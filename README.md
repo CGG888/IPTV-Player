@@ -301,15 +301,16 @@ bin\Debug\net8.0-windows\
 
 ---
 
-## 示例截图（占位符）
+## 示例截图
 
-> 维护人员可将截图放入 `docs/screenshots/` 并替换下列占位符。
+- 主界面  
+  ![main](docs/screenshots/main.png)
 
-- 主界面：
-  - `![main](docs/screenshots/main.png)`
-- 全屏悬浮控制条：
-  - `![fullscreen-overlay](docs/screenshots/fullscreen-overlay.png)`
-- EPG 面板（含直播/回放状态）：
-  - `![epg](docs/screenshots/epg.png)`
-- 设置窗口（深色标题栏与主题）：
-  - `![settings](docs/screenshots/settings.png)`
+- 全屏悬浮控制条  
+  ![fullscreen-overlay](docs/screenshots/fullscreen-overlay.png)
+
+- EPG 面板（含直播/回放状态）  
+  ![epg](docs/screenshots/epg.png)
+
+- 设置窗口（深色标题栏与主题）  
+  ![settings](docs/screenshots/settings.png)
