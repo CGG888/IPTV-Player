@@ -30,7 +30,6 @@ desktop.ini
 
 *.nupkg
 *.snupkg
-build_release.bat
-setup.iss
  
 /libmpv-2.dll
+RELEASE.md
