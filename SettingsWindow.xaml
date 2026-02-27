@@ -1,0 +1,152 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        x:Class="LibmpvIptvClient.SettingsWindow"
+        Title="播放设置" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None" Icon="/iptv.png"
+        Background="#1F1F1F" Foreground="#EEE">
+  <WindowChrome.WindowChrome>
+    <shell:WindowChrome CaptionHeight="40" GlassFrameThickness="0" CornerRadius="8" ResizeBorderThickness="0" UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+  <Window.Resources>
+      <Style TargetType="TextBox">
+          <Setter Property="Background" Value="#333"/>
+          <Setter Property="Foreground" Value="White"/>
+          <Setter Property="BorderBrush" Value="#555"/>
+          <Setter Property="Padding" Value="4,2"/>
+          <Setter Property="VerticalContentAlignment" Value="Center"/>
+      </Style>
+      <Style TargetType="CheckBox">
+          <Setter Property="Foreground" Value="#EEE"/>
+          <Setter Property="VerticalContentAlignment" Value="Center"/>
+      </Style>
+      <Style TargetType="Button">
+          <Setter Property="Background" Value="#333"/>
+          <Setter Property="Foreground" Value="White"/>
+          <Setter Property="BorderBrush" Value="#555"/>
+          <Setter Property="Padding" Value="8,4"/>
+          <Setter Property="Template">
+              <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                      <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4">
+                          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                              <Setter Property="Background" Value="#444"/>
+                          </Trigger>
+                          <Trigger Property="IsPressed" Value="True">
+                              <Setter Property="Background" Value="#555"/>
+                          </Trigger>
+                      </ControlTemplate.Triggers>
+                  </ControlTemplate>
+              </Setter.Value>
+          </Setter>
+      </Style>
+      <Style x:Key="TitleBarButton" TargetType="ButtonBase">
+          <Setter Property="Background" Value="Transparent"/>
+          <Setter Property="BorderThickness" Value="0"/>
+          <Setter Property="Width" Value="46"/>
+          <Setter Property="Height" Value="32"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+          <Setter Property="Template">
+              <Setter.Value>
+                  <ControlTemplate TargetType="ButtonBase">
+                      <Border x:Name="bd" Background="{TemplateBinding Background}">
+                          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                              <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                          </Trigger>
+                          <Trigger Property="IsPressed" Value="True">
+                              <Setter TargetName="bd" Property="Background" Value="#22000000"/>
+                          </Trigger>
+                      </ControlTemplate.Triggers>
+                  </ControlTemplate>
+              </Setter.Value>
+          </Setter>
+      </Style>
+  </Window.Resources>
+  <Border Background="#1F1F1F" CornerRadius="8" BorderBrush="#333" BorderThickness="1">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="40"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Background="#181818" BorderBrush="#333" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+        <Grid Margin="12,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Image Source="/iptv.png" Width="18" Height="18" Margin="0,0,8,0"/>
+            <TextBlock Text="播放设置" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          </StackPanel>
+          <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Button.Style>
+              <Style TargetType="ButtonBase" BasedOn="{StaticResource TitleBarButton}">
+                <Style.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                  </Trigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+            <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Button>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="1" Margin="24">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <CheckBox x:Name="CbHwdec" Grid.Row="0" Grid.ColumnSpan="2" Content="启用硬件解码 (d3d11va)" Margin="0,0,0,16"/>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="缓存秒数" VerticalAlignment="Center" Margin="0,0,16,0"/>
+        <TextBox x:Name="TbCacheSecs" Grid.Row="1" Grid.Column="1" Height="30"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="demuxer-max-bytes (MiB)" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbMaxBytes" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="demuxer-max-back-bytes (MiB)" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbMaxBackBytes" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="FCC 预取数量" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbFccPrefetch" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="超时换源 (秒)" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbSourceTimeout" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="EPG 地址" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbEpgUrl" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="台标库地址" VerticalAlignment="Center" Margin="0,12,16,0" ToolTip="支持占位符 {name}，例如 http://site.com/{name}.png"/>
+        <TextBox x:Name="TbLogoUrl" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <StackPanel Grid.Row="8" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+          <Button Width="80" Margin="0,0,12,0" Content="调试日志" Click="BtnDebug_Click"/>
+          <Button Width="80" Margin="0,0,12,0" Content="保存" IsDefault="True" Click="BtnSave_Click" Background="#35C759" BorderBrush="#35C759"/>
+          <Button Width="80" Margin="0,0,0,0" Content="取消" IsCancel="True"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

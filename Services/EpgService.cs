@@ -1,0 +1,228 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Xml;
+using LibmpvIptvClient.Models;
+
+namespace LibmpvIptvClient.Services
+{
+    public class EpgService
+    {
+        private readonly HttpClient _http;
+        private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
+
+        public EpgService(HttpClient http)
+        {
+            _http = http;
+        }
+
+        public async Task LoadEpgAsync(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+
+            try 
+            {
+                byte[] data;
+                // 使用 URL 的 Hash 作为缓存文件名的一部分
+                var hash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(url)));
+                var cachePath = Path.Combine(Path.GetTempPath(), $"iptv_epg_{hash}.dat");
+                
+                // 简单的缓存策略：文件存在且小于 12 小时则直接使用
+                if (File.Exists(cachePath) && (DateTime.Now - File.GetLastWriteTime(cachePath)).TotalHours < 12)
+                {
+                    System.Diagnostics.Debug.WriteLine("Loading EPG from cache...");
+                    data = await File.ReadAllBytesAsync(cachePath);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Downloading EPG from {url}...");
+                    data = await _http.GetByteArrayAsync(url);
+                    // 异步写入缓存
+                    _ = File.WriteAllBytesAsync(cachePath, data);
+                }
+
+                System.Diagnostics.Debug.WriteLine($"EPG Data Length: {data.Length} bytes");
+
+                using var ms = new MemoryStream(data);
+                Stream stream = ms;
+                
+                // Check for GZIP
+                if (data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B)
+                {
+                    System.Diagnostics.Debug.WriteLine("EPG is GZIP compressed.");
+                    stream = new GZipStream(ms, CompressionMode.Decompress);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("EPG is plain XML.");
+                }
+
+                await Task.Run(() => ParseXml(stream));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"EPG Load Error: {ex.Message}");
+            }
+        }
+
+        private void ParseXml(Stream stream)
+        {
+            var newPrograms = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
+            var newMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                // 创建命名空间管理器以处理带前缀的节点
+                var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore };
+                using var reader = XmlReader.Create(stream, settings);
+                
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element)
+                    {
+                        // 忽略命名空间，只匹配 LocalName
+                        if (reader.LocalName == "channel")
+                        {
+                            var id = reader.GetAttribute("id");
+                            if (!string.IsNullOrEmpty(id))
+                            {
+                                // Read display-name
+                                using var inner = reader.ReadSubtree();
+                                while (inner.Read())
+                                {
+                                    if (inner.NodeType == XmlNodeType.Element && inner.LocalName == "display-name")
+                                    {
+                                        var name = inner.ReadElementContentAsString();
+                                        if (!string.IsNullOrEmpty(name)) newMap[name] = id;
+                                    }
+                                }
+                            }
+                        }
+                        else if (reader.LocalName == "programme")
+                        {
+                            var channelId = reader.GetAttribute("channel");
+                            if (string.IsNullOrEmpty(channelId)) continue;
+
+                            var prog = new EpgProgram();
+                            if (TryParseTime(reader.GetAttribute("start"), out var start)) prog.Start = start;
+                            if (TryParseTime(reader.GetAttribute("stop"), out var end)) prog.End = end;
+
+                            // Read inner elements
+                            using var inner = reader.ReadSubtree();
+                            while (inner.Read())
+                            {
+                                if (inner.NodeType == XmlNodeType.Element)
+                                {
+                                    if (inner.LocalName == "title")
+                                    {
+                                        prog.Title = inner.ReadElementContentAsString();
+                                    }
+                                    else if (inner.LocalName == "desc")
+                                    {
+                                        prog.Description = inner.ReadElementContentAsString();
+                                    }
+                                }
+                            }
+
+                            if (!newPrograms.ContainsKey(channelId))
+                            {
+                                newPrograms[channelId] = new List<EpgProgram>();
+                            }
+                            newPrograms[channelId].Add(prog);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) 
+            {
+                System.Diagnostics.Debug.WriteLine("XML Parse Error: " + ex.Message);
+            }
+
+            // Sort
+            foreach (var kv in newPrograms)
+            {
+                kv.Value.Sort((a, b) => a.Start.CompareTo(b.Start));
+            }
+
+            _programs = newPrograms;
+            _channelNameMap = newMap;
+        }
+
+        private bool TryParseTime(string? s, out DateTime dt)
+        {
+            dt = DateTime.MinValue;
+            if (string.IsNullOrEmpty(s)) return false;
+
+            // Clean up string
+            s = s.Trim();
+            
+            // Format: yyyyMMddHHmmss zzz or yyyyMMddHHmmss
+            // Handle space before timezone
+            // Example: 20240226120000 +0800
+            
+            if (s.Length >= 14)
+            {
+                var core = s.Substring(0, 14);
+                if (DateTime.TryParseExact(core, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var local))
+                {
+                    // Check for timezone suffix
+                    if (s.Length > 14)
+                    {
+                        var suffix = s.Substring(14).Trim();
+                        // +0800, +08:00, +08
+                        if (suffix.StartsWith("+") || suffix.StartsWith("-"))
+                        {
+                            try 
+                            {
+                                // Parse offset manually to be robust
+                                var sign = suffix.StartsWith("+") ? 1 : -1;
+                                var valStr = suffix.Substring(1).Replace(":", "");
+                                if (valStr.Length >= 2 && int.TryParse(valStr.Substring(0, 2), out var hh))
+                                {
+                                    int mm = 0;
+                                    if (valStr.Length >= 4) int.TryParse(valStr.Substring(2, 2), out mm);
+                                    var offset = new TimeSpan(hh, mm, 0);
+                                    var dto = new DateTimeOffset(local, sign * offset);
+                                    dt = dto.LocalDateTime;
+                                    return true;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    
+                    // Fallback to local time if no timezone or parse failed
+                    dt = local;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public List<EpgProgram> GetPrograms(string tvgId, string? channelName = null)
+        {
+            if (_programs.TryGetValue(tvgId ?? "", out var list)) return list;
+            
+            // Try fallback by name
+            if (!string.IsNullOrEmpty(channelName) && _channelNameMap.TryGetValue(channelName, out var id))
+            {
+                if (_programs.TryGetValue(id, out var list2)) return list2;
+            }
+            
+            return new List<EpgProgram>();
+        }
+
+        public EpgProgram? GetCurrentProgram(string tvgId, string? channelName = null)
+        {
+            var list = GetPrograms(tvgId, channelName);
+            var now = DateTime.Now;
+            return list.FirstOrDefault(p => now >= p.Start && now < p.End);
+        }
+    }
+}

@@ -1,0 +1,2185 @@
+using System;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
+using LibmpvIptvClient.Diagnostics;
+using System.Windows.Media;
+using System.Windows.Controls;
+
+namespace LibmpvIptvClient
+{
+    public partial class MainWindow : Window
+    {
+        private MpvInterop? _mpv;
+        private ChannelService? _channelService;
+        private M3UParser? _m3uParser;
+        private EpgService? _epgService;
+        private HttpClient _http = new HttpClient();
+        private List<Channel> _channels = new List<Channel>();
+        private DebugWindow? _debug;
+        private System.Windows.Threading.DispatcherTimer _timer = new System.Windows.Threading.DispatcherTimer();
+        private System.Windows.Threading.DispatcherTimer _epgTimer = new System.Windows.Threading.DispatcherTimer();
+        private bool _seeking = false;
+        private List<DateTime> _availableDates = new List<DateTime>();
+        private DateTime _currentEpgDate = DateTime.Today;
+        private bool _paused = false;
+        private OverlayControls? _overlayWpf;
+        private System.Windows.Threading.DispatcherTimer _overlayHideTimer = new System.Windows.Threading.DispatcherTimer();
+        private System.Windows.Threading.DispatcherTimer _overlayPollTimer = new System.Windows.Threading.DispatcherTimer();
+        private bool _isFullscreen = false;
+        private FullscreenWindow? _fs;
+        private System.Windows.Forms.Panel? _fsPanel;
+        private Channel? _currentChannel;
+        private List<Source> _currentSources = new List<Source>();
+        private string? _selectedGroup = null;
+        private bool _drawerCollapsed = true; // Default collapsed
+        private double _drawerWidth = 380;
+        private Window? _fsDrawer;
+        private Window? _fsEpg; // 全屏 EPG 抽屉
+        private TopOverlay? _topOverlay;
+
+        private class GroupItem
+        {
+            public string Name { get; set; } = "";
+            public List<Channel> Items { get; set; } = new List<Channel>();
+            public int Count => Items?.Count ?? 0;
+        }
+        private System.Windows.Threading.DispatcherTimer _sourceTimeoutTimer = new System.Windows.Threading.DispatcherTimer();
+        private DateTime _playStartTime;
+        public MainWindow()
+        {
+            InitializeComponent();
+            Loaded += OnLoaded;
+            Closed += OnClosed;
+            // 主视频区域双击切换全屏
+            try { VideoPanel.DoubleClick += MainPanel_DoubleClick; } catch { }
+            _sourceTimeoutTimer.Tick += OnSourceTimeout;
+        }
+        
+        // Window Control Buttons
+        void BtnPin_Click(object sender, RoutedEventArgs e)
+        {
+            Topmost = !Topmost;
+            if (sender is System.Windows.Controls.Primitives.ToggleButton tb)
+            {
+                tb.IsChecked = Topmost;
+            }
+        }
+        void BtnMin_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+        void BtnMax_Click(object sender, RoutedEventArgs e)
+        {
+            if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+            else SystemCommands.MaximizeWindow(this);
+        }
+        void BtnClose_Click(object sender, RoutedEventArgs e) => Close();
+
+        void PromptOpenFile()
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Playlist Files (*.m3u;*.m3u8)|*.m3u;*.m3u8|All Files (*.*)|*.*" };
+            if (dlg.ShowDialog() == true)
+            {
+                // Deselect all saved sources when opening a local file
+                if (AppSettings.Current.SavedSources != null)
+                {
+                    foreach (var s in AppSettings.Current.SavedSources) s.IsSelected = false;
+                    AppSettings.Current.Save();
+                }
+                _ = LoadChannels(dlg.FileName);
+            }
+        }
+
+        void PromptAddM3u()
+        {
+            var dlg = new AddM3uWindow { Owner = this };
+            if (dlg.ShowDialog() == true)
+            {
+                var src = new M3uSource { Name = dlg.SourceName, Url = dlg.SourceUrl };
+                if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
+                AppSettings.Current.SavedSources.Add(src);
+                AppSettings.Current.Save(); // Save to disk
+                LoadM3uSource(src);
+            }
+        }
+
+        void BtnAppTitle_Click(object sender, RoutedEventArgs e)
+        {
+            var cm = LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
+                openFile: PromptOpenFile,
+                openUrl: PromptOpenUrl,
+                addM3uFile: PromptAddM3uFile,
+                addM3uUrl: PromptAddM3u,
+                editM3u: EditM3uSource,
+                loadM3u: LoadM3uSource,
+                openSettings: OpenSettings,
+                showAbout: ShowAbout,
+                exitApp: ExitApp,
+                toggleFcc: (on) => 
+                {
+                    AppSettings.Current.FccPrefetchCount = on ? 2 : 0;
+                    AppSettings.Current.Save();
+                    try { _overlayWpf?.SetFcc(on); } catch { }
+                },
+                toggleUdp: (on) => 
+                {
+                    AppSettings.Current.EnableUdpOptimization = on;
+                    AppSettings.Current.Save();
+                    try { _overlayWpf?.SetUdp(on); } catch { }
+                },
+                toggleEpg: (on) => 
+                {
+                    CbEpg.IsChecked = on;
+                    CbEpg_Click(CbEpg, new RoutedEventArgs());
+                },
+                toggleDrawer: (on) => SetDrawerCollapsed(!on),
+                isEpgChecked: CbEpg.IsChecked == true,
+                isDrawerChecked: !_drawerCollapsed
+            );
+
+            BtnAppTitle.ContextMenu = cm;
+            BtnAppTitle.ContextMenu.PlacementTarget = BtnAppTitle;
+            BtnAppTitle.ContextMenu.IsOpen = true;
+        }
+
+        async void PromptOpenUrl()
+        {
+            var dlg = new AddM3uWindow { Owner = this, Title = "打开链接" };
+            dlg.HideNameField(); // Hide name input for simple URL opening
+            
+            if (dlg.ShowDialog() == true)
+            {
+                var url = dlg.SourceUrl.Trim();
+                if (string.IsNullOrWhiteSpace(url)) return;
+
+                if (AppSettings.Current.SavedSources != null)
+                {
+                    foreach (var s in AppSettings.Current.SavedSources) s.IsSelected = false;
+                    AppSettings.Current.Save();
+                }
+
+                // Check for obvious stream protocols
+                if (IsDirectStreamProtocol(url))
+                {
+                    LoadSingleStream(url);
+                    return;
+                }
+
+                // Try load as playlist first (silent mode)
+                await LoadChannels(url, silent: true);
+                
+                if (_channels.Count == 0)
+                {
+                    // Fallback: treat as single stream
+                    LoadSingleStream(url);
+                }
+            }
+        }
+
+        bool IsDirectStreamProtocol(string url)
+        {
+            return url.StartsWith("udp://", StringComparison.OrdinalIgnoreCase) ||
+                   url.StartsWith("rtp://", StringComparison.OrdinalIgnoreCase) ||
+                   url.StartsWith("rtsp://", StringComparison.OrdinalIgnoreCase) ||
+                   url.StartsWith("rtmp://", StringComparison.OrdinalIgnoreCase);
+        }
+
+        void LoadSingleStream(string url)
+        {
+            _channels.Clear();
+            var ch = new Channel 
+            { 
+                Name = "网络流", 
+                Tag = new Source { Url = url },
+                Group = "网络流",
+                Logo = "/iptv.png"
+            };
+            ch.Sources = new List<Source> { (Source)ch.Tag };
+            _channels.Add(ch);
+            ComputeGlobalIndex();
+            ApplyChannelFilter();
+            
+            PlayChannel(ch);
+        }
+
+        void PromptAddM3uFile()
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog 
+            { 
+                Filter = "Playlist Files (*.m3u;*.m3u8)|*.m3u;*.m3u8|All Files (*.*)|*.*",
+                Multiselect = true 
+            };
+            
+            if (dlg.ShowDialog() == true)
+            {
+                if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
+                
+                M3uSource? lastSrc = null;
+                foreach (var file in dlg.FileNames)
+                {
+                    var src = new M3uSource { Name = System.IO.Path.GetFileNameWithoutExtension(file), Url = file };
+                    AppSettings.Current.SavedSources.Add(src);
+                    lastSrc = src;
+                }
+                AppSettings.Current.Save();
+                
+                if (lastSrc != null) LoadM3uSource(lastSrc);
+            }
+        }
+
+        void ShowAbout()
+        {
+            var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+            var dlg = new AboutWindow();
+            dlg.Owner = owner;
+            dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            if (owner.Topmost) dlg.Topmost = true;
+            dlg.ShowDialog();
+        }
+
+        void ExitApp()
+        {
+            var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+            if (ModernMessageBox.Show(owner, "确定要退出软件吗？", "退出", MessageBoxButton.YesNo) == true)
+            {
+                // Force exit fullscreen to cleanup handles and overlays
+                if (_isFullscreen) ToggleFullscreen(false);
+                
+                // Ensure MPV is stopped and detached before closing window
+                try
+                {
+                    _mpv?.Stop();
+                    _mpv?.SetWid(IntPtr.Zero);
+                }
+                catch { }
+
+                Close();
+            }
+        }
+
+        void LoadM3uSource(M3uSource src)
+        {
+            if (AppSettings.Current.SavedSources != null)
+            {
+                foreach (var s in AppSettings.Current.SavedSources)
+                    s.IsSelected = (s == src); // Match by reference for uniqueness
+                AppSettings.Current.Save();
+            }
+            _ = LoadChannels(src.Url);
+        }
+
+        void MainPanel_DoubleClick(object? sender, EventArgs e) => ToggleFullscreen(true);
+        void VideoHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            e.Handled = true;
+        }
+        void ListChannels_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try { ListChannels.Focus(); } catch { }
+        }
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TryEnableDarkTitleBar();
+                _mpv = new MpvInterop();
+                _mpv.Create();
+                _mpv.SetSettings(AppSettings.Current);
+                var hwnd = new WindowInteropHelper(this).Handle;
+                var panelHwnd = VideoPanel.Handle;
+                _mpv.SetWid(panelHwnd);
+                _mpv.Initialize();
+                try { SliderVolume.Value = 60; } catch { }
+                _mpv.SetVolume(60);
+                _timer.Interval = TimeSpan.FromMilliseconds(500);
+                _timer.Tick += OnTick;
+                _timer.Start();
+                BuildOverlayWindow();
+                if (DrawerColumn != null) _drawerWidth = DrawerColumn.Width.Value;
+                
+                // Initially hide VideoHost to show placeholder
+                try { VideoHost.Visibility = Visibility.Collapsed; } catch { }
+            }
+            catch (Exception ex)
+            {
+                try { Logger.Log("初始化失败 " + ex.ToString()); } catch { }
+                System.Windows.MessageBox.Show(this, ex.Message, "启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                Close();
+                return;
+            }
+            _m3uParser = new M3UParser(_http);
+            _epgService = new EpgService(_http);
+            var checker = new IptvCheckerClient(_http, _m3uParser, "", "/api/export/json", "/api/export/m3u", "");
+            _channelService = new ChannelService(_http, _m3uParser, checker);
+            _epgTimer.Interval = TimeSpan.FromMinutes(1);
+            _epgTimer.Tick += (s, e) => UpdateEpgDisplay();
+            _epgTimer.Start();
+            Logger.Log("应用启动完成");
+            
+            // Auto-load last selected source if available
+            if (AppSettings.Current.SavedSources != null)
+            {
+                var lastSelected = AppSettings.Current.SavedSources.FirstOrDefault(s => s.IsSelected);
+                if (lastSelected != null)
+                {
+                    Logger.Log("自动加载上次选择的源: " + lastSelected.Name);
+                    LoadM3uSource(lastSelected);
+                }
+            }
+        }
+        void ComputeGlobalIndex()
+        {
+            try
+            {
+                var list = DistinctByNamePreserveOrder(_channels);
+                var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var key = list[i].Name ?? "";
+                    map[key] = i + 1;
+                }
+                foreach (var ch in _channels)
+                {
+                    if (ch?.Name == null) continue;
+                    if (map.TryGetValue(ch.Name, out var idx)) ch.GlobalIndex = idx;
+                }
+            }
+            catch { }
+        }
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+        void TryEnableDarkTitleBar()
+        {
+            try
+            {
+                var hwnd = new WindowInteropHelper(this).Handle;
+                int value = 1;
+                DwmSetWindowAttribute(hwnd, 20, ref value, sizeof(int));
+                DwmSetWindowAttribute(hwnd, 19, ref value, sizeof(int));
+            }
+            catch { }
+        }
+        void BuildOverlayWindow()
+        {
+            _overlayWpf = new OverlayControls();
+            _overlayWpf.Owner = this;
+            _overlayWpf.PlayPause += () => BtnPlayPause_Click(this, new RoutedEventArgs());
+            _overlayWpf.Stop += () => BtnStop_Click(this, new RoutedEventArgs());
+            _overlayWpf.Rew += () => BtnRew_Click(this, new RoutedEventArgs());
+            _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
+            _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
+            _overlayWpf.DrawerToggled += (visible) => SetDrawerCollapsed(!visible);
+            _overlayWpf.EpgToggled += (visible) => 
+            { 
+                CbEpg.IsChecked = visible;
+                CbEpg_Click(this, new RoutedEventArgs());
+            };
+            _overlayWpf.SeekStart += () => _seeking = true;
+            _overlayWpf.SeekEnd += (val) => { if (_mpv != null) { _seeking = false; _mpv.SeekAbsolute(val); } };
+            _overlayWpf.VolumeChanged += (val) => { if (_mpv != null) _mpv.SetVolume(val); };
+            _overlayWpf.MuteChanged += (on) => { _muted = on; if (_mpv != null) _mpv.Mute(on); SetMuteIcon(); };
+            // _overlayWpf.FccChanged += (v) => { try { CbFcc.IsChecked = v; } catch { } }; // Removed
+            // _overlayWpf.UdpChanged += (v) => { try { CbUdpMode.IsChecked = v; } catch { } }; // Removed
+            _overlayWpf.SourceMenuRequested += () => OpenSourceMenuAtOverlay();
+            _overlayWpf.Topmost = true;
+            
+            if (_drawerCollapsed)
+            {
+                DrawerColumn.Width = new GridLength(0);
+            }
+            try { CbDrawer.IsChecked = !_drawerCollapsed; } catch { }
+            try 
+            { 
+                _overlayWpf.SetDrawerVisible(!_drawerCollapsed); 
+            } 
+            catch { }
+            
+            _overlayWpf.SetVolume(60);
+            _overlayWpf.Show();
+            PositionOverlay();
+            _overlayWpf.Hide();
+            _overlayHideTimer.Interval = TimeSpan.FromSeconds(2);
+            _overlayHideTimer.Tick += (s, e) => 
+            { 
+                _overlayWpf?.Hide(); 
+                _topOverlay?.Hide();
+                _overlayHideTimer.Stop(); 
+            };
+            _overlayPollTimer.Interval = TimeSpan.FromMilliseconds(120);
+            _overlayPollTimer.Tick += (s, e) => ShowOverlayWithDelay();
+            VideoPanel.MouseMove += (s, e) => ShowOverlayWithDelay();
+            this.SizeChanged += (s, e) => PositionOverlay();
+            this.LocationChanged += (s, e) => PositionOverlay();
+            ShowOverlayWithDelay();
+            
+            _timer.Interval = TimeSpan.FromSeconds(0.5);
+            _timer.Tick += Timer_Tick;
+            _timer.Start();
+        }
+
+        void Timer_Tick(object? sender, EventArgs e)
+        {
+            if (_mpv == null) return;
+            try
+            {
+                var pos = _mpv.GetTimePos() ?? 0;
+                var dur = _mpv.GetDuration() ?? 0;
+                
+                LblElapsed.Text = FormatTime(pos);
+                LblDuration.Text = FormatTime(dur);
+                
+                if (!_seeking)
+                {
+                    SliderSeek.Maximum = dur <= 0 ? 1 : dur;
+                    SliderSeek.Value = Math.Max(0, Math.Min(SliderSeek.Maximum, pos));
+                }
+
+                try { _overlayWpf?.SetTime(pos, dur); } catch { }
+            }
+            catch { }
+        }
+
+        void ResetOverlayForOwner(Window owner, bool fullscreen)
+        {
+            try { _overlayWpf?.Close(); } catch { }
+            _overlayWpf = new OverlayControls();
+            _overlayWpf.Owner = owner;
+            _overlayWpf.PlayPause += () => BtnPlayPause_Click(this, new RoutedEventArgs());
+            _overlayWpf.Stop += () => BtnStop_Click(this, new RoutedEventArgs());
+            _overlayWpf.Rew += () => BtnRew_Click(this, new RoutedEventArgs());
+            _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
+            _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
+            _overlayWpf.DrawerToggled += (visible) => SetDrawerCollapsed(!visible);
+            _overlayWpf.SeekStart += () => _seeking = true;
+            _overlayWpf.SeekEnd += (val) => { if (_mpv != null) { _seeking = false; _mpv.SeekAbsolute(val); } };
+            _overlayWpf.VolumeChanged += (val) => { if (_mpv != null) _mpv.SetVolume(val); };
+            _overlayWpf.MuteChanged += (on) => { _muted = on; if (_mpv != null) _mpv.Mute(on); SetMuteIcon(); };
+            // _overlayWpf.FccChanged += (v) => { try { CbFcc.IsChecked = v; } catch { } }; // Removed
+            // _overlayWpf.UdpChanged += (v) => { try { CbUdpMode.IsChecked = v; } catch { } }; // Removed
+            _overlayWpf.SourceMenuRequested += () => OpenSourceMenuAtOverlay();
+            _overlayWpf.Topmost = true;
+            try { _overlayWpf.SetDrawerVisible(!_drawerCollapsed); } catch { }
+            try { _overlayWpf.SetEpgVisible(CbEpg.IsChecked == true); } catch { }
+            try { _overlayWpf.SetPaused(_paused); } catch { }
+            _overlayWpf.SetVolume(60);
+            _overlayWpf.Show();
+            PositionOverlay();
+            _overlayWpf.Hide();
+        }
+        bool _muted = false;
+        void BtnMute_Click(object sender, RoutedEventArgs e)
+        {
+            _muted = !_muted;
+            if (_mpv != null) _mpv.Mute(_muted);
+            SetMuteIcon();
+        }
+        void UpdatePlayPauseIcon()
+        {
+            try
+            {
+                IconPlayPause.Symbol = _paused ? ModernWpf.Controls.Symbol.Play : ModernWpf.Controls.Symbol.Pause;
+            }
+            catch { }
+            try
+            {
+                _overlayWpf?.SetPaused(_paused);
+            }
+            catch { }
+        }
+        void SetMuteIcon()
+        {
+            try
+            {
+                IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+            }
+            catch { }
+        }
+        void EditM3uSource(M3uSource source)
+        {
+            var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+            var dlg = new EditM3uWindow(source.Name, source.Url) { Owner = owner };
+            try { dlg.Topmost = _isFullscreen; } catch { }
+            
+            if (dlg.ShowDialog() == true)
+            {
+                if (dlg.IsDeleteRequested)
+                {
+                    if (AppSettings.Current.SavedSources != null)
+                    {
+                        // Use reference removal if possible, or by name/url
+                        var target = AppSettings.Current.SavedSources.FirstOrDefault(s => s.Name == source.Name && s.Url == source.Url);
+                        if (target != null)
+                        {
+                            AppSettings.Current.SavedSources.Remove(target);
+                            AppSettings.Current.Save();
+                        }
+                    }
+                }
+                else
+                {
+                    source.Name = dlg.SourceName;
+                    source.Url = dlg.SourceUrl;
+                    AppSettings.Current.Save();
+                }
+            }
+        }
+
+        void OpenSettings()
+        {
+            var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+            var dlg = new SettingsWindow(AppSettings.Current) { Owner = owner };
+            dlg.DebugRequested += () => BtnDebug_Click(this, new RoutedEventArgs());
+            try { dlg.Topmost = _isFullscreen; } catch { }
+            if (dlg.ShowDialog() == true)
+            {
+                AppSettings.Current.Hwdec = dlg.Result.Hwdec;
+                AppSettings.Current.CacheSecs = dlg.Result.CacheSecs;
+                AppSettings.Current.DemuxerMaxBytesMiB = dlg.Result.DemuxerMaxBytesMiB;
+                AppSettings.Current.DemuxerMaxBackBytesMiB = dlg.Result.DemuxerMaxBackBytesMiB;
+                AppSettings.Current.FccPrefetchCount = dlg.Result.FccPrefetchCount;
+                AppSettings.Current.SourceTimeoutSec = dlg.Result.SourceTimeoutSec;
+                AppSettings.Current.CustomEpgUrl = dlg.Result.CustomEpgUrl;
+                AppSettings.Current.CustomLogoUrl = dlg.Result.CustomLogoUrl;
+                AppSettings.Current.Save(); // Save to disk
+                if (_mpv != null)
+                {
+                    _mpv.SetSettings(AppSettings.Current);
+                    _mpv.Initialize();
+                }
+            }
+        }
+        void SetDrawerCollapsed(bool collapsed)
+        {
+            if (_drawerCollapsed == collapsed) return;
+            _drawerCollapsed = collapsed;
+            if (collapsed)
+            {
+                _drawerWidth = DrawerColumn.Width.Value;
+                DrawerColumn.Width = new GridLength(0);
+                if (_fsDrawer != null) _fsDrawer.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                DrawerColumn.Width = new GridLength(_drawerWidth > 0 ? _drawerWidth : 380);
+                if (_fsDrawer != null) _fsDrawer.Visibility = Visibility.Visible;
+                if (_isFullscreen && _fsDrawer == null && !_drawerCollapsed) ShowFullscreenDrawer();
+            }
+            try { CbDrawer.IsChecked = !collapsed; } catch { }
+            try { _overlayWpf?.SetDrawerVisible(!collapsed); } catch { }
+        }
+        void PositionOverlay()
+        {
+            if (_overlayWpf == null) return;
+            var rect = (_isFullscreen && _fsPanel != null)
+                ? _fsPanel.RectangleToScreen(_fsPanel.ClientRectangle)
+                : VideoPanel.RectangleToScreen(VideoPanel.ClientRectangle);
+            var source = PresentationSource.FromVisual(_isFullscreen && _fs != null ? (System.Windows.Media.Visual)_fs : (System.Windows.Media.Visual)this);
+            if (source != null)
+            {
+                var m = source.CompositionTarget.TransformFromDevice;
+                var pt1 = m.Transform(new System.Windows.Point(rect.Left, rect.Top));
+                var pt2 = m.Transform(new System.Windows.Point(rect.Right, rect.Bottom));
+                _overlayWpf.Left = pt1.X;
+                _overlayWpf.Top = pt2.Y - _overlayWpf.Height;
+                _overlayWpf.Width = Math.Max(320, pt2.X - pt1.X);
+                return;
+            }
+            // Fallback（未取到 DPI 转换）
+            _overlayWpf.Left = rect.Left;
+            _overlayWpf.Top = rect.Bottom - _overlayWpf.Height;
+            _overlayWpf.Width = Math.Max(320, rect.Width);
+        }
+        
+        void PositionTopOverlay()
+        {
+            if (_topOverlay == null || !_isFullscreen) return;
+            if (_fsPanel != null)
+            {
+                var rect = _fsPanel.RectangleToScreen(_fsPanel.ClientRectangle);
+                var source = PresentationSource.FromVisual(_fs);
+                if (source != null)
+                {
+                    var m = source.CompositionTarget.TransformFromDevice;
+                    var pt1 = m.Transform(new System.Windows.Point(rect.Left, rect.Top));
+                    var pt2 = m.Transform(new System.Windows.Point(rect.Right, rect.Bottom));
+                    _topOverlay.Left = pt1.X;
+                    _topOverlay.Top = pt1.Y;
+                    _topOverlay.Width = Math.Max(320, pt2.X - pt1.X);
+                }
+                else
+                {
+                    _topOverlay.Left = rect.Left;
+                    _topOverlay.Top = rect.Top;
+                    _topOverlay.Width = rect.Width;
+                }
+            }
+        }
+
+        void ShowOverlayWithDelay()
+        {
+            if (!_isFullscreen || _fs == null || !_fs.IsLoaded)
+            {
+                // Windowed Mode Logic
+                if (VideoHost.IsMouseOver || (BottomBar.IsMouseOver && BottomBar.Visibility == Visibility.Visible))
+                {
+                    _overlayWpf?.Hide();
+                    _topOverlay?.Hide();
+                }
+                return;
+            }
+            
+            // Fullscreen Logic
+            PositionOverlay();
+            PositionTopOverlay();
+
+            if (GetCursorPos(out POINT p))
+            {
+                // Convert to logical pixels relative to _fs
+                System.Windows.Point relPoint;
+                try
+                {
+                    relPoint = _fs.PointFromScreen(new System.Windows.Point(p.X, p.Y));
+                }
+                catch
+                {
+                    relPoint = new System.Windows.Point(p.X - _fs.Left, p.Y - _fs.Top);
+                }
+
+                var relX = relPoint.X;
+                var relY = relPoint.Y;
+                var screenW = _fs.ActualWidth;
+                var screenH = _fs.ActualHeight;
+
+                if (screenW <= 0 || screenH <= 0) return;
+
+                // 1. Bottom Zone (Overlay Controls)
+                if (relY > screenH - 120) 
+                {
+                    if (_overlayWpf != null && !_overlayWpf.IsVisible)
+                    {
+                        _overlayWpf.Show();
+                        _overlayWpf.Topmost = true;
+                        _overlayHideTimer.Stop();
+                        _overlayHideTimer.Start();
+                    }
+                }
+
+                // 2. Top Zone (Top Overlay)
+                if (relY < 60 || (_topOverlay != null && _topOverlay.IsMenuOpen))
+                {
+                    if (_topOverlay != null && !_topOverlay.IsVisible)
+                    {
+                        _topOverlay.Show();
+                        _topOverlay.Topmost = true;
+                    }
+                    if (_topOverlay != null && _topOverlay.IsVisible)
+                    {
+                        _overlayHideTimer.Stop();
+                        _overlayHideTimer.Start();
+                    }
+                }
+
+                // 3. EPG (Left)
+                bool epgEnabled = CbEpg.IsChecked == true;
+                if (epgEnabled)
+                {
+                    if (_fsEpg == null) ShowFullscreenEpg();
+                    
+                    if (_fsEpg != null)
+                    {
+                        bool isVisible = _fsEpg.Visibility == Visibility.Visible;
+                        bool inZone = relX <= 320; 
+                        bool onEdge = relX <= 20;
+                        
+                        if (!isVisible && onEdge)
+                        {
+                            if (_fsEpg != null && _fs != null)
+                            {
+                                _fsEpg.Show();
+                                _fsEpg.Visibility = Visibility.Visible;
+                                // Fix Z-Order: Ensure FS is topmost first, then EPG
+                                _fs.Topmost = true;
+                                _fsEpg.Topmost = true;
+                                _fsEpg.Activate();
+                                
+                                _fsEpg.Left = _fs.Left;
+                                _fsEpg.Top = _fs.Top;
+                                _fsEpg.Height = _fs.ActualHeight;
+                            }
+                        }
+                        else if (isVisible && !inZone)
+                        {
+                            if (_fsEpg != null)
+                            {
+                                _fsEpg.Hide();
+                                _fsEpg.Visibility = Visibility.Collapsed;
+                                // Restore FS topmost state based on user preference
+                                if (_fs != null) _fs.Topmost = Topmost;
+                            }
+                        }
+                    }
+                }
+                else if (_fsEpg != null) CloseFullscreenEpg();
+
+                // 4. Drawer (Right)
+                if (!_drawerCollapsed && _fs != null) 
+                {
+                    if (_fsDrawer == null) ShowFullscreenDrawer(); 
+                    
+                    if (_fsDrawer != null)
+                    {
+                        bool isVisible = _fsDrawer.Visibility == Visibility.Visible;
+                        double w = _drawerWidth > 0 ? _drawerWidth : 380;
+                        bool inZone = relX >= screenW - w;
+                        bool onEdge = relX >= screenW - 20;
+
+                        if (!isVisible && onEdge)
+                        {
+                            if (_fsDrawer != null && _fs != null)
+                            {
+                                _fsDrawer.Show();
+                                _fsDrawer.Visibility = Visibility.Visible;
+                                // Fix Z-Order: Ensure FS is topmost first, then Drawer
+                                _fs.Topmost = true;
+                                _fsDrawer.Topmost = true;
+                                _fsDrawer.Activate();
+                                
+                                _fsDrawer.Left = _fs.Left + _fs.ActualWidth - w;
+                                _fsDrawer.Top = _fs.Top;
+                                _fsDrawer.Height = _fs.ActualHeight;
+                            }
+                        }
+                        else if (isVisible && !inZone)
+                        {
+                            if (_fsDrawer != null)
+                            {
+                                _fsDrawer.Hide();
+                                _fsDrawer.Visibility = Visibility.Collapsed;
+                                // Restore FS topmost state based on user preference
+                                if (_fs != null) _fs.Topmost = Topmost;
+                            }
+                        }
+                    }
+                }
+                else if (_fsDrawer != null) CloseFullscreenDrawer();
+            }
+        }
+        void OnClosed(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (_overlayWpf != null) 
+                {
+                    _overlayWpf.Close();
+                    _overlayWpf = null;
+                }
+                if (_fs != null) 
+                {
+                    _fs.Close();
+                    _fs = null;
+                }
+                if (_mpv != null)
+                {
+                    _mpv.Dispose();
+                    _mpv = null;
+                }
+            }
+            catch { }
+        }
+        void BtnPlay_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mpv == null) return;
+            var url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+            _mpv.LoadFile(url);
+        }
+        // Duplicate BtnStop_Click removed from here
+
+        async System.Threading.Tasks.Task LoadChannels(string m3uUrl, bool silent = false)
+        {
+            if (_channelService == null) return;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(m3uUrl)) return;
+
+                // Selection logic moved to LoadM3uSource / PromptOpenFile to avoid duplicates
+
+                Logger.Log("加载频道 " + m3uUrl);
+                _channels = await _channelService.LoadChannelsAsync(m3uUrl, true);
+                ComputeGlobalIndex();
+                ApplyChannelFilter();
+                if (_channels.Count == 0 && !silent)
+                {
+                    System.Windows.MessageBox.Show(this, "未从来源解析到任何频道：\n1) 检查 URL 或本地路径是否可访问\n2) 若为后端导出，确认参数有效\n3) 若为压缩/特殊编码，已自动尝试解码", "加载结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Logger.Log("未解析到频道");
+                }
+                else Logger.Log("解析频道数量 " + _channels.Count);
+                
+                // 优先使用自定义 EPG，否则尝试从 M3U 获取
+                var epgUrl = AppSettings.Current.CustomEpgUrl;
+                if (string.IsNullOrWhiteSpace(epgUrl) && _m3uParser != null)
+                {
+                    epgUrl = _m3uParser.TvgUrl;
+                }
+
+                if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
+                {
+                    Logger.Log("正在加载 EPG: " + epgUrl);
+                    // 异步加载 EPG，不阻塞 UI
+                    _ = Task.Run(async () => 
+                    {
+                        try 
+                        {
+                            await _epgService.LoadEpgAsync(epgUrl);
+                            Dispatcher.Invoke(() => UpdateEpgDisplay());
+                        }
+                        catch (Exception ex) { Logger.Log("EPG 加载失败: " + ex.Message); }
+                    });
+                }
+
+                try { UpdateGroups(); } catch { }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(this, "加载频道失败：\n" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Log("加载频道失败 " + ex.Message);
+            }
+            finally
+            {
+                // BtnLoad.IsEnabled = true; // Removed
+            }
+        }
+        void TxtSearch_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            ApplyChannelFilter();
+        }
+        void BtnClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            try { TxtSearch.Text = ""; } catch { }
+        }
+        void ApplyChannelFilter()
+        {
+            var key = "";
+            try { key = (TxtSearch.Text ?? "").Trim(); } catch { }
+            IEnumerable<Channel> baseList = _channels;
+            if (!string.IsNullOrEmpty(key))
+            {
+                var q = key.ToLowerInvariant();
+                baseList = _channels.FindAll(c => c?.Name != null && c.Name.ToLowerInvariant().Contains(q));
+            }
+            if (!string.IsNullOrEmpty(_selectedGroup))
+            {
+                baseList = System.Linq.Enumerable.Where(baseList, c => string.Equals(c.Group, _selectedGroup, StringComparison.OrdinalIgnoreCase));
+            }
+            var distinct = DistinctByName(baseList);
+            // “所有频道”保持全局序号（GlobalIndex），不重新编号
+            ListChannels.ItemsSource = distinct;
+            try { TxtCount.Text = string.IsNullOrEmpty(key) ? $"共 {_channels.Count} 个频道" : $"筛选到 {distinct.Count} / {_channels.Count}"; } catch { }
+            UpdateGroups();
+        }
+        List<Channel> DistinctByNamePreserveOrder(IEnumerable<Channel> list)
+        {
+            var map = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<Channel>();
+            foreach (var c in list)
+            {
+                if (c == null || c.Name == null) continue;
+                if (map.Add(c.Name)) result.Add(c);
+            }
+            return result;
+        }
+        List<Channel> DistinctByName(IEnumerable<Channel> list)
+        {
+            var map = new Dictionary<string, Channel>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in list)
+            {
+                if (c == null) continue;
+                if (!map.TryGetValue(c.Name, out var exist))
+                {
+                    map[c.Name] = c;
+                }
+                else
+                {
+                    var scoreExist = ScoreChannel(exist);
+                    var scoreNew = ScoreChannel(c);
+                    if (scoreNew > scoreExist) map[c.Name] = c;
+                    if (string.IsNullOrWhiteSpace(map[c.Name].Logo) && !string.IsNullOrWhiteSpace(c.Logo)) map[c.Name].Logo = c.Logo;
+                }
+            }
+            return new List<Channel>(map.Values);
+        }
+        int ScoreChannel(Channel c)
+        {
+            int score = 0;
+            if (!string.IsNullOrWhiteSpace(c.Logo)) score += 1;
+            if (!string.IsNullOrWhiteSpace(c.Group) && c.Group.Contains("4K", StringComparison.OrdinalIgnoreCase)) score += 2;
+            return score;
+        }
+        void UpdateGroups()
+        {
+            var map = new Dictionary<string, List<Channel>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in _channels)
+            {
+                if (string.IsNullOrWhiteSpace(c.Group)) continue;
+                if (!map.TryGetValue(c.Group, out var list)) { list = new List<Channel>(); map[c.Group] = list; }
+                list.Add(c);
+            }
+            var groups = new List<GroupItem>();
+            foreach (var kv in map)
+            {
+                var items = DistinctByName(kv.Value);
+                for (int i = 0; i < items.Count; i++) items[i].DisplayIndex = i + 1;
+                groups.Add(new GroupItem { Name = $"{kv.Key}", Items = items });
+            }
+            groups.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+            try { ListGroups.ItemsSource = groups; } catch { }
+        }
+        void ListGroups_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) { }
+        void OnPreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                try
+                {
+                    if (sender is System.Windows.FrameworkElement fe && fe.DataContext is Channel ch)
+                    {
+                        PlayChannel(ch);
+                        e.Handled = true;
+                    }
+                }
+                catch { }
+            }
+        }
+        void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is FrameworkElement fe && fe.DataContext is Channel ch)
+                {
+                    ch.Favorite = !ch.Favorite;
+                    UpdateFavorites();
+                }
+            }
+            catch { }
+        }
+        void UpdateFavorites()
+        {
+            try
+            {
+                var favs = new List<Channel>();
+                foreach (var c in _channels)
+                {
+                    if (c?.Favorite == true) favs.Add(c);
+                }
+                // 去重保持顺序
+                var map = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var list = new List<Channel>();
+                foreach (var c in favs)
+                {
+                    if (map.Add(c.Name ?? "")) list.Add(c);
+                }
+                ListFavorites.ItemsSource = list;
+            }
+            catch { }
+        }
+        void PlayChannel(Channel ch)
+        {
+            if (_mpv == null || ch == null) return;
+            try
+            {
+                // Clear EPG playing status
+                if (_currentPlayingProgram != null)
+                {
+                    _currentPlayingProgram.IsPlaying = false;
+                    _currentPlayingProgram = null;
+                    if (ListEpg.ItemsSource is List<EpgProgram> || ListEpg.ItemsSource is IEnumerable<EpgProgram>) 
+                    {
+                        ListEpg.Items.Refresh();
+                    }
+                }
+
+                // 更新播放标记用于样式高亮
+                foreach (var c in _channels) if (c != null) c.Playing = false;
+                ch.Playing = true;
+            }
+            catch { }
+            if (ch.Tag is Source src)
+            {
+                _paused = false;
+                var url = SanitizeUrl(src.Url);
+                if (AppSettings.Current.EnableUdpOptimization) // Check AppSettings instead of CbUdpMode
+                {
+                    try
+                    {
+                        var u = new Uri(url);
+                        var m = System.Text.RegularExpressions.Regex.Match(u.AbsolutePath, @"/rtp/(?<ip>239\.\d+\.\d+\.\d+):(?<port>\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (m.Success)
+                        {
+                            var ip = m.Groups["ip"].Value;
+                            var port = m.Groups["port"].Value;
+                            url = $"udp://{ip}:{port}";
+                        }
+                    }
+                    catch { }
+                }
+                // LblStatus.Text = url; // Removed
+                Logger.Log("开始播放 " + url);
+                _currentChannel = ch;
+                _currentSources = BuildSourcesForChannel(ch);
+                
+                // 重置超时计时器
+                _sourceTimeoutTimer.Stop();
+                _playStartTime = DateTime.Now;
+                _sourceTimeoutTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, AppSettings.Current.SourceTimeoutSec));
+                _sourceTimeoutTimer.Start();
+
+                if (AppSettings.Current.FccPrefetchCount > 0 && IsMulticast(url)) // Check AppSettings instead of CbFcc
+                {
+                    var idx = _channels.IndexOf(ch);
+                    var list = new List<string>();
+                    var count = Math.Max(0, AppSettings.Current.FccPrefetchCount);
+                    for (int i = 1; i <= count; i++)
+                    {
+                        var n = idx + i;
+                        if (n >= 0 && n < _channels.Count)
+                        {
+                            var next = _channels[n];
+                            if (next?.Tag is Source nextSrc)
+                            {
+                                list.Add(SanitizeUrl(nextSrc.Url));
+                            }
+                        }
+                    }
+                    if (list.Count > 0) _mpv.LoadWithPrefetch(url, list);
+                    else _mpv.LoadFile(url);
+                }
+                else
+                {
+                    _mpv.LoadFile(url);
+                }
+                UpdatePlayPauseIcon();
+                
+                // Hide placeholder and Show VideoHost
+                try 
+                { 
+                    PlaceholderPanel.Visibility = Visibility.Collapsed; 
+                    VideoHost.Visibility = Visibility.Visible;
+                    // Update Status Indicator: Live
+                    // PlaybackStatusIndicator.Visibility = Visibility.Visible; // Hidden behind VideoHost due to Airspace
+                    TxtPlaybackStatus.Text = "直播";
+                    TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.White;
+                    PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+                    
+                    // Sync with Overlay
+                    _overlayWpf?.SetPlaybackStatus("直播", System.Windows.Media.Brushes.White);
+                } 
+                catch { }
+
+                if (EpgPanel.Visibility == Visibility.Visible) RefreshEpgList(ch);
+            }
+        }
+        void UpdateEpgDisplay()
+        {
+            if (_epgService == null) return;
+            foreach (var ch in _channels)
+            {
+                var prog = _epgService.GetCurrentProgram(ch.TvgId, ch.Name);
+                if (prog != null) ch.CurrentProgramTitle = prog.Title;
+                else ch.CurrentProgramTitle = "";
+            }
+            if (EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
+            {
+                RefreshEpgList(_currentChannel);
+            }
+        }
+        void CbEpg_Click(object sender, RoutedEventArgs e)
+        {
+            bool show = CbEpg.IsChecked == true;
+            if (_isFullscreen)
+            {
+                if (show) ShowFullscreenEpg();
+                else CloseFullscreenEpg();
+            }
+            else
+            {
+                EpgColumn.Width = new GridLength(show ? 320 : 0);
+                EpgPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            }
+            
+            try { _overlayWpf?.SetEpgVisible(show); } catch { }
+            if (show && _currentChannel != null)
+            {
+                RefreshEpgList(_currentChannel);
+            }
+        }
+        private class EpgDateItem
+        {
+            public DateTime Date { get; set; }
+            public string Label { get; set; } = "";
+        }
+        
+        void RefreshEpgList(Channel ch)
+        {
+            if (ch == null) return;
+            LblEpgChannel.Text = ch.Name;
+            
+            // Re-fetch programs for the channel
+            var programs = _epgService?.GetPrograms(ch.TvgId, ch.Name);
+
+            if (programs == null || programs.Count == 0)
+            {
+                // No EPG data found -> Generate placeholders
+                programs = GeneratePlaceholderEpg();
+            }
+
+            // Group by date
+            _availableDates = programs.Select(p => p.Start.Date).Distinct().OrderBy(d => d).ToList();
+            
+            // Set current date (Today or first available)
+            if (_availableDates.Contains(DateTime.Today)) 
+            {
+                _currentEpgDate = DateTime.Today;
+            }
+            else if (_availableDates.Count > 0) 
+            {
+                _currentEpgDate = _availableDates[0];
+            }
+            else
+            {
+                _currentEpgDate = DateTime.Today; // Fallback
+            }
+
+            UpdateEpgDateUI();
+            
+            // Filter and display
+            var filtered = programs.Where(p => p.Start.Date == _currentEpgDate).OrderBy(p => p.Start).ToList();
+            ListEpg.ItemsSource = filtered;
+            
+            // Scroll logic
+            if (_currentEpgDate == DateTime.Today)
+            {
+                var now = DateTime.Now;
+                var current = filtered.FirstOrDefault(p => p.Start <= now && p.End > now);
+                if (current != null) ListEpg.ScrollIntoView(current);
+            }
+            else
+            {
+                if (ListEpg.Items.Count > 0) ListEpg.ScrollIntoView(ListEpg.Items[0]);
+            }
+        }
+
+        List<EpgProgram> GeneratePlaceholderEpg()
+        {
+            var list = new List<EpgProgram>();
+            var today = DateTime.Today;
+            // Generate for today only, 1-hour blocks
+            for (int i = 0; i < 24; i++)
+            {
+                var start = today.AddHours(i);
+                var end = today.AddHours(i + 1);
+                list.Add(new EpgProgram
+                {
+                    Title = "精彩节目",
+                    Start = start,
+                    End = end
+                });
+            }
+            return list;
+        }
+
+        void UpdateEpgDateUI()
+        {
+            if (_availableDates.Count == 0)
+            {
+                TxtCurrentDate.Text = "无数据";
+                BtnPrevDay.IsEnabled = false;
+                BtnNextDay.IsEnabled = false;
+                return;
+            }
+
+            var idx = _availableDates.IndexOf(_currentEpgDate);
+            if (idx < 0 && _availableDates.Count > 0)
+            {
+                _currentEpgDate = _availableDates[0];
+                idx = 0;
+            }
+
+            // Label
+            var d = _currentEpgDate;
+            var today = DateTime.Today;
+            string label = d.ToString("MM-dd");
+            if (d == today) label = "今天";
+            else if (d == today.AddDays(1)) label = "明天";
+            else if (d == today.AddDays(-1)) label = "昨天";
+            TxtCurrentDate.Text = label;
+
+            // Buttons
+            BtnPrevDay.IsEnabled = idx > 0;
+            BtnNextDay.IsEnabled = idx < _availableDates.Count - 1;
+        }
+
+        void BtnPrevDay_Click(object sender, RoutedEventArgs e)
+        {
+            var idx = _availableDates.IndexOf(_currentEpgDate);
+            if (idx > 0)
+            {
+                _currentEpgDate = _availableDates[idx - 1];
+                UpdateEpgDateUI();
+                FilterEpgList();
+            }
+        }
+
+        void BtnNextDay_Click(object sender, RoutedEventArgs e)
+        {
+            var idx = _availableDates.IndexOf(_currentEpgDate);
+            if (idx >= 0 && idx < _availableDates.Count - 1)
+            {
+                _currentEpgDate = _availableDates[idx + 1];
+                UpdateEpgDateUI();
+                FilterEpgList();
+            }
+        }
+
+        void FilterEpgList()
+        {
+            if (_currentChannel == null) return;
+            
+            // Re-fetch programs for the channel
+            var programs = _epgService?.GetPrograms(_currentChannel.TvgId, _currentChannel.Name);
+
+            if (programs == null || programs.Count == 0)
+            {
+                // No EPG data found -> Generate placeholders
+                programs = GeneratePlaceholderEpg();
+            }
+
+            var filtered = programs.Where(p => p.Start.Date == _currentEpgDate).OrderBy(p => p.Start).ToList();
+            ListEpg.ItemsSource = filtered;
+            
+            // Scroll to current program if viewing today
+            if (_currentEpgDate == DateTime.Today)
+            {
+                var now = DateTime.Now;
+                var current = filtered.FirstOrDefault(p => p.Start <= now && p.End > now);
+                if (current != null) ListEpg.ScrollIntoView(current);
+            }
+            else
+            {
+                if (ListEpg.Items.Count > 0) ListEpg.ScrollIntoView(ListEpg.Items[0]);
+            }
+        }
+        void ListEpg_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is System.Windows.Controls.ListBoxItem item && item.DataContext is EpgProgram prog)
+            {
+                if (prog.Status == "回放" && _currentChannel != null)
+                {
+                    PlayCatchup(_currentChannel, prog);
+                    e.Handled = true;
+                }
+            }
+        }
+        private EpgProgram? _currentPlayingProgram; // Track playing catchup
+
+        void PlayCatchup(Channel ch, EpgProgram prog)
+        {
+            if (string.IsNullOrEmpty(ch.CatchupSource)) return;
+            try
+            {
+                var url = ch.CatchupSource;
+                // ... (url processing) ...
+                // 替换占位符
+                // {utc:yyyyMMddHHmmss} / {utcend:...}
+                url = ReplaceTimePlaceholder(url, "{utc:", "}", prog.Start.ToUniversalTime(), prog.End.ToUniversalTime());
+                url = ReplaceTimePlaceholder(url, "{utcend:", "}", prog.Start.ToUniversalTime(), prog.End.ToUniversalTime());
+                
+                // ${...} format
+                url = url.Replace("${(b)yyyyMMdd|UTC}", prog.Start.ToUniversalTime().ToString("yyyyMMdd"));
+                url = url.Replace("${(b)HHmmss|UTC}", prog.Start.ToUniversalTime().ToString("HHmmss"));
+                url = url.Replace("${(e)yyyyMMdd|UTC}", prog.End.ToUniversalTime().ToString("yyyyMMdd"));
+                url = url.Replace("${(e)HHmmss|UTC}", prog.End.ToUniversalTime().ToString("HHmmss"));
+                
+                // Local time fallbacks if needed
+                url = url.Replace("{start}", prog.Start.ToString("yyyyMMddHHmmss"));
+                url = url.Replace("{end}", prog.End.ToString("yyyyMMddHHmmss"));
+
+                Logger.Log("播放回放: " + url);
+                _mpv?.LoadFile(url);
+                
+                // Update playing status
+                if (_currentPlayingProgram != null) _currentPlayingProgram.IsPlaying = false;
+                _currentPlayingProgram = prog;
+                _currentPlayingProgram.IsPlaying = true;
+                
+                UpdatePlayPauseIcon();
+                // Force UI refresh to update "Playing" status in EPG list
+                if (ListEpg.ItemsSource is List<EpgProgram> list)
+                {
+                    ListEpg.Items.Refresh();
+                }
+
+                // Update Status Indicator: Catchup
+                try
+                {
+                    // PlaybackStatusIndicator.Visibility = Visibility.Visible;
+                    TxtPlaybackStatus.Text = "回放";
+                    TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange;
+                    PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+                    
+                    // Sync with Overlay
+                    _overlayWpf?.SetPlaybackStatus("回放", System.Windows.Media.Brushes.Orange);
+                }
+                catch { }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("回放失败: " + ex.Message);
+            }
+        }
+        string ReplaceTimePlaceholder(string input, string prefix, string suffix, DateTime start, DateTime end)
+        {
+            // Simple regex replacement for {utc:format}
+            // Need to find all occurrences
+            var pattern = System.Text.RegularExpressions.Regex.Escape(prefix) + "(.*?)" + System.Text.RegularExpressions.Regex.Escape(suffix);
+            return System.Text.RegularExpressions.Regex.Replace(input, pattern, m =>
+            {
+                var fmt = m.Groups[1].Value;
+                if (prefix.Contains("end")) return end.ToString(fmt);
+                return start.ToString(fmt);
+            });
+        }
+        void AllChannel_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.FrameworkElement fe && fe.DataContext is Channel ch)
+                {
+                    PlayChannel(ch);
+                }
+            }
+            catch { }
+        }
+        List<Source> BuildSourcesForChannel(Channel ch)
+        {
+            var list = new List<Source>();
+            if (ch.Sources != null) foreach (var s in ch.Sources) if (!list.Exists(x => string.Equals(x.Url, s.Url, StringComparison.OrdinalIgnoreCase))) list.Add(s);
+            foreach (var c in _channels)
+            {
+                if (c == null) continue;
+                if (string.Equals(c.Name, ch.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (c.Sources != null)
+                        foreach (var s in c.Sources)
+                            if (!list.Exists(x => string.Equals(x.Url, s.Url, StringComparison.OrdinalIgnoreCase))) list.Add(s);
+                    if (c.Tag != null && !list.Exists(x => string.Equals(x.Url, c.Tag.Url, StringComparison.OrdinalIgnoreCase))) list.Add(c.Tag);
+                }
+            }
+            return list;
+        }
+        string SourceLabel(Source s)
+        {
+            var parts = new List<string>();
+            parts.Add(IsMulticast(s.Url) ? "组播" : "单播");
+            
+            if (s.Quality != null)
+            {
+                if (s.Quality.Height >= 2160) parts.Add("UHD");
+                else if (s.Quality.Height >= 1080) parts.Add("FHD");
+                else if (s.Quality.Height >= 720) parts.Add("HD");
+                else if (s.Quality.Height > 0) parts.Add("SD");
+            }
+            
+            if (s.Quality != null && s.Quality.Fps > 0) parts.Add($"{s.Quality.Fps:0.#}fps");
+            
+            return string.Join("-", parts);
+        }
+        void BtnSources_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSourceMenuAtButton(BtnSources);
+        }
+        void BtnRatio_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new System.Windows.Controls.ContextMenu();
+            var options = new[] { 
+                ("默认", "default"),
+                ("16:9", "16:9"),
+                ("4:3", "4:3"),
+                ("拉伸", "stretch"),
+                ("填充", "fill"),
+                ("裁剪", "crop")
+            };
+            foreach (var (label, val) in options)
+            {
+                var mi = new System.Windows.Controls.MenuItem();
+                mi.Header = label;
+                mi.Click += (s, ev) => _mpv?.SetAspectRatio(val);
+                menu.Items.Add(mi);
+            }
+            BtnRatio.ContextMenu = menu;
+            BtnRatio.ContextMenu.PlacementTarget = BtnRatio;
+            BtnRatio.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            BtnRatio.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
+            BtnRatio.ContextMenu.IsOpen = true;
+        }
+        void OpenSourceMenuAtButton(System.Windows.Controls.Button target)
+        {
+            if (_currentChannel == null) return;
+            if (_currentSources == null || _currentSources.Count == 0) _currentSources = BuildSourcesForChannel(_currentChannel);
+            
+            // 获取当前播放的源 URL
+            string currentPlayingUrl = "";
+            if (_currentChannel.Tag is Source playingSrc)
+            {
+                currentPlayingUrl = SanitizeUrl(playingSrc.Url);
+            }
+
+            var menu = new System.Windows.Controls.ContextMenu();
+            foreach (var s in _currentSources)
+            {
+                var mi = new System.Windows.Controls.MenuItem();
+                mi.Header = SourceLabel(s);
+                mi.Tag = s;
+                
+                // 如果是当前播放源，设置为选中状态
+                if (SanitizeUrl(s.Url) == currentPlayingUrl)
+                {
+                    mi.IsChecked = true;
+                }
+
+                mi.Click += (s2, e2) =>
+                {
+                    if (_mpv == null) return;
+                    // 更新当前频道的播放源记录
+                    var newSrc = (Source)((System.Windows.Controls.MenuItem)s2).Tag;
+                    _currentChannel.Tag = newSrc;
+                    
+                    var u = SanitizeUrl(newSrc.Url);
+                    Logger.Log("切换源 " + u);
+                    _mpv.LoadFile(u);
+                };
+                menu.Items.Add(mi);
+            }
+            target.ContextMenu = menu;
+            target.ContextMenu.PlacementTarget = target;
+            target.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            target.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
+            target.ContextMenu.IsOpen = true;
+        }
+        void OpenSourceMenuAtOverlay()
+        {
+            if (_overlayWpf == null) return;
+            if (_currentChannel == null) return;
+            if (_currentSources == null || _currentSources.Count == 0) _currentSources = BuildSourcesForChannel(_currentChannel);
+            
+            // 获取当前播放的源 URL
+            string currentPlayingUrl = "";
+            if (_currentChannel.Tag is Source playingSrc)
+            {
+                currentPlayingUrl = SanitizeUrl(playingSrc.Url);
+            }
+
+            var menu = new System.Windows.Controls.ContextMenu();
+            foreach (var s in _currentSources)
+            {
+                var mi = new System.Windows.Controls.MenuItem();
+                mi.Header = SourceLabel(s);
+                mi.Tag = s;
+                
+                // 如果是当前播放源，设置为选中状态
+                if (SanitizeUrl(s.Url) == currentPlayingUrl)
+                {
+                    mi.IsChecked = true;
+                }
+
+                mi.Click += (s2, e2) =>
+                {
+                    if (_mpv == null) return;
+                    // 更新当前频道的播放源记录
+                    var newSrc = (Source)((System.Windows.Controls.MenuItem)s2).Tag;
+                    _currentChannel.Tag = newSrc;
+                    
+                    var u = SanitizeUrl(newSrc.Url);
+                    Logger.Log("切换源 " + u);
+                    _mpv.LoadFile(u);
+                };
+                menu.Items.Add(mi);
+            }
+            _overlayWpf.OpenSourceContextMenu(menu);
+        }
+        bool IsMulticast(string url)
+        {
+            try
+            {
+                var s = url.ToLowerInvariant();
+                if (s.StartsWith("udp://239.")) return true;
+                if (s.Contains("/rtp/239.")) return true;
+                if (System.Text.RegularExpressions.Regex.IsMatch(url, @"239\.\d+\.\d+\.\d+")) return true;
+            }
+            catch { }
+            return false;
+        }
+        void ToggleFullscreen(bool on)
+        {
+            if (on == _isFullscreen) return;
+            if (on)
+            {
+                _isFullscreen = true; // 先切标志，避免早期轮询把悬浮条隐藏
+                
+                // 确保同步两个全屏按钮的状态
+                try { if (BtnWinFullscreen != null) BtnWinFullscreen.IsChecked = on; } catch { }
+
+                // Hide Title Bar (Row 0)
+                try { ((Grid)Content).RowDefinitions[0].Height = new GridLength(0); } catch { }
+
+                BottomBar.Visibility = Visibility.Collapsed;
+                _fs = new FullscreenWindow();
+                _fs.Topmost = false; // 明确禁用置顶，防止遮挡 EPG
+                _fs.Owner = this;
+                _fs.Loaded += OnFullscreenLoaded;
+                _fsPanel = _fs.VideoPanel;
+                if (_mpv != null && _fsPanel != null)
+                {
+                    _mpv.SetWid(_fsPanel.Handle);
+                }
+                try { if (_fsPanel != null) _fsPanel.DoubleClick += FsPanel_DoubleClick; } catch { }
+                _fs.ExitRequested += () => ToggleFullscreen(false);
+                _fs.Activated += (s, e) => 
+                {
+                    // 当全屏窗口激活时，确保子窗口在最前
+                    try
+                    {
+                        if (_fsEpg != null && _fsEpg.IsVisible) 
+                        {
+                            _fsEpg.Topmost = true;
+                            var h = new System.Windows.Interop.WindowInteropHelper(_fsEpg).Handle;
+                            SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+                        }
+                        if (_fsDrawer != null && _fsDrawer.IsVisible)
+                        {
+                            _fsDrawer.Topmost = true;
+                            var h = new System.Windows.Interop.WindowInteropHelper(_fsDrawer).Handle;
+                            SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+                        }
+                        if (_topOverlay != null && _topOverlay.IsVisible)
+                        {
+                            _topOverlay.Topmost = true;
+                        }
+                    }
+                    catch { }
+                };
+                _fs.SizeChanged += (s, e) => { PositionOverlay(); PositionTopOverlay(); };
+                _fs.LocationChanged += (s, e) => { PositionOverlay(); PositionTopOverlay(); };
+                _fs.MouseMove += (s, e) => ShowOverlayWithDelay();
+                if (_fsPanel != null)
+                {
+                    _fsPanel.MouseMove += (s, e) => ShowOverlayWithDelay();
+                }
+                _overlayPollTimer.Start();
+                _fs.Show();
+                _fs.Focus();
+                ResetOverlayForOwner(_fs, true);
+                
+                // Create Top Overlay
+                _topOverlay = new TopOverlay();
+                _topOverlay.Minimize += () => BtnMin_Click(this, new RoutedEventArgs());
+                _topOverlay.MaximizeRestore += () => ToggleFullscreen(false); // In FS, Maximize/Restore exits FS? Or just Restore? Usually "Restore" exits FS.
+                _topOverlay.CloseWindow += () => ExitApp();
+                _topOverlay.ExitApp += () => ExitApp();
+                _topOverlay.FullscreenToggle += () => ToggleFullscreen(false);
+                _topOverlay.OpenFile += () => { ToggleFullscreen(false); PromptOpenFile(); };
+                _topOverlay.OpenUrl += () => { ToggleFullscreen(false); PromptOpenUrl(); };
+                _topOverlay.AddM3uFile += () => { ToggleFullscreen(false); PromptAddM3uFile(); };
+                _topOverlay.AddM3u += () => { ToggleFullscreen(false); PromptAddM3u(); };
+                _topOverlay.LoadM3u += (src) => LoadM3uSource(src);
+                _topOverlay.EditM3u += EditM3uSource;
+                _topOverlay.FccChanged += (on) => { try { _overlayWpf?.SetFcc(on); } catch { } };
+                _topOverlay.UdpChanged += (on) => { try { _overlayWpf?.SetUdp(on); } catch { } };
+                _topOverlay.EpgToggled += (on) => { CbEpg.IsChecked = on; CbEpg_Click(CbEpg, new RoutedEventArgs()); };
+                _topOverlay.DrawerToggled += (on) => SetDrawerCollapsed(!on);
+                
+                _topOverlay.IsUdpEnabled = () => AppSettings.Current.EnableUdpOptimization;
+                _topOverlay.IsEpgVisible = () => CbEpg.IsChecked == true;
+                _topOverlay.IsDrawerVisible = () => !_drawerCollapsed;
+                
+                _topOverlay.IsTopmost = () => Topmost;
+                _topOverlay.TopmostChanged += (on) => 
+                {
+                    Topmost = on;
+                    if (_fs != null) _fs.Topmost = on;
+                    // Ensure overlay stays on top of FS
+                    if (_topOverlay != null) _topOverlay.Topmost = true; 
+                };
+                _topOverlay.OpenSettings += OpenSettings;
+                
+                PositionTopOverlay();
+                // Initially hidden, shown on hover
+                _topOverlay.Hide();
+            }
+            else
+            {
+                _isFullscreen = false; // 先切标志，确保后续逻辑按窗口模式处理
+
+                // 确保同步两个全屏按钮的状态
+                try { if (BtnWinFullscreen != null) BtnWinFullscreen.IsChecked = on; } catch { }
+                
+                // Show Title Bar
+                try { ((Grid)Content).RowDefinitions[0].Height = GridLength.Auto; } catch { }
+
+                CloseFullscreenDrawer();
+                CloseFullscreenEpg();
+                if (_topOverlay != null) { _topOverlay.Close(); _topOverlay = null; }
+
+                BottomBar.Visibility = Visibility.Visible;
+                _overlayPollTimer.Stop();
+                if (_mpv != null)
+                {
+                    _mpv.SetWid(VideoPanel.Handle);
+                }
+                if (_fs != null)
+                {
+                    _fs.Loaded -= OnFullscreenLoaded;
+                    _fs.ExitRequested -= () => ToggleFullscreen(false);
+                    try { if (_fsPanel != null) _fsPanel.DoubleClick -= FsPanel_DoubleClick; } catch { }
+                    
+                    // Reset overlay BEFORE closing FS to avoid crash
+                    ResetOverlayForOwner(this, false);
+                    
+                    // Dispose/Close FS window safely
+                    try { _fs.Close(); } catch { }
+                    _fs = null;
+                    _fsPanel = null;
+                }
+                // 返回窗口模式时隐藏悬浮条（进度/控制条在视频外展示）
+                _overlayWpf?.Hide();
+                try
+                {
+                    Topmost = true;   // 提升到最前
+                    Topmost = false;  // 恢复正常置顶标志
+                    Activate();       // 激活窗口
+                    Focus();          // 聚焦窗口
+                }
+                catch { }
+            }
+            ShowOverlayWithDelay();
+        }
+        void OnFullscreenLoaded(object? sender, RoutedEventArgs e)
+        {
+            if (!_isFullscreen) return;
+            if (_overlayWpf == null) return;
+            if (sender is not Window win) return;
+            
+            // 确保全屏抽屉逻辑
+            if (_fsDrawer == null && !_drawerCollapsed)
+            {
+                ShowFullscreenDrawer();
+            }
+
+            // 使用 Loaded 优先级而不是 Idle，避免延迟过长
+            win.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!_isFullscreen) return;
+                if (_overlayWpf == null) return;
+                try
+                {
+                    // 强制断开旧的 Owner，避免句柄冲突
+                    _overlayWpf.Owner = null;
+                    _overlayWpf.Visibility = Visibility.Collapsed;
+                    _overlayWpf.Hide();
+
+                    if (!ReferenceEquals(_overlayWpf.Owner, win))
+                    {
+                        _overlayWpf.Owner = win;
+                    }
+                    _overlayWpf.Topmost = true;
+                    // 使用 InvalidateVisual 强制刷新
+                    _overlayWpf.InvalidateVisual();
+                    _overlayWpf.Show();
+                    _overlayWpf.Visibility = Visibility.Visible;
+                    
+                    PositionOverlay();
+                    _overlayHideTimer.Stop();
+                    _overlayHideTimer.Start();
+                    ShowOverlayWithDelay(); // 强制触发一次显示检查
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Overlay reparent error: " + ex.Message);
+                }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        void ShowFullscreenDrawer()
+        {
+            if (_fsDrawer != null || !_isFullscreen || _fs == null) return;
+            try
+            {
+                // 从主窗口移除 DrawerPanel
+                if (DrawerPanel.Parent is System.Windows.Controls.Grid g) g.Children.Remove(DrawerPanel);
+                else if (DrawerPanel.Parent is System.Windows.Controls.Panel p) p.Children.Remove(DrawerPanel);
+
+                _fsDrawer = new Window
+                {
+                    Owner = _fs,
+                    WindowStyle = WindowStyle.None,
+                    ResizeMode = ResizeMode.NoResize,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent, // 确保透明背景
+                    ShowInTaskbar = false,
+                    Topmost = true,
+                    Width = _drawerWidth > 0 ? _drawerWidth : 380,
+                    Height = _fs.ActualHeight > 0 ? _fs.ActualHeight : SystemParameters.PrimaryScreenHeight,
+                    Left = _fs.Left + _fs.ActualWidth - (_drawerWidth > 0 ? _drawerWidth : 380),
+                    Top = _fs.Top,
+                    Content = DrawerPanel
+                };
+                // 确保 DrawerPanel 可见
+                DrawerPanel.Visibility = Visibility.Visible;
+                _fsDrawer.Show();
+                _fsDrawer.Hide(); // 初始隐藏，等待鼠标触发
+                
+                // 强制置顶
+                _fsDrawer.Dispatcher.BeginInvoke(new Action(() => 
+                {
+                    if (_fsDrawer != null)
+                    {
+                        var handle = new System.Windows.Interop.WindowInteropHelper(_fsDrawer).Handle;
+                        SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("ShowFullscreenDrawer error: " + ex.Message);
+            }
+        }
+        void CloseFullscreenDrawer()
+        {
+            if (_fsDrawer != null)
+            {
+                try
+                {
+                    _fsDrawer.Close();
+                    _fsDrawer.Content = null; // Detach content
+                }
+                catch { }
+                _fsDrawer = null;
+            }
+            // 归还 DrawerPanel 到主窗口
+            if (DrawerPanel.Parent == null)
+            {
+                try
+                {
+                    // 确保挂载到主 Grid，并设置正确的行列
+                    // Column 2, Row 1, RowSpan 2
+                    var mainGrid = (System.Windows.Controls.Grid)this.Content;
+                    if (!mainGrid.Children.Contains(DrawerPanel))
+                    {
+                        mainGrid.Children.Add(DrawerPanel);
+                    }
+                    System.Windows.Controls.Grid.SetColumn(DrawerPanel, 2);
+                    System.Windows.Controls.Grid.SetRow(DrawerPanel, 1);
+                    System.Windows.Controls.Grid.SetRowSpan(DrawerPanel, 2);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Drawer restore error: " + ex.Message);
+                }
+            }
+            // 恢复主窗口中的折叠状态
+            if (_drawerCollapsed)
+            {
+                DrawerColumn.Width = new GridLength(0);
+            }
+            else
+            {
+                DrawerColumn.Width = new GridLength(_drawerWidth > 0 ? _drawerWidth : 380);
+            }
+        }
+        
+        void ShowFullscreenEpg()
+        {
+            if (_fsEpg != null || !_isFullscreen || _fs == null) return;
+            try
+            {
+                // 确保从任何父容器中移除
+                if (EpgPanel.Parent is System.Windows.Controls.Panel p) p.Children.Remove(EpgPanel);
+                else if (EpgPanel.Parent is System.Windows.Controls.ContentControl cc) cc.Content = null;
+                else if (EpgPanel.Parent is System.Windows.Controls.Decorator d) d.Child = null;
+                
+                _fsEpg = new Window
+                {
+                    Owner = _fs, 
+                    WindowStyle = WindowStyle.None,
+                    ResizeMode = ResizeMode.NoResize,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    ShowInTaskbar = false,
+                    Topmost = true, // Force topmost
+                    Width = 320,
+                    Height = _fs.ActualHeight > 0 ? _fs.ActualHeight : SystemParameters.PrimaryScreenHeight,
+                    Left = _fs.Left,
+                    Top = _fs.Top,
+                    Content = EpgPanel
+                };
+                
+                EpgPanel.Visibility = Visibility.Visible;
+                _fsEpg.Show();
+                _fsEpg.Hide(); // 初始隐藏，等待鼠标触发
+                
+                // 强制置顶刷新
+                _fsEpg.Dispatcher.BeginInvoke(new Action(() => 
+                {
+                    if (_fsEpg != null)
+                    {
+                        _fsEpg.Topmost = false;
+                        _fsEpg.Topmost = true;
+                        _fsEpg.Activate();
+                        _fsEpg.Focus();
+                        // 确保位置正确
+                        try 
+                        {
+                            if (_fs != null)
+                            {
+                                _fsEpg.Left = _fs.Left;
+                                _fsEpg.Top = _fs.Top;
+                            }
+                            // 使用 Win32 API 强制置顶 HWND_TOPMOST
+                            var handle = new System.Windows.Interop.WindowInteropHelper(_fsEpg).Handle;
+                            SetWindowPos(handle, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+                        }
+                        catch {}
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("ShowFullscreenEpg error: " + ex.Message);
+            }
+        }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GetCursorPos(out POINT lpPoint);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        void CloseFullscreenEpg()
+        {
+            if (_fsEpg != null)
+            {
+                try 
+                { 
+                    _fsEpg.Close(); 
+                    _fsEpg.Content = null; 
+                } 
+                catch { }
+                _fsEpg = null;
+            }
+            
+            // 归还 EpgPanel
+            if (EpgPanel.Parent == null)
+            {
+                try
+                {
+                    // Find the main grid. Assuming MainWindow's Content is the Grid.
+                    if (this.Content is System.Windows.Controls.Grid mainGrid)
+                    {
+                        if (!mainGrid.Children.Contains(EpgPanel))
+                        {
+                            mainGrid.Children.Add(EpgPanel);
+                        }
+                        // Column 0, Row 1, RowSpan 2
+                        System.Windows.Controls.Grid.SetColumn(EpgPanel, 0);
+                        System.Windows.Controls.Grid.SetRow(EpgPanel, 1);
+                        System.Windows.Controls.Grid.SetRowSpan(EpgPanel, 2);
+                    }
+                }
+                catch { }
+            }
+            
+            // Restore visibility based on toggle state
+            bool isEpgOn = CbEpg.IsChecked == true;
+            if (isEpgOn)
+            {
+                EpgPanel.Visibility = Visibility.Visible;
+                EpgColumn.Width = new GridLength(320);
+            }
+            else
+            {
+                EpgPanel.Visibility = Visibility.Collapsed;
+                EpgColumn.Width = new GridLength(0);
+            }
+        }
+        void FsPanel_DoubleClick(object? sender, EventArgs e) => ToggleFullscreen(false);
+        string SanitizeUrl(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            var s = input.Trim();
+            var idx = s.IndexOf('$');
+            if (idx > 0) s = s.Substring(0, idx);
+            s = s.Trim().TrimEnd(',');
+            return s;
+        }
+        void BtnDebug_Click(object sender, RoutedEventArgs e)
+        {
+            if (_debug == null || !_debug.IsVisible)
+            {
+                _debug = new DebugWindow();
+                _debug.Owner = this;
+                _debug.Show();
+            }
+            else
+            {
+                _debug.Activate();
+            }
+        }
+        void OnSourceTimeout(object? sender, EventArgs e)
+        {
+            _sourceTimeoutTimer.Stop();
+            if (_mpv == null || _currentChannel == null || _currentSources == null || _currentSources.Count <= 1) return;
+
+            // 检查当前是否已经播放成功（根据时间位置判断）
+            var t = _mpv.GetTimePos();
+            if (t.HasValue && t.Value > 0) return; // 已经播放中
+
+            // 尝试切换到下一个源
+            var currentUrl = SanitizeUrl(_currentChannel.Tag is Source src ? src.Url : "");
+            var idx = _currentSources.FindIndex(s => SanitizeUrl(s.Url) == currentUrl);
+            
+            if (idx >= 0 && idx < _currentSources.Count - 1)
+            {
+                var nextSource = _currentSources[idx + 1];
+                Logger.Log($"源超时 ({AppSettings.Current.SourceTimeoutSec}s)，自动切换到下一源: {nextSource.Url}");
+                
+                // 更新当前频道的Tag为新源，以便 PlayChannel 使用
+                _currentChannel.Tag = nextSource;
+                PlayChannel(_currentChannel);
+            }
+        }
+        void OnTick(object? sender, EventArgs e)
+        {
+            if (_mpv == null) return;
+            var t = _mpv.GetTimePos();
+            if (t.HasValue && t.Value > 0) _sourceTimeoutTimer.Stop(); // 有进度，说明播放成功
+            var d = _mpv.GetDuration();
+            if (d.HasValue && d.Value > 0)
+            {
+                if (!_seeking)
+                {
+                    SliderSeek.Maximum = d.Value;
+                    SliderSeek.Value = t ?? 0;
+                }
+                LblElapsed.Text = FormatTime(t ?? 0);
+                LblDuration.Text = FormatTime(d.Value);
+                _overlayWpf?.SetTime(t ?? 0, d.Value);
+            }
+            // 更新播放信息状态行（英文标签芯片）
+            try
+            {
+                var w = _mpv.GetInt("width") ?? 0;
+                var h = _mpv.GetInt("height") ?? 0;
+                var fps = _mpv.GetDouble("estimated-vf-fps") ?? _mpv.GetDouble("fps");
+                var hw = _mpv.GetString("hwdec-current");
+                var vcodec = _mpv.GetString("video-codec");
+                var acodec = _mpv.GetString("audio-codec");
+                // 码率优先使用 video-params/bitrate（kbit/s），其次 demuxer-bitrate/video-bitrate（单位不稳定）
+                var brKbit = _mpv.GetDouble("video-params/bitrate");
+                double? brRaw = _mpv.GetDouble("demuxer-bitrate") ?? _mpv.GetDouble("video-bitrate");
+                string brStr = "-";
+                if (brKbit.HasValue && brKbit.Value > 0)
+                {
+                    var mb = brKbit.Value / 8000.0; // kbit/s -> MB/s
+                    brStr = $"{mb:0.0}MB/s";
+                }
+                else if (brRaw.HasValue)
+                {
+                    double v = brRaw.Value;
+                    double mbps;
+                    if (v < 900)
+                    {
+                        // MB/s
+                        mbps = v;
+                    }
+                    else if (v < 9000)
+                    {
+                        // kB/s -> MB/s
+                        mbps = v / 1000.0;
+                    }
+                    else if (v < 2_000_000)
+                    {
+                        // kbit/s -> MB/s
+                        mbps = v / 8000.0;
+                    }
+                    else
+                    {
+                        // bit/s -> MB/s
+                        mbps = v / 8_000_000.0;
+                    }
+                    if (double.IsFinite(mbps) && mbps > 0)
+                    {
+                        if (mbps > 500) // 异常兜底
+                        {
+                            mbps = v / 8_000_000.0;
+                        }
+                        brStr = $"{mbps:0.0}MB/s";
+                    }
+                    else
+                    {
+                        brStr = "-";
+                    }
+                }
+                var tags = new List<string>();
+                tags.Add(string.IsNullOrEmpty(hw) ? "SW" : "HW");
+                if (!string.IsNullOrWhiteSpace(vcodec))
+                {
+                    var up = vcodec.ToUpperInvariant();
+                    if (up.Contains("HEVC") || up.Contains("H265")) tags.Add("HEVC");
+                    else if (up.Contains("H264") || up.Contains("AVC")) tags.Add("H.264");
+                    else tags.Add(up);
+                }
+                if (!string.IsNullOrWhiteSpace(acodec))
+                {
+                    var up = acodec.ToUpperInvariant();
+                    if (up.Contains("E-AC-3") || up.Contains("EAC3")) tags.Add("EAC3");
+                    else if (up.Contains("AC-3") || up.Contains("AC3")) tags.Add("AC3");
+                    else if (up.Contains("MP3") || up.Contains("MPEG AUDIO LAYER 3")) tags.Add("MP3");
+                    else if (up.Contains("MP2") || up.Contains("MPEG AUDIO LAYER 2") || up.Contains("MPEG LAYER II")) tags.Add("MP2");
+                    else if (up.Contains("AAC")) tags.Add("AAC");
+                    else if (up.Contains("WMA")) tags.Add("WMA");
+                    else if (up.Contains("FLAC")) tags.Add("FLAC");
+                    else if (up.Contains("OPUS")) tags.Add("OPUS");
+                    else if (up.Contains("VORBIS")) tags.Add("VORBIS");
+                    else if (up.Contains("PCM")) tags.Add("PCM");
+                    else if (up.Contains("DTS")) tags.Add("DTS");
+                    else if (up.Contains("TRUEHD")) tags.Add("TRUEHD");
+                    else tags.Add(up);
+                }
+                if (h >= 2160) tags.Add("4K");
+                else if (h >= 1080) tags.Add("FHD");
+                else if (h >= 720) tags.Add("HD");
+                else if (h > 0) tags.Add("SD");
+                if (fps.HasValue && fps.Value > 0) tags.Add($"{fps.Value:0.##}fps");
+                tags.Add(brStr);
+                UpdateTagPanel(tags);
+                var info = string.Join("  ", tags);
+                if (_overlayWpf != null)
+                {
+                    _overlayWpf.SetInfo(info);
+                    _overlayWpf.SetTags(tags);
+                }
+            }
+            catch { }
+        }
+        void UpdateTagPanel(List<string> tags)
+        {
+            try
+            {
+                TagPanel.Children.Clear();
+                var style = TagPanel.TryFindResource("TagChip") as System.Windows.Style;
+                foreach (var t in tags)
+                {
+                    var border = new System.Windows.Controls.Border
+                    {
+                        Style = style
+                    };
+                    var tb = new System.Windows.Controls.TextBlock
+                    {
+                        Text = t,
+                        Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xDD, 0xDD, 0xDD)),
+                        FontSize = 11,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    border.Child = tb;
+                    TagPanel.Children.Add(border);
+                }
+            }
+            catch { }
+        }
+        string FormatTime(double sec)
+        {
+            if (sec < 0) sec = 0;
+            var ts = TimeSpan.FromSeconds(sec);
+            return ts.Hours > 0 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
+        }
+        void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _seeking = true;
+        }
+        void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_mpv == null) return;
+            _seeking = false;
+            var v = SliderSeek.Value;
+            _mpv.SeekAbsolute(v);
+        }
+        void SliderSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_seeking)
+            {
+                LblElapsed.Text = FormatTime(SliderSeek.Value);
+            }
+        }
+        void BtnPlayPause_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mpv == null) return;
+            _paused = !_paused;
+            _mpv.Pause(_paused);
+            UpdatePlayPauseIcon();
+        }
+        void BtnStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mpv == null) return;
+            _mpv.Stop();
+            _paused = false;
+            UpdatePlayPauseIcon();
+            
+            // Show placeholder and Hide VideoHost (Airspace workaround)
+            try 
+            { 
+                PlaceholderPanel.Visibility = Visibility.Visible; 
+                VideoHost.Visibility = Visibility.Collapsed;
+            } 
+            catch { }
+        }
+        void BtnRew_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mpv == null) return;
+            _mpv.SeekRelative(-10);
+        }
+        void BtnFwd_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mpv == null) return;
+            _mpv.SeekRelative(10);
+        }
+        void SliderVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_mpv == null) return;
+            _mpv.SetVolume(SliderVolume.Value);
+        }
+        void CbFullscreen_Checked(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = false;
+            if (sender is System.Windows.Controls.Primitives.ToggleButton tb)
+            {
+                isChecked = tb.IsChecked == true;
+            }
+            ToggleFullscreen(isChecked);
+        }
+        void CbDrawer_Click(object sender, RoutedEventArgs e)
+        {
+            var visible = CbDrawer.IsChecked == true;
+            SetDrawerCollapsed(!visible);
+        }
+    }
+}

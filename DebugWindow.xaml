@@ -1,0 +1,15 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LibmpvIptvClient.DebugWindow"
+        Title="调试日志" Width="900" Height="500" WindowStartupLocation="CenterOwner" Icon="/iptv.png">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <TextBox x:Name="TxtLog" Grid.Row="0" FontFamily="Consolas" FontSize="12" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+        <DockPanel Grid.Row="1" LastChildFill="False" Margin="8">
+            <Button Content="清空" Width="80" Click="BtnClear_Click"/>
+        </DockPanel>
+    </Grid>
+    </Window>
