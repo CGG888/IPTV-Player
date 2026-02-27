@@ -30,6 +30,5 @@ desktop.ini
 
 *.nupkg
 *.snupkg
- 
+
 /libmpv-2.dll
-RELEASE.md
