@@ -10,7 +10,9 @@
         ShowInTaskbar="False"
         Topmost="True"
         ResizeMode="NoResize"
-        Width="900" Height="80">
+        Width="900" Height="80"
+        ShowActivated="False"
+        PreviewMouseWheel="OnPreviewMouseWheel">
     <Window.Resources>
       <SolidColorBrush x:Key="OverlayBg" Color="#CC000000"/>
       <SolidColorBrush x:Key="OverlayFg" Color="#EEEEEE"/>
@@ -98,10 +100,11 @@
                 </Border>
                 <Track x:Name="PART_Track">
                   <Track.DecreaseRepeatButton>
-                    <RepeatButton Command="Slider.DecreaseLarge" Background="{StaticResource AccentBrush}">
+                    <!-- 隐藏原生填充，避免与自定义进度条重复 -->
+                    <RepeatButton Command="Slider.DecreaseLarge" Background="#00FFFFFF">
                       <RepeatButton.Template>
                         <ControlTemplate TargetType="RepeatButton">
-                          <Border Height="8" CornerRadius="4" Background="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                          <Border Height="0" Background="#00FFFFFF"/>
                         </ControlTemplate>
                       </RepeatButton.Template>
                     </RepeatButton>
@@ -148,18 +151,11 @@
         <!-- Wait, the user said "Red marked area" which implies bottom-left of SCREEN/VIDEO. -->
         <!-- OverlayControls is usually at the bottom center. -->
         <!-- Let's add it to the left of the play button. -->
-        
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        
-        <!-- Playback Status Indicator -->
-        <Border x:Name="StatusIndicator" Style="{StaticResource StatusIndicatorStyle}" VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed">
-            <TextBlock x:Name="TxtStatus" Text="直播" Foreground="White" FontSize="14" FontWeight="Bold"/>
-        </Border>
 
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- 进度条 -->
                 <RowDefinition Height="*"/>    <!-- 按钮 -->
@@ -172,11 +168,13 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="120"/>
             </Grid.ColumnDefinitions>
-            <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource ThickSlider}" 
+            <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}" 
                     Minimum="0" Maximum="100" 
                     ValueChanged="SliderSeek_ValueChanged" 
-                    PreviewMouseDown="SliderSeek_PreviewMouseDown" 
-                    PreviewMouseUp="SliderSeek_PreviewMouseUp"/>
+                    PreviewMouseDown="SliderSeek_PreviewMouseDown"
+                    PreviewMouseUp="SliderSeek_PreviewMouseUp"
+                    PreviewMouseMove="SliderSeek_MouseMove"
+                    MouseLeave="SliderSeek_MouseLeave"/>
             <Grid Grid.Column="1" Margin="12,0,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -186,7 +184,7 @@
                     <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                 </Button>
                 <Slider Grid.Column="1" x:Name="SliderVolume" Minimum="0" Maximum="100" 
-                        ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource ThickSlider}" VerticalAlignment="Center"/>
+                        ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource UnifiedThickSlider}" VerticalAlignment="Center"/>
             </Grid>
         </Grid>
 
@@ -239,6 +237,9 @@
                 <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="画面比例" Click="BtnRatio_Click">
                     <ui:SymbolIcon Symbol="Crop"/>
                 </Button>
+                <ToggleButton x:Name="CbTimeshift" Style="{StaticResource OverlayToggle}" ToolTip="时移">
+                    <ui:SymbolIcon Symbol="Clock"/>
+                </ToggleButton>
                 
                 <ToggleButton x:Name="CbEpg" Style="{StaticResource OverlayToggle}" ToolTip="节目指南" Click="CbEpg_Checked">
                     <ui:SymbolIcon Symbol="Calendar"/>

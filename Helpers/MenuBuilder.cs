@@ -140,7 +140,7 @@ namespace LibmpvIptvClient.Helpers
 
             // 5. System
             var miSystem = new MenuItem { Header = "系统" };
-            var miSettings = new MenuItem { Header = "设置..." };
+            var miSettings = new MenuItem { Header = "设置" };
             miSettings.Click += (s, args) => openSettings?.Invoke();
             miSystem.Items.Add(miSettings);
 
@@ -148,7 +148,7 @@ namespace LibmpvIptvClient.Helpers
             miAbout.Click += (s, args) => showAbout?.Invoke();
             miSystem.Items.Add(miAbout);
 
-            var miExit = new MenuItem { Header = "退出软件" };
+            var miExit = new MenuItem { Header = "退出" };
             miExit.Click += (s, args) => exitApp?.Invoke();
             miSystem.Items.Add(miExit);
             cm.Items.Add(miSystem);

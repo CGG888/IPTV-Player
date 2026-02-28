@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         x:Class="LibmpvIptvClient.SettingsWindow"
-        Title="播放设置" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Title="设置" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" Icon="/iptv.png"
         Background="#1F1F1F" Foreground="#EEE">
   <WindowChrome.WindowChrome>
@@ -84,7 +84,7 @@
           </Grid.ColumnDefinitions>
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <Image Source="/iptv.png" Width="18" Height="18" Margin="0,0,8,0"/>
-            <TextBlock Text="播放设置" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="设置" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
           </StackPanel>
           <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button.Style>
@@ -103,6 +103,7 @@
 
       <Grid Grid.Row="1" Margin="24">
         <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
@@ -141,7 +142,10 @@
         <TextBlock Grid.Row="7" Grid.Column="0" Text="台标库地址" VerticalAlignment="Center" Margin="0,12,16,0" ToolTip="支持占位符 {name}，例如 http://site.com/{name}.png"/>
         <TextBox x:Name="TbLogoUrl" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
 
-        <StackPanel Grid.Row="8" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="时移范围 (小时)" VerticalAlignment="Center" Margin="0,12,16,0"/>
+        <TextBox x:Name="TbTimeshiftHours" Grid.Row="8" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+        <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
           <Button Width="80" Margin="0,0,12,0" Content="调试日志" Click="BtnDebug_Click"/>
           <Button Width="80" Margin="0,0,12,0" Content="保存" IsDefault="True" Click="BtnSave_Click" Background="#35C759" BorderBrush="#35C759"/>
           <Button Width="80" Margin="0,0,0,0" Content="取消" IsCancel="True"/>

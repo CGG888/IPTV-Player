@@ -190,10 +190,11 @@
                                 </Border>
                                 <Track x:Name="PART_Track">
                                     <Track.DecreaseRepeatButton>
-                                        <RepeatButton Command="Slider.DecreaseLarge" Background="{StaticResource AccentBrush}">
+                                        <!-- 隐藏原生填充，避免与自定义进度条重复 -->
+                                        <RepeatButton Command="Slider.DecreaseLarge" Background="#00FFFFFF">
                                             <RepeatButton.Template>
                                                 <ControlTemplate TargetType="RepeatButton">
-                                                    <Border Height="8" CornerRadius="4" Background="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                                    <Border Height="0" Background="#00FFFFFF"/>
                                                 </ControlTemplate>
                                             </RepeatButton.Template>
                                         </RepeatButton>
@@ -577,7 +578,7 @@
         </Grid>
 
         <!-- 视频区域 -->
-        <Grid Grid.Row="1" Grid.Column="1" Background="Black">
+        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel">
             <wfi:WindowsFormsHost x:Name="VideoHost" Background="Black" PreviewMouseWheel="VideoHost_PreviewMouseWheel">
                 <wf:Panel x:Name="VideoPanel" BackColor="Black"/>
             </wfi:WindowsFormsHost>
@@ -875,7 +876,7 @@
         </Border>
 
         <!-- 底部控制栏 -->
-        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="1" Background="#181818" Height="64" BorderBrush="#333" BorderThickness="0,1,0,0">
+        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="1" Background="#181818" Height="64" BorderBrush="#333" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
             <Grid Margin="12,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- 进度条 -->
@@ -888,11 +889,13 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="120"/>
                     </Grid.ColumnDefinitions>
-                    <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource ThickSlider}" 
+                    <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}" 
                             Minimum="0" Maximum="100" 
                             ValueChanged="SliderSeek_ValueChanged" 
-                            PreviewMouseDown="SliderSeek_PreviewMouseDown" 
-                            PreviewMouseUp="SliderSeek_PreviewMouseUp"/>
+                            PreviewMouseDown="SliderSeek_PreviewMouseDown"
+                            PreviewMouseUp="SliderSeek_PreviewMouseUp"
+                            PreviewMouseMove="SliderSeek_MouseMove"
+                            MouseLeave="SliderSeek_MouseLeave"/>
                     <Grid Grid.Column="1" Margin="12,0,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -902,7 +905,7 @@
                             <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                         </Button>
                         <Slider Grid.Column="1" x:Name="SliderVolume" Minimum="0" Maximum="100" 
-                                ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource ThickSlider}" VerticalAlignment="Center"/>
+                                ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource UnifiedThickSlider}" VerticalAlignment="Center"/>
                     </Grid>
                 </Grid>
 
@@ -947,6 +950,9 @@
                         <Button x:Name="BtnRatio" Style="{StaticResource BarButton}" Click="BtnRatio_Click" ToolTip="画面比例">
                             <ui:SymbolIcon Symbol="Crop"/>
                         </Button>
+                        <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" Click="CbTimeshift_Click" ToolTip="时移">
+                            <ui:SymbolIcon Symbol="Clock"/>
+                        </ToggleButton>
 
                         <ToggleButton x:Name="CbEpg" Style="{StaticResource BarToggle}" Click="CbEpg_Click" ToolTip="节目指南">
                             <ui:SymbolIcon Symbol="Calendar"/>

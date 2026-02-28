@@ -20,15 +20,44 @@ namespace LibmpvIptvClient
         public event Action<bool>? EpgToggled;
         public event Action<string>? AspectRatioChanged;
         private bool _seeking = false;
+        public bool IsSourcesMenuOpen { get; private set; } = false;
+        public bool IsRatioMenuOpen { get; private set; } = false;
+        public bool IsAnyMenuOpen => IsSourcesMenuOpen || IsRatioMenuOpen;
+        public string CurrentAspect { get; set; } = "default";
+        public event Action<bool>? TimeshiftToggled;
+        private bool _timeshiftOn = false;
+        private DateTime _tsMin;
+        private DateTime _tsMax;
         public OverlayControls()
         {
             InitializeComponent();
+            try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
+            try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
         }
         public void SetPaused(bool paused)
         {
             try
             {
                 IconPlayPause.Symbol = paused ? ModernWpf.Controls.Symbol.Play : ModernWpf.Controls.Symbol.Pause;
+            }
+            catch { }
+        }
+        public void SetTimeshift(bool on)
+        {
+            _timeshiftOn = on;
+            try { CbTimeshift.IsChecked = on; } catch { }
+        }
+        public void SetTimeshiftRange(DateTime min, DateTime max)
+        {
+            _tsMin = min;
+            _tsMax = max;
+        }
+        public void SetTimeshiftLabels(DateTime cursor, DateTime now, bool seeking)
+        {
+            try
+            {
+                LblDuration.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
+                if (!seeking) LblElapsed.Text = cursor.ToString("yyyy-MM-dd HH:mm:ss");
             }
             catch { }
         }
@@ -39,8 +68,11 @@ namespace LibmpvIptvClient
             {
                 SliderSeek.Value = Math.Max(0, Math.Min(SliderSeek.Maximum, current));
             }
-            LblElapsed.Text = FormatTime(current);
-            LblDuration.Text = FormatTime(duration);
+            if (!_timeshiftOn)
+            {
+                LblElapsed.Text = FormatTime(current);
+                LblDuration.Text = FormatTime(duration);
+            }
         }
         public void SetVolume(double val)
         {
@@ -56,15 +88,65 @@ namespace LibmpvIptvClient
         void BtnStop_Click(object sender, RoutedEventArgs e) => Stop?.Invoke();
         void BtnRew_Click(object sender, RoutedEventArgs e) => Rew?.Invoke();
         void BtnFwd_Click(object sender, RoutedEventArgs e) => Fwd?.Invoke();
-        void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e) { _seeking = true; SeekStart?.Invoke(); }
+        void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                var p = e.GetPosition(SliderSeek);
+                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
+                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
+                _seeking = true;
+                SliderSeek.Value = sec;
+                SeekStart?.Invoke();
+            }
+            catch
+            {
+                _seeking = true;
+                SeekStart?.Invoke();
+            }
+        }
         void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             _seeking = false;
             SeekEnd?.Invoke(SliderSeek.Value);
         }
+        void SliderSeek_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                var p = e.GetPosition(SliderSeek);
+                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
+                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
+                if (_timeshiftOn)
+                {
+                    var t = _tsMin.AddSeconds(Math.Max(0, sec));
+                    SliderSeek.ToolTip = t.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                else
+                {
+                    SliderSeek.ToolTip = FormatTime(sec);
+                }
+            }
+            catch { }
+        }
+        void SliderSeek_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try { SliderSeek.ClearValue(ToolTipProperty); } catch { }
+        }
         void SliderSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_seeking) LblElapsed.Text = FormatTime(SliderSeek.Value);
+            if (_seeking)
+            {
+                if (_timeshiftOn)
+                {
+                    var t = _tsMin.AddSeconds(Math.Max(0, SliderSeek.Value));
+                    LblElapsed.Text = t.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                else
+                {
+                    LblElapsed.Text = FormatTime(SliderSeek.Value);
+                }
+            }
         }
         void SliderVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -117,11 +199,18 @@ namespace LibmpvIptvClient
             {
                 var mi = new MenuItem();
                 mi.Header = label;
+                mi.IsCheckable = true;
+                mi.IsChecked = string.Equals(CurrentAspect, val, StringComparison.OrdinalIgnoreCase);
                 mi.Click += (s, ev) => AspectRatioChanged?.Invoke(val);
                 menu.Items.Add(mi);
             }
+            menu.Opened += (s, ev) => IsRatioMenuOpen = true;
+            menu.Closed += (s, ev) => IsRatioMenuOpen = false;
             BtnRatio.ContextMenu = menu;
             BtnRatio.ContextMenu.PlacementTarget = BtnRatio;
+            BtnRatio.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            BtnRatio.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
             BtnRatio.ContextMenu.IsOpen = true;
         }
         public void SetInfo(string text) { LblInfo.Text = text; }
@@ -129,8 +218,24 @@ namespace LibmpvIptvClient
         public event Action<bool>? MuteChanged;
         public void OpenSourceContextMenu(ContextMenu menu)
         {
+            try
+            {
+                var cmStyle = (Style)FindResource(typeof(ContextMenu));
+                if (cmStyle != null) menu.Style = cmStyle;
+                var miStyle = (Style)FindResource(typeof(MenuItem));
+                foreach (var obj in menu.Items)
+                {
+                    if (obj is MenuItem mi && miStyle != null) mi.Style = miStyle;
+                }
+            }
+            catch { }
+            menu.Opened += (s, ev) => IsSourcesMenuOpen = true;
+            menu.Closed += (s, ev) => IsSourcesMenuOpen = false;
             BtnSources.ContextMenu = menu;
             BtnSources.ContextMenu.PlacementTarget = BtnSources;
+            BtnSources.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            BtnSources.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
             BtnSources.ContextMenu.IsOpen = true;
         }
         public void SetTags(System.Collections.Generic.List<string> tags)
@@ -156,20 +261,24 @@ namespace LibmpvIptvClient
             {
                 if (string.IsNullOrEmpty(text))
                 {
-                    StatusIndicator.Visibility = Visibility.Collapsed;
                     StatusIndicatorInner.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
-                    StatusIndicator.Visibility = Visibility.Visible;
                     StatusIndicatorInner.Visibility = Visibility.Visible;
-                    TxtStatus.Text = text;
-                    TxtStatus.Foreground = foreground;
                     TxtStatusInner.Text = text;
                     TxtStatusInner.Foreground = foreground;
                 }
             }
             catch { }
+        }
+        void OnPreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            int step = 5;
+            int dir = e.Delta > 0 ? 1 : -1;
+            var v = Math.Max(0, Math.Min(100, SliderVolume.Value + dir * step));
+            SliderVolume.Value = v;
+            e.Handled = true;
         }
     }
 }

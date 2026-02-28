@@ -42,7 +42,47 @@ namespace LibmpvIptvClient
         private Window? _fsDrawer;
         private Window? _fsEpg; // 全屏 EPG 抽屉
         private TopOverlay? _topOverlay;
+        private double _volume = 60;
+        private bool _updatingVolume = false;
+        private string _playbackStatusText = "";
+        private System.Windows.Media.Brush _playbackStatusBrush = System.Windows.Media.Brushes.White;
+        private DateTime _lastOverlayEval = DateTime.MinValue;
+        private bool _lastBottomVisible = false;
+        private bool _lastTopVisible = false;
+        private string _currentAspect = "default";
+        private System.Windows.Forms.IMessageFilter? _fsKeyFilter;
+        private bool _timeshiftActive = false;
+        private DateTime _timeshiftMin;
+        private DateTime _timeshiftMax;
+        private DateTime _timeshiftStart;
+        private double _timeshiftCursorSec = 0; // from _timeshiftMin in seconds
+        private System.Windows.Threading.DispatcherTimer? _timeshiftResyncTimer;
 
+        void ApplyTimeshiftUi()
+        {
+            try
+            {
+                if (!_timeshiftActive) return;
+                _timeshiftMax = DateTime.Now;
+                var total = Math.Max(1, (_timeshiftMax - _timeshiftMin).TotalSeconds);
+                _timeshiftCursorSec = Math.Max(0, Math.Min(total, _timeshiftCursorSec));
+                var t = _timeshiftMin.AddSeconds(_timeshiftCursorSec);
+                // Window bar
+                SliderSeek.Maximum = total;
+                SliderSeek.Value = _timeshiftCursorSec;
+                LblElapsed.Text = t.ToString("yyyy-MM-dd HH:mm:ss");
+                LblDuration.Text = _timeshiftMax.ToString("yyyy-MM-dd HH:mm:ss");
+                // Overlay bar
+                try
+                {
+                    _overlayWpf?.SetTimeshiftRange(_timeshiftMin, _timeshiftMax);
+                    _overlayWpf?.SetTime(_timeshiftCursorSec, total);
+                    _overlayWpf?.SetTimeshiftLabels(t, _timeshiftMax, false);
+                }
+                catch { }
+            }
+            catch { }
+        }
         private class GroupItem
         {
             public string Name { get; set; } = "";
@@ -56,9 +96,63 @@ namespace LibmpvIptvClient
             InitializeComponent();
             Loaded += OnLoaded;
             Closed += OnClosed;
+            PreviewKeyDown += OnPreviewKeyDown;
             // 主视频区域双击切换全屏
             try { VideoPanel.DoubleClick += MainPanel_DoubleClick; } catch { }
+            try { VideoPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
             _sourceTimeoutTimer.Tick += OnSourceTimeout;
+        }
+        void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            try
+            {
+                if (e.Key == System.Windows.Input.Key.Space)
+                {
+                    BtnPlayPause_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key == System.Windows.Input.Key.Left)
+                {
+                    TryArrowSeek(-1);
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key == System.Windows.Input.Key.Right)
+                {
+                    TryArrowSeek(1);
+                    e.Handled = true;
+                    return;
+                }
+            }
+            catch { }
+        }
+        void TryArrowSeek(int dir)
+        {
+            if (_mpv == null) return;
+            if (_currentPlayingProgram == null) return; // 仅回看模式可用
+            var step = 10 * dir;
+            _mpv.SeekRelative(step);
+        }
+        void SetVolumeInternal(double v)
+        {
+            if (_updatingVolume) return;
+            _updatingVolume = true;
+            _volume = Math.Max(0, Math.Min(100, v));
+            try { if (_mpv != null) _mpv.SetVolume(_volume); } catch { }
+            try { SliderVolume.Value = _volume; } catch { }
+            try { _overlayWpf?.SetVolume(_volume); } catch { }
+            _updatingVolume = false;
+        }
+        void OnOverlayVolumeChanged(double v)
+        {
+            SetVolumeInternal(v);
+        }
+        void AdjustVolumeByWheel(int delta)
+        {
+            int step = 5;
+            int dir = delta > 0 ? 1 : -1;
+            SetVolumeInternal(_volume + dir * step);
         }
         
         // Window Control Buttons
@@ -274,6 +368,20 @@ namespace LibmpvIptvClient
         void MainPanel_DoubleClick(object? sender, EventArgs e) => ToggleFullscreen(true);
         void VideoHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
+            AdjustVolumeByWheel(e.Delta);
+            ShowOverlayWithDelay();
+            e.Handled = true;
+        }
+        void VideoArea_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            AdjustVolumeByWheel(e.Delta);
+            ShowOverlayWithDelay();
+            e.Handled = true;
+        }
+        void BottomBar_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            AdjustVolumeByWheel(e.Delta);
+            ShowOverlayWithDelay();
             e.Handled = true;
         }
         void ListChannels_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -285,6 +393,20 @@ namespace LibmpvIptvClient
             try
             {
                 TryEnableDarkTitleBar();
+                try
+                {
+                    var s1 = OverlayVisibilityPolicy.ShouldShowBottom(1080, 1070, 160, 0.26, false) == true;
+                    var s2 = OverlayVisibilityPolicy.ShouldShowBottom(1080, 800, 160, 0.26, true) == true;
+                    var s3 = OverlayVisibilityPolicy.ShouldShowBottom(1080, 800, 160, 0.26, false) == false;
+                    var s4 = OverlayVisibilityPolicy.ShouldShowTop(10, 60, false) == true;
+                    var s5 = OverlayVisibilityPolicy.ShouldShowTop(100, 60, true) == true;
+                    var s6 = OverlayVisibilityPolicy.ShouldShowTop(100, 60, false) == false;
+                    if (!(s1 && s2 && s3 && s4 && s5 && s6))
+                    {
+                        System.Diagnostics.Debug.WriteLine("OverlayVisibilityPolicy tests failed");
+                    }
+                }
+                catch { }
                 _mpv = new MpvInterop();
                 _mpv.Create();
                 _mpv.SetSettings(AppSettings.Current);
@@ -293,7 +415,8 @@ namespace LibmpvIptvClient
                 _mpv.SetWid(panelHwnd);
                 _mpv.Initialize();
                 try { SliderVolume.Value = 60; } catch { }
-                _mpv.SetVolume(60);
+                _volume = 60;
+                _mpv.SetVolume(_volume);
                 _timer.Interval = TimeSpan.FromMilliseconds(500);
                 _timer.Tick += OnTick;
                 _timer.Start();
@@ -378,31 +501,54 @@ namespace LibmpvIptvClient
                 CbEpg_Click(this, new RoutedEventArgs());
             };
             _overlayWpf.SeekStart += () => _seeking = true;
-            _overlayWpf.SeekEnd += (val) => { if (_mpv != null) { _seeking = false; _mpv.SeekAbsolute(val); } };
-            _overlayWpf.VolumeChanged += (val) => { if (_mpv != null) _mpv.SetVolume(val); };
+            _overlayWpf.SeekEnd += (val) => 
+            { 
+                _seeking = false; 
+                if (_mpv == null) return;
+                if (_timeshiftActive && _currentChannel != null)
+                {
+                    var secs = Math.Max(0, val);
+                    var t = _timeshiftMin.AddSeconds(secs);
+                    PlayCatchupAt(_currentChannel, t);
+                    _timeshiftStart = t;
+                }
+                else
+                {
+                    _mpv.SeekAbsolute(val);
+                }
+            };
+            _overlayWpf.VolumeChanged += (val) => OnOverlayVolumeChanged(val);
             _overlayWpf.MuteChanged += (on) => { _muted = on; if (_mpv != null) _mpv.Mute(on); SetMuteIcon(); };
             // _overlayWpf.FccChanged += (v) => { try { CbFcc.IsChecked = v; } catch { } }; // Removed
             // _overlayWpf.UdpChanged += (v) => { try { CbUdpMode.IsChecked = v; } catch { } }; // Removed
             _overlayWpf.SourceMenuRequested += () => OpenSourceMenuAtOverlay();
+            _overlayWpf.TimeshiftToggled += (on) => ToggleTimeshift(on);
             _overlayWpf.Topmost = true;
+            try { _overlayWpf.CurrentAspect = _currentAspect; } catch { }
             
             if (_drawerCollapsed)
             {
                 DrawerColumn.Width = new GridLength(0);
             }
-            try { CbDrawer.IsChecked = !_drawerCollapsed; } catch { }
             try 
             { 
                 _overlayWpf.SetDrawerVisible(!_drawerCollapsed); 
             } 
             catch { }
             
-            _overlayWpf.SetVolume(60);
+            try
+            {
+                if (!string.IsNullOrEmpty(_playbackStatusText))
+                {
+                    _overlayWpf.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                }
+            }
+            catch { }
+            _overlayWpf.SetVolume(_volume);
             _overlayWpf.Show();
             PositionOverlay();
             _overlayWpf.Hide();
             _overlayHideTimer.Interval = TimeSpan.FromSeconds(2);
-            _overlayHideTimer.Tick += (s, e) => 
             { 
                 _overlayWpf?.Hide(); 
                 _topOverlay?.Hide();
@@ -425,19 +571,130 @@ namespace LibmpvIptvClient
             if (_mpv == null) return;
             try
             {
-                var pos = _mpv.GetTimePos() ?? 0;
-                var dur = _mpv.GetDuration() ?? 0;
-                
-                LblElapsed.Text = FormatTime(pos);
-                LblDuration.Text = FormatTime(dur);
-                
-                if (!_seeking)
+                if (_timeshiftActive)
                 {
-                    SliderSeek.Maximum = dur <= 0 ? 1 : dur;
-                    SliderSeek.Value = Math.Max(0, Math.Min(SliderSeek.Maximum, pos));
+                    _timeshiftMax = DateTime.Now;
+                    var posMpv = _mpv.GetTimePos() ?? 0;
+                    var t = _timeshiftStart.AddSeconds(posMpv);
+                    var current = (t - _timeshiftMin).TotalSeconds;
+                    var total = (_timeshiftMax - _timeshiftMin).TotalSeconds;
+                    SliderSeek.Maximum = Math.Max(1, total);
+                    if (!_seeking)
+                    {
+                        _timeshiftCursorSec = Math.Max(0, Math.Min(SliderSeek.Maximum, current));
+                        ApplyTimeshiftUi();
+                    }
+                    else
+                    {
+                        // 拖动期间仅更新 Now（右侧），不覆盖左侧
+                        try { LblDuration.Text = _timeshiftMax.ToString("yyyy-MM-dd HH:mm:ss"); _overlayWpf?.SetTimeshiftRange(_timeshiftMin, _timeshiftMax); } catch { }
+                    }
                 }
+                else
+                {
+                    var pos = _mpv.GetTimePos() ?? 0;
+                    var dur = _mpv.GetDuration() ?? 0;
+                    LblElapsed.Text = FormatTime(pos);
+                    LblDuration.Text = FormatTime(dur);
+                    if (!_seeking)
+                    {
+                        SliderSeek.Maximum = dur <= 0 ? 1 : dur;
+                        SliderSeek.Value = Math.Max(0, Math.Min(SliderSeek.Maximum, pos));
+                    }
+                    try { _overlayWpf?.SetTime(pos, dur); } catch { }
+                }
+            }
+            catch { }
+        }
+        void ToggleTimeshift(bool on)
+        {
+            // 防止重复调用导致的状态重置（特别是切换全屏/窗口时的事件回环）
+            if (_timeshiftActive == on) return;
 
-                try { _overlayWpf?.SetTime(pos, dur); } catch { }
+            if (_currentChannel == null || string.IsNullOrEmpty(_currentChannel.CatchupSource))
+            {
+                try { _overlayWpf?.SetTimeshift(false); } catch { }
+                try { if (CbTimeshift != null) CbTimeshift.IsChecked = false; } catch { }
+                return;
+            }
+            _timeshiftActive = on;
+            if (on)
+            {
+                _timeshiftMax = DateTime.Now;
+                var hours = Math.Max(0, AppSettings.Current.TimeshiftHours);
+                var minBySettings = _timeshiftMax.AddHours(-hours);
+                DateTime minByEpg = minBySettings;
+                try
+                {
+                    var programs = _epgService?.GetPrograms(_currentChannel.TvgId, _currentChannel.Name);
+                    if (programs != null && programs.Count > 0)
+                    {
+                        var earliest = programs.Min(p => p.Start);
+                        if (earliest > minByEpg) minByEpg = earliest;
+                    }
+                }
+                catch { }
+                _timeshiftMin = minByEpg;
+                _timeshiftStart = _timeshiftMax;
+                // 初始游标放在最右侧（Now），便于直接拖动回退
+                _timeshiftCursorSec = Math.Max(0, (_timeshiftMax - _timeshiftMin).TotalSeconds);
+                try { _overlayWpf?.SetPlaybackStatus("时移", System.Windows.Media.Brushes.Orange); } catch { }
+                try { _overlayWpf?.SetTimeshift(true); } catch { }
+                try { if (CbTimeshift != null) CbTimeshift.IsChecked = true; } catch { }
+                ApplyTimeshiftUi();
+            }
+            else
+            {
+                try { _overlayWpf?.SetPlaybackStatus("直播", System.Windows.Media.Brushes.White); } catch { }
+                try { _overlayWpf?.SetTimeshift(false); } catch { }
+                try { if (CbTimeshift != null) CbTimeshift.IsChecked = false; } catch { }
+                // 返回直播：重新播放当前频道的直播源
+                try
+                {
+                    if (_currentChannel != null)
+                    {
+                        PlayChannel(_currentChannel);
+                    }
+                }
+                catch { }
+            }
+        }
+        void CbTimeshift_Click(object sender, RoutedEventArgs e)
+        {
+            bool on = CbTimeshift.IsChecked == true;
+            ToggleTimeshift(on);
+        }
+        void PlayCatchupAt(Channel ch, DateTime start)
+        {
+            if (string.IsNullOrEmpty(ch.CatchupSource)) return;
+            try
+            {
+                var url = ch.CatchupSource;
+                DateTime end = start.AddHours(1);
+                try
+                {
+                    var programs = _epgService?.GetPrograms(ch.TvgId, ch.Name);
+                    if (programs != null && programs.Count > 0)
+                    {
+                        var prog = programs.FirstOrDefault(p => p.Start <= start && p.End > start);
+                        if (prog != null) end = prog.End;
+                    }
+                }
+                catch { }
+                var su = start.ToUniversalTime();
+                var eu = end.ToUniversalTime();
+                url = ReplaceTimePlaceholder(url, "{utc:", "}", su, eu);
+                url = ReplaceTimePlaceholder(url, "{utcend:", "}", su, eu);
+                url = url.Replace("${(b)yyyyMMdd|UTC}", su.ToString("yyyyMMdd"));
+                url = url.Replace("${(b)HHmmss|UTC}", su.ToString("HHmmss"));
+                url = url.Replace("${(e)yyyyMMdd|UTC}", eu.ToString("yyyyMMdd"));
+                url = url.Replace("${(e)HHmmss|UTC}", eu.ToString("HHmmss"));
+                url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
+                url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
+                _mpv?.LoadFile(url);
+                _playbackStatusText = "时移";
+                _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
+                try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
             }
             catch { }
         }
@@ -453,21 +710,102 @@ namespace LibmpvIptvClient
             _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
             _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
             _overlayWpf.DrawerToggled += (visible) => SetDrawerCollapsed(!visible);
+            _overlayWpf.EpgToggled += (visible) => 
+            { 
+                CbEpg.IsChecked = visible;
+                CbEpg_Click(this, new RoutedEventArgs());
+            };
             _overlayWpf.SeekStart += () => _seeking = true;
-            _overlayWpf.SeekEnd += (val) => { if (_mpv != null) { _seeking = false; _mpv.SeekAbsolute(val); } };
-            _overlayWpf.VolumeChanged += (val) => { if (_mpv != null) _mpv.SetVolume(val); };
+            _overlayWpf.SeekEnd += (val) =>
+            {
+                _seeking = false;
+                if (_mpv == null) return;
+                if (_timeshiftActive && _currentChannel != null)
+                {
+                    var secs = Math.Max(0, val);
+                    _timeshiftCursorSec = secs; // 保存游标，供窗口/全屏切换同步
+                    var t = _timeshiftMin.AddSeconds(secs);
+                    PlayCatchupAt(_currentChannel, t);
+                    _timeshiftStart = t;
+                }
+                else
+                {
+                    _mpv.SeekAbsolute(val);
+                }
+            };
+            _overlayWpf.VolumeChanged += (val) => OnOverlayVolumeChanged(val);
             _overlayWpf.MuteChanged += (on) => { _muted = on; if (_mpv != null) _mpv.Mute(on); SetMuteIcon(); };
             // _overlayWpf.FccChanged += (v) => { try { CbFcc.IsChecked = v; } catch { } }; // Removed
             // _overlayWpf.UdpChanged += (v) => { try { CbUdpMode.IsChecked = v; } catch { } }; // Removed
             _overlayWpf.SourceMenuRequested += () => OpenSourceMenuAtOverlay();
+            try { _overlayWpf.TimeshiftToggled += (on) => ToggleTimeshift(on); } catch { }
             _overlayWpf.Topmost = true;
             try { _overlayWpf.SetDrawerVisible(!_drawerCollapsed); } catch { }
             try { _overlayWpf.SetEpgVisible(CbEpg.IsChecked == true); } catch { }
             try { _overlayWpf.SetPaused(_paused); } catch { }
-            _overlayWpf.SetVolume(60);
+            try { _overlayWpf.CurrentAspect = _currentAspect; } catch { }
+            _overlayWpf.SetVolume(_volume);
+            // 初始化时移状态到新创建的悬浮条（窗口/全屏一致）
+            try
+            {
+                _overlayWpf.SetTimeshift(_timeshiftActive);
+                if (_timeshiftActive)
+                {
+                    if (_timeshiftMax == default) _timeshiftMax = DateTime.Now;
+                    if (_timeshiftMin == default)
+                    {
+                        var hours = Math.Max(0, AppSettings.Current.TimeshiftHours);
+                        _timeshiftMin = _timeshiftMax.AddHours(-hours);
+                    }
+                    var total = Math.Max(1, (_timeshiftMax - _timeshiftMin).TotalSeconds);
+                    ApplyTimeshiftUi();
+                    // 如果当前是回到窗口模式（fullscreen == false），同时把底部进度条与标签立即同步一次
+                    if (!fullscreen)
+                    {
+                        ApplyTimeshiftUi();
+                    }
+                }
+            }
+            catch { }
+            try
+            {
+                if (!string.IsNullOrEmpty(_playbackStatusText))
+                {
+                    _overlayWpf.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                }
+            }
+            catch { }
             _overlayWpf.Show();
             PositionOverlay();
             _overlayWpf.Hide();
+            // 刚创建悬浮条后，再异步同步一次时移 UI（避免创建过程中的布局延迟导致的不同步）
+            try
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (_timeshiftActive) SyncTimeshiftUi();
+                }), System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch { }
+            // 再设定一次轻微延迟的二次同步，确保 mpv.pos 在切换后稳定
+            try
+            {
+                _timeshiftResyncTimer?.Stop();
+                _timeshiftResyncTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+                _timeshiftResyncTimer.Tick += (s, e2) =>
+                {
+                    _timeshiftResyncTimer?.Stop();
+                    _timeshiftResyncTimer = null;
+                    if (_timeshiftActive) SyncTimeshiftUi();
+                };
+                _timeshiftResyncTimer.Start();
+            }
+            catch { }
+        }
+        void SyncTimeshiftUi()
+        {
+            if (_mpv == null || !_timeshiftActive) return;
+            ApplyTimeshiftUi();
         }
         bool _muted = false;
         void BtnMute_Click(object sender, RoutedEventArgs e)
@@ -543,6 +881,7 @@ namespace LibmpvIptvClient
                 AppSettings.Current.SourceTimeoutSec = dlg.Result.SourceTimeoutSec;
                 AppSettings.Current.CustomEpgUrl = dlg.Result.CustomEpgUrl;
                 AppSettings.Current.CustomLogoUrl = dlg.Result.CustomLogoUrl;
+                AppSettings.Current.TimeshiftHours = dlg.Result.TimeshiftHours;
                 AppSettings.Current.Save(); // Save to disk
                 if (_mpv != null)
                 {
@@ -655,20 +994,46 @@ namespace LibmpvIptvClient
 
                 if (screenW <= 0 || screenH <= 0) return;
 
-                // 1. Bottom Zone (Overlay Controls)
-                if (relY > screenH - 120) 
+                // 1. Bottom Zone (Overlay Controls) - dynamic sensitivity (min 160px or 26% height)
+                double bottomZone = Math.Max(160, screenH * 0.26);
+                bool inBottomZone = relY > screenH - bottomZone;
+                bool keepBottomForMenu = _overlayWpf != null && _overlayWpf.IsAnyMenuOpen;
+                if (inBottomZone) 
                 {
                     if (_overlayWpf != null && !_overlayWpf.IsVisible)
                     {
                         _overlayWpf.Show();
-                        _overlayWpf.Topmost = true;
+                        BringOverlayToTop();
                         _overlayHideTimer.Stop();
                         _overlayHideTimer.Start();
+                    }
+                    else if (_overlayWpf != null && _overlayWpf.IsVisible)
+                    {
+                        BringOverlayToTop();
+                        _overlayHideTimer.Stop();
+                        _overlayHideTimer.Start();
+                    }
+                    _lastBottomVisible = true;
+                    _lastOverlayEval = DateTime.UtcNow;
+                }
+                else
+                {
+                    var now = DateTime.UtcNow;
+                    if (_overlayWpf != null && _overlayWpf.IsVisible && !keepBottomForMenu)
+                    {
+                        if ((now - _lastOverlayEval).TotalMilliseconds > 60 || _lastBottomVisible)
+                        {
+                            _overlayWpf.Hide();
+                            _lastBottomVisible = false;
+                            _lastOverlayEval = now;
+                        }
                     }
                 }
 
                 // 2. Top Zone (Top Overlay)
-                if (relY < 60 || (_topOverlay != null && _topOverlay.IsMenuOpen))
+                bool inTopZone = relY < 60;
+                bool keepTopForMenu = _topOverlay != null && _topOverlay.IsMenuOpen;
+                if (inTopZone || keepTopForMenu)
                 {
                     if (_topOverlay != null && !_topOverlay.IsVisible)
                     {
@@ -679,6 +1044,20 @@ namespace LibmpvIptvClient
                     {
                         _overlayHideTimer.Stop();
                         _overlayHideTimer.Start();
+                    }
+                    _lastTopVisible = true;
+                }
+                else
+                {
+                    if (_topOverlay != null && _topOverlay.IsVisible && !keepTopForMenu)
+                    {
+                        var now = DateTime.UtcNow;
+                        if ((now - _lastOverlayEval).TotalMilliseconds > 60 || _lastTopVisible)
+                        {
+                            _topOverlay.Hide();
+                            _lastTopVisible = false;
+                            _lastOverlayEval = now;
+                        }
                     }
                 }
 
@@ -989,6 +1368,7 @@ namespace LibmpvIptvClient
             if (_mpv == null || ch == null) return;
             try
             {
+                if (_timeshiftActive) ToggleTimeshift(false);
                 // Clear EPG playing status
                 if (_currentPlayingProgram != null)
                 {
@@ -1073,7 +1453,9 @@ namespace LibmpvIptvClient
                     PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
                     
                     // Sync with Overlay
-                    _overlayWpf?.SetPlaybackStatus("直播", System.Windows.Media.Brushes.White);
+                    _playbackStatusText = "直播";
+                    _playbackStatusBrush = System.Windows.Media.Brushes.White;
+                    _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 } 
                 catch { }
 
@@ -1288,6 +1670,7 @@ namespace LibmpvIptvClient
             if (string.IsNullOrEmpty(ch.CatchupSource)) return;
             try
             {
+                if (_timeshiftActive) ToggleTimeshift(false);
                 var url = ch.CatchupSource;
                 // ... (url processing) ...
                 // 替换占位符
@@ -1329,7 +1712,9 @@ namespace LibmpvIptvClient
                     PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
                     
                     // Sync with Overlay
-                    _overlayWpf?.SetPlaybackStatus("回放", System.Windows.Media.Brushes.Orange);
+                    _playbackStatusText = "回放";
+                    _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
+                    _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 }
                 catch { }
             }
@@ -1414,7 +1799,14 @@ namespace LibmpvIptvClient
             {
                 var mi = new System.Windows.Controls.MenuItem();
                 mi.Header = label;
-                mi.Click += (s, ev) => _mpv?.SetAspectRatio(val);
+                mi.IsCheckable = true;
+                mi.IsChecked = string.Equals(_currentAspect, val, StringComparison.OrdinalIgnoreCase);
+                mi.Click += (s, ev) => 
+                { 
+                    _currentAspect = val;
+                    if (_overlayWpf != null) _overlayWpf.CurrentAspect = _currentAspect;
+                    _mpv?.SetAspectRatio(val);
+                };
                 menu.Items.Add(mi);
             }
             BtnRatio.ContextMenu = menu;
@@ -1488,6 +1880,7 @@ namespace LibmpvIptvClient
                 var mi = new System.Windows.Controls.MenuItem();
                 mi.Header = SourceLabel(s);
                 mi.Tag = s;
+                mi.IsCheckable = true;
                 
                 // 如果是当前播放源，设置为选中状态
                 if (SanitizeUrl(s.Url) == currentPlayingUrl)
@@ -1525,6 +1918,15 @@ namespace LibmpvIptvClient
         void ToggleFullscreen(bool on)
         {
             if (on == _isFullscreen) return;
+
+            // 1. 暂停所有定时器，防止在切换过程中读取不稳定的 MPV 状态
+            _timer.Stop();
+            _overlayPollTimer.Stop();
+
+            // 2. 移除切换前的 MPV 状态读取，直接信任当前的 _timeshiftCursorSec
+            // 因为在切换过程中 MPV 的状态可能不稳定（归零），导致进度条重置
+            // 而 Timer_Tick 在切换前一直在正常更新，所以当前的 _timeshiftCursorSec 是最准确的
+
             if (on)
             {
                 _isFullscreen = true; // 先切标志，避免早期轮询把悬浮条隐藏
@@ -1546,7 +1948,11 @@ namespace LibmpvIptvClient
                     _mpv.SetWid(_fsPanel.Handle);
                 }
                 try { if (_fsPanel != null) _fsPanel.DoubleClick += FsPanel_DoubleClick; } catch { }
+                try { if (_fsPanel != null) _fsPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
                 _fs.ExitRequested += () => ToggleFullscreen(false);
+                _fs.PlayPauseRequested += () => BtnPlayPause_Click(this, new RoutedEventArgs());
+                _fs.SeekRequested += (dir) => TryArrowSeek(dir);
+                try { _fs.Host.PreviewMouseWheel += FsHost_PreviewMouseWheel; } catch { }
                 _fs.Activated += (s, e) => 
                 {
                     // 当全屏窗口激活时，确保子窗口在最前
@@ -1574,14 +1980,30 @@ namespace LibmpvIptvClient
                 _fs.SizeChanged += (s, e) => { PositionOverlay(); PositionTopOverlay(); };
                 _fs.LocationChanged += (s, e) => { PositionOverlay(); PositionTopOverlay(); };
                 _fs.MouseMove += (s, e) => ShowOverlayWithDelay();
+                try { _fs.Host.MouseMove += (s, e) => ShowOverlayWithDelay(); } catch { }
+                try { _fs.Host.PreviewMouseMove += (s, e) => ShowOverlayWithDelay(); } catch { }
                 if (_fsPanel != null)
                 {
                     _fsPanel.MouseMove += (s, e) => ShowOverlayWithDelay();
+                    _fsPanel.MouseEnter += (s, e) => ShowOverlayWithDelay();
                 }
-                _overlayPollTimer.Start();
+                // 注意：这里不要立即 Start timer，等到 OnFullscreenLoaded 再恢复
                 _fs.Show();
                 _fs.Focus();
                 ResetOverlayForOwner(_fs, true);
+                ShowFsOverlayNow();
+                try { _fs.Activate(); _fs.Focus(); } catch { }
+                // Add WinForms key filter to capture keys even when WinForms controls hold focus
+                try
+                {
+                    _fsKeyFilter = new WinFormsKeyFilter(
+                        exit: () => ToggleFullscreen(false),
+                        playPause: () => BtnPlayPause_Click(this, new RoutedEventArgs()),
+                        seek: (dir) => TryArrowSeek(dir)
+                    );
+                    System.Windows.Forms.Application.AddMessageFilter(_fsKeyFilter);
+                }
+                catch { }
                 
                 // Create Top Overlay
                 _topOverlay = new TopOverlay();
@@ -1618,6 +2040,7 @@ namespace LibmpvIptvClient
                 PositionTopOverlay();
                 // Initially hidden, shown on hover
                 _topOverlay.Hide();
+                try { _fs.Activate(); _fs.Focus(); } catch { }
             }
             else
             {
@@ -1634,7 +2057,7 @@ namespace LibmpvIptvClient
                 if (_topOverlay != null) { _topOverlay.Close(); _topOverlay = null; }
 
                 BottomBar.Visibility = Visibility.Visible;
-                _overlayPollTimer.Stop();
+                
                 if (_mpv != null)
                 {
                     _mpv.SetWid(VideoPanel.Handle);
@@ -1644,6 +2067,17 @@ namespace LibmpvIptvClient
                     _fs.Loaded -= OnFullscreenLoaded;
                     _fs.ExitRequested -= () => ToggleFullscreen(false);
                     try { if (_fsPanel != null) _fsPanel.DoubleClick -= FsPanel_DoubleClick; } catch { }
+                    try { if (_fsPanel != null) _fsPanel.MouseWheel -= FsPanel_MouseWheel; } catch { }
+                    try { _fs.Host.PreviewMouseWheel -= FsHost_PreviewMouseWheel; } catch { }
+                    try { _fs.Host.MouseMove -= (s, e) => ShowOverlayWithDelay(); } catch { }
+                    try { _fs.Host.PreviewMouseMove -= (s, e) => ShowOverlayWithDelay(); } catch { }
+                    try { if (_fsPanel != null) _fsPanel.MouseEnter -= (s, e) => ShowOverlayWithDelay(); } catch { }
+                    try
+                    {
+                        if (_fsKeyFilter != null) System.Windows.Forms.Application.RemoveMessageFilter(_fsKeyFilter);
+                        _fsKeyFilter = null;
+                    }
+                    catch { }
                     
                     // Reset overlay BEFORE closing FS to avoid crash
                     ResetOverlayForOwner(this, false);
@@ -1655,6 +2089,15 @@ namespace LibmpvIptvClient
                 }
                 // 返回窗口模式时隐藏悬浮条（进度/控制条在视频外展示）
                 _overlayWpf?.Hide();
+
+                // 强制同步窗口模式下的控件状态
+                try 
+                { 
+                    if (CbTimeshift != null) CbTimeshift.IsChecked = _timeshiftActive; 
+                    if (_timeshiftActive) ApplyTimeshiftUi(); // 再次应用时移 UI 到窗口控件
+                } 
+                catch { }
+
                 try
                 {
                     Topmost = true;   // 提升到最前
@@ -1663,7 +2106,48 @@ namespace LibmpvIptvClient
                     Focus();          // 聚焦窗口
                 }
                 catch { }
+
+                // 恢复定时器
+                _timer.Start();
+                _overlayPollTimer.Start();
             }
+            ShowOverlayWithDelay();
+        }
+        void ShowFsOverlayNow()
+        {
+            if (!_isFullscreen || _fs == null || _overlayWpf == null) return;
+            try
+            {
+                PositionOverlay();
+                _overlayWpf.Show();
+                BringOverlayToTop();
+                _overlayHideTimer.Stop();
+                _overlayHideTimer.Start();
+            }
+            catch { }
+        }
+        void BringOverlayToTop()
+        {
+            try
+            {
+                if (_overlayWpf == null) return;
+                _overlayWpf.Topmost = true;
+                _overlayWpf.Topmost = false;
+                _overlayWpf.Topmost = true;
+                var h = new System.Windows.Interop.WindowInteropHelper(_overlayWpf).Handle;
+                SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+            }
+            catch { }
+        }
+        void FsHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            AdjustVolumeByWheel(e.Delta);
+            ShowOverlayWithDelay();
+            e.Handled = true;
+        }
+        void FsPanel_MouseWheel(object? sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            AdjustVolumeByWheel(e.Delta);
             ShowOverlayWithDelay();
         }
         void OnFullscreenLoaded(object? sender, RoutedEventArgs e)
@@ -1699,11 +2183,19 @@ namespace LibmpvIptvClient
                     _overlayWpf.InvalidateVisual();
                     _overlayWpf.Show();
                     _overlayWpf.Visibility = Visibility.Visible;
+                    ShowFsOverlayNow();
                     
                     PositionOverlay();
                     _overlayHideTimer.Stop();
                     _overlayHideTimer.Start();
                     ShowOverlayWithDelay(); // 强制触发一次显示检查
+
+                    // 恢复定时器（在窗口完全加载后）
+                    _timer.Start();
+                    _overlayPollTimer.Start();
+                    
+                    // 再次同步一次时移UI，确保 Slider 位置正确
+                    if (_timeshiftActive) ApplyTimeshiftUi();
                 }
                 catch (Exception ex)
                 {
@@ -1969,6 +2461,8 @@ namespace LibmpvIptvClient
         }
         void OnTick(object? sender, EventArgs e)
         {
+            // 在时移模式下，不允许此超时监控例程改动进度条和标签，避免与时移逻辑竞态导致不同步
+            if (_timeshiftActive) return;
             if (_mpv == null) return;
             var t = _mpv.GetTimePos();
             if (t.HasValue && t.Value > 0) _sourceTimeoutTimer.Stop(); // 有进度，说明播放成功
@@ -2115,20 +2609,73 @@ namespace LibmpvIptvClient
         void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             _seeking = true;
+            try
+            {
+                var p = e.GetPosition(SliderSeek);
+                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
+                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
+                SliderSeek.Value = sec;
+            }
+            catch { }
         }
         void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (_mpv == null) return;
             _seeking = false;
             var v = SliderSeek.Value;
-            _mpv.SeekAbsolute(v);
+            if (_timeshiftActive && _currentChannel != null)
+            {
+                _timeshiftCursorSec = Math.Max(0, v);
+                var t = _timeshiftMin.AddSeconds(_timeshiftCursorSec);
+                PlayCatchupAt(_currentChannel, t);
+                _timeshiftStart = t;
+            }
+            else
+            {
+                _mpv.SeekAbsolute(v);
+            }
         }
         void SliderSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_seeking)
             {
-                LblElapsed.Text = FormatTime(SliderSeek.Value);
+                if (_timeshiftActive)
+                {
+                    var t = _timeshiftMin.AddSeconds(Math.Max(0, SliderSeek.Value));
+                    LblElapsed.Text = t.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                else
+                {
+                    LblElapsed.Text = FormatTime(SliderSeek.Value);
+                }
             }
+        }
+        void SliderSeek_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                var p = e.GetPosition(SliderSeek);
+                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
+                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
+                if (_timeshiftActive)
+                {
+                    var t = _timeshiftMin.AddSeconds(Math.Max(0, sec));
+                    SliderSeek.ToolTip = t.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                else
+                {
+                    // 回看或普通播放：若有时移起点，则显示起点+sec，否则显示相对时间
+                    var tip = _currentPlayingProgram != null
+                        ? _currentPlayingProgram.Start.AddSeconds(Math.Max(0, sec)).ToString("yyyy-MM-dd HH:mm:ss")
+                        : FormatTime(sec);
+                    SliderSeek.ToolTip = tip;
+                }
+            }
+            catch { }
+        }
+        void SliderSeek_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try { SliderSeek.ClearValue(ToolTipProperty); } catch { }
         }
         void BtnPlayPause_Click(object sender, RoutedEventArgs e)
         {
@@ -2164,8 +2711,7 @@ namespace LibmpvIptvClient
         }
         void SliderVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_mpv == null) return;
-            _mpv.SetVolume(SliderVolume.Value);
+            SetVolumeInternal(SliderVolume.Value);
         }
         void CbFullscreen_Checked(object sender, RoutedEventArgs e)
         {

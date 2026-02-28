@@ -10,7 +10,8 @@
         Background="Transparent"
         ShowInTaskbar="False"
         Topmost="True"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        ShowActivated="False">
     
     <Window.Resources>
         <Style x:Key="TopBtnStyle" TargetType="ButtonBase">

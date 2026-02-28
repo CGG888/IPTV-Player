@@ -24,6 +24,7 @@ namespace LibmpvIptvClient
         public string CustomEpgUrl { get; set; } = "";
         public string CustomLogoUrl { get; set; } = ""; // Custom Logo Repo URL (e.g. http://site.com/{name}.png)
         public List<M3uSource> SavedSources { get; set; } = new List<M3uSource>();
+        public int TimeshiftHours { get; set; } = 6;
 
         public static PlaybackSettings Load()
         {

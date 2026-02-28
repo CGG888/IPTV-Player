@@ -19,6 +19,7 @@ namespace LibmpvIptvClient
             TbSourceTimeout.Text = current.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture);
             TbEpgUrl.Text = current.CustomEpgUrl;
             TbLogoUrl.Text = current.CustomLogoUrl;
+            TbTimeshiftHours.Text = Math.Max(0, current.TimeshiftHours).ToString(CultureInfo.InvariantCulture);
         }
         void BtnSave_Click(object sender, RoutedEventArgs e)
         {
@@ -31,6 +32,7 @@ namespace LibmpvIptvClient
             if (int.TryParse(TbSourceTimeout.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var st)) s.SourceTimeoutSec = Math.Max(1, st);
             s.CustomEpgUrl = TbEpgUrl.Text?.Trim() ?? "";
             s.CustomLogoUrl = TbLogoUrl.Text?.Trim() ?? "";
+            if (int.TryParse(TbTimeshiftHours.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var tsh)) s.TimeshiftHours = Math.Max(0, Math.Min(168, tsh));
             Result = s;
             DialogResult = true;
             Close();
