@@ -91,10 +91,29 @@
     - `${(b)yyyyMMdd|UTC}`、`${(b)HHmmss|UTC}`、`${(e)yyyyMMdd|UTC}`、`${(e)HHmmss|UTC}`
     - `{start}`、`{end}`（本地时间 `yyyyMMddHHmmss`）
   - 相关实现：[MainWindow.xaml.cs](./MainWindow.xaml.cs)
+
+### 时移（Time-Shift）
+
+- 启用条件：频道存在 `catchup-source`
+- 时间轴范围：
+  - 右侧“现在时间（Now）”：`DateTime.Now`
+  - 左侧“最早时间（Earliest）”：取“设置中的时移小时数”回退到的时间与 EPG 最早节目的开始时间两者中的较晚者
+- 拖动与播放：
+  - 拖动时左侧时间显示当前指针时间，右侧显示“现在时间”，右侧秒数实时跳动
+  - 松开后按所选时间计算回放 URL 并播放（与回放占位符一致）
+- 模板支持（与回放一致）：
+  - `{utc:FORMAT}`、`{utcend:FORMAT}`（UTC）
+  - `${(b)yyyyMMdd|UTC}`、`${(b)HHmmss|UTC}`（开始时间）
+  - `${(e)yyyyMMdd|UTC}`、`${(e)HHmmss|UTC}`（结束时间）
+  - `{start}`、`{end}`（本地时间 `yyyyMMddHHmmss`）
+- 全屏/窗口同步：
+  - 以 `_timeshiftCursorSec` 为唯一进度来源，切换全屏/窗口时冻结定时器、迁移窗口、恢复后按该值刷新 UI，确保时间轴位置与状态一致
+- 关闭时移：自动返回直播，状态标签显示“直播”
 - 收藏
   - 频道项“★/☆”按钮收藏/取消收藏
   - “收藏”页签展示收藏列表（去重保持顺序）
   - 说明：当前收藏为运行时状态，未做跨启动持久化（[MainWindow.xaml.cs](./MainWindow.xaml.cs)）
+- 播放记录/历史
 - 播放记录/历史
   - 说明：当前版本未实现播放历史记录功能（后续可扩展）
 
@@ -319,8 +338,9 @@ bin\Debug\net8.0-windows\
 
 ## 功能状态与路线图
 
-- [ ] 时移（Time-Shift）  
-        （尚未实现）允许直播随时暂停/后退并在任意时刻回到直播，支持拖动时间轴与快进/快退。技术难点在低延迟循环缓冲、磁盘与内存占用控制、音视频时钟同步及与 EPG 节目时间对齐。
+- [x] 时移（Time-Shift，基于 catchup-source 的回放式时移）  
+        已实现：按配置/EPG 计算时间范围，拖动选择时间后基于模板生成回放 URL 并播放；全屏/窗口进度与状态双向同步。  
+        未实现：本地循环缓冲（DVR 式“暂停直播后原地继续”），涉及磁盘环形缓冲与 A/V 时钟同步，后续单独规划。
 
 ### 未来计划
 - [ ] AI 节目推荐（个性化内容建议）
