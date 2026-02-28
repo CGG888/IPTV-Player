@@ -10,6 +10,7 @@ using LibmpvIptvClient.Services;
 using LibmpvIptvClient.Diagnostics;
 using System.Windows.Media;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace LibmpvIptvClient
 {
@@ -19,6 +20,7 @@ namespace LibmpvIptvClient
         private ChannelService? _channelService;
         private M3UParser? _m3uParser;
         private EpgService? _epgService;
+            private UserDataStore _userDataStore = new UserDataStore();
         private HttpClient _http = new HttpClient();
         private List<Channel> _channels = new List<Channel>();
         private DebugWindow? _debug;
@@ -57,6 +59,8 @@ namespace LibmpvIptvClient
         private DateTime _timeshiftStart;
         private double _timeshiftCursorSec = 0; // from _timeshiftMin in seconds
         private System.Windows.Threading.DispatcherTimer? _timeshiftResyncTimer;
+            private string _currentUrl = "";
+            private DateTime _lastHistoryUpdate = DateTime.MinValue;
 
         void ApplyTimeshiftUi()
         {
@@ -97,6 +101,14 @@ namespace LibmpvIptvClient
             Loaded += OnLoaded;
             Closed += OnClosed;
             PreviewKeyDown += OnPreviewKeyDown;
+            try
+            {
+                if (ListHistory != null)
+                {
+                    ListHistory.CommandBindings.Add(new CommandBinding(System.Windows.Input.ApplicationCommands.Delete, HistoryDeleteOne_Executed, HistoryDeleteOne_CanExecute));
+                }
+            }
+            catch { }
             // 主视频区域双击切换全屏
             try { VideoPanel.DoubleClick += MainPanel_DoubleClick; } catch { }
             try { VideoPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
@@ -428,7 +440,7 @@ namespace LibmpvIptvClient
             }
             catch (Exception ex)
             {
-                try { Logger.Log("初始化失败 " + ex.ToString()); } catch { }
+                try { Logger.Error("初始化失败 " + ex.ToString()); } catch { }
                 System.Windows.MessageBox.Show(this, ex.Message, "启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
                 return;
@@ -441,6 +453,9 @@ namespace LibmpvIptvClient
             _epgTimer.Tick += (s, e) => UpdateEpgDisplay();
             _epgTimer.Start();
             Logger.Log("应用启动完成");
+            
+            // 初始化用户数据（收藏/历史）
+            try { _userDataStore.Load(); } catch { }
             
             // Auto-load last selected source if available
             if (AppSettings.Current.SavedSources != null)
@@ -605,6 +620,7 @@ namespace LibmpvIptvClient
                 }
             }
             catch { }
+            UpdateHistoryProgressIfNeeded();
         }
         void ToggleTimeshift(bool on)
         {
@@ -641,6 +657,8 @@ namespace LibmpvIptvClient
                 try { _overlayWpf?.SetPlaybackStatus("时移", System.Windows.Media.Brushes.Orange); } catch { }
                 try { _overlayWpf?.SetTimeshift(true); } catch { }
                 try { if (CbTimeshift != null) CbTimeshift.IsChecked = true; } catch { }
+                try { TxtPlaybackStatus.Text = "时移"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                try { TxtBottomPlaybackStatus.Text = "时移"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
                 ApplyTimeshiftUi();
             }
             else
@@ -692,9 +710,162 @@ namespace LibmpvIptvClient
                 url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
                 url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
                 _mpv?.LoadFile(url);
+                _currentUrl = url;
                 _playbackStatusText = "时移";
                 _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
                 try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                
+                // 写入播放记录（时移）
+                try
+                {
+                    var key = UserDataStore.ComputeKey(ch, url);
+                    _userDataStore.AddOrUpdateHistory(new HistoryItem
+                    {
+                        Key = key,
+                        Name = ch.Name,
+                        Logo = ch.Logo,
+                        Group = ch.Group,
+                        SourceUrl = url,
+                        PlayType = "timeshift"
+                    });
+                    ListHistory.ItemsSource = _userDataStore.GetHistory();
+                }
+                catch { }
+            }
+            catch { }
+        }
+        void ListHistory_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (ListHistory.SelectedItem is HistoryItem hi)
+                {
+                    // 非直播类型：优先按记录URL播放，确保状态正确
+                    if (hi.PlayTypeLabel != "直播" && _mpv != null && !string.IsNullOrWhiteSpace(hi.SourceUrl))
+                    {
+                        _mpv.LoadFile(hi.SourceUrl);
+                        _currentUrl = hi.SourceUrl;
+                        if (hi.PlayTypeLabel == "回放")
+                        {
+                            _playbackStatusText = "回放";
+                            _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
+                            try { TxtPlaybackStatus.Text = "回放"; TxtBottomPlaybackStatus.Text = "回放"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                            try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                            _timeshiftActive = false; try { CbTimeshift.IsChecked = false; } catch { }
+                        }
+                        else if (hi.PlayTypeLabel == "时移")
+                        {
+                            _playbackStatusText = "时移";
+                            _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
+                            try { TxtPlaybackStatus.Text = "时移"; TxtBottomPlaybackStatus.Text = "时移"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                            try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                            // 不强制切到时移UI，避免依赖当前频道 catchup-source；仅同步文案
+                        }
+                        _paused = false;
+                        UpdatePlayPauseIcon();
+                        return;
+                    }
+                    // 直播：尝试匹配频道再播放
+                    {
+                        var ch = _channels.FirstOrDefault(c => string.Equals(UserDataStore.ComputeKey(c), hi.Key, StringComparison.OrdinalIgnoreCase))
+                                 ?? _channels.FirstOrDefault(c => string.Equals(c.Name ?? "", hi.Name ?? "", StringComparison.OrdinalIgnoreCase));
+                        if (ch != null)
+                        {
+                            PlayChannel(ch);
+                            return;
+                        }
+                    }
+                    // 最后兜底：直接URL播放（当频道匹配不到时）
+                    if (_mpv != null && !string.IsNullOrWhiteSpace(hi.SourceUrl))
+                    {
+                        _mpv.LoadFile(hi.SourceUrl);
+                        _currentUrl = hi.SourceUrl;
+                        _playbackStatusText = "直播";
+                        _playbackStatusBrush = System.Windows.Media.Brushes.White;
+                        try { TxtPlaybackStatus.Text = "直播"; TxtBottomPlaybackStatus.Text = "直播"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; } catch { }
+                        try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                        _paused = false;
+                        UpdatePlayPauseIcon();
+                    }
+                }
+            }
+            catch { }
+        }
+        void HistoryDeleteOne_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            try
+            {
+                if (e.Parameter is HistoryItem hi)
+                {
+                    _userDataStore.RemoveHistory(hi.Key);
+                    ListHistory.ItemsSource = _userDataStore.GetHistory();
+                    e.Handled = true;
+                }
+            }
+            catch { }
+        }
+        void HistoryDeleteOne_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = e.Parameter is HistoryItem;
+            e.Handled = true;
+        }
+        void BtnHistoryDelete_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sel = ListHistory.SelectedItems;
+                if (sel == null || sel.Count == 0) return;
+                var keys = new List<string>();
+                foreach (var item in sel)
+                {
+                    if (item is HistoryItem hi && !string.IsNullOrWhiteSpace(hi.Key)) keys.Add(hi.Key);
+                }
+                foreach (var k in keys) _userDataStore.RemoveHistory(k);
+                ListHistory.ItemsSource = _userDataStore.GetHistory();
+            }
+            catch { }
+        }
+        void BtnHistoryClear_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _userDataStore.ClearHistory();
+                ListHistory.ItemsSource = _userDataStore.GetHistory();
+            }
+            catch { }
+        }
+        void UpdateHistoryProgressIfNeeded()
+        {
+            if (_mpv == null) return;
+            var now = DateTime.UtcNow;
+            if ((now - _lastHistoryUpdate).TotalSeconds < 5) return;
+            _lastHistoryUpdate = now;
+            try
+            {
+                string playType = "live";
+                if (_timeshiftActive) playType = "timeshift";
+                else if (_currentPlayingProgram != null) playType = "catchup";
+                if (_currentChannel == null && string.IsNullOrWhiteSpace(_currentUrl)) return;
+                var key = _currentChannel != null ? UserDataStore.ComputeKey(_currentChannel, _currentUrl) : (_currentUrl ?? "");
+                var pos = _mpv.GetTimePos() ?? 0;
+                var dur = _mpv.GetDuration() ?? 0;
+                var name = _currentChannel?.Name ?? "未命名";
+                var logo = _currentChannel?.Logo ?? "";
+                var group = _currentChannel?.Group ?? "";
+                var srcUrl = _currentUrl;
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(srcUrl)) return;
+                _userDataStore.AddOrUpdateHistory(new HistoryItem
+                {
+                    Key = key,
+                    Name = name,
+                    Logo = logo,
+                    Group = group,
+                    SourceUrl = srcUrl,
+                    PlayType = playType,
+                    PositionSec = pos,
+                    DurationSec = dur
+                });
+                try { Dispatcher.BeginInvoke(new Action(() => { try { ListHistory.Items.Refresh(); } catch { ListHistory.ItemsSource = _userDataStore.GetHistory(); } }), System.Windows.Threading.DispatcherPriority.Background); } catch { }
             }
             catch { }
         }
@@ -882,6 +1053,7 @@ namespace LibmpvIptvClient
                 AppSettings.Current.CustomEpgUrl = dlg.Result.CustomEpgUrl;
                 AppSettings.Current.CustomLogoUrl = dlg.Result.CustomLogoUrl;
                 AppSettings.Current.TimeshiftHours = dlg.Result.TimeshiftHours;
+                AppSettings.Current.UpdateCdnMirrors = dlg.Result.UpdateCdnMirrors;
                 AppSettings.Current.Save(); // Save to disk
                 if (_mpv != null)
                 {
@@ -1219,11 +1391,32 @@ namespace LibmpvIptvClient
                 }
 
                 try { UpdateGroups(); } catch { }
+                
+                // 应用收藏状态
+                try
+                {
+                    var favs = _userDataStore.GetFavorites();
+                    foreach (var ch in _channels)
+                    {
+                        if (ch == null) continue;
+                        var key = UserDataStore.ComputeKey(ch);
+                        ch.Favorite = favs.Any(f => string.Equals(f, key, StringComparison.OrdinalIgnoreCase));
+                    }
+                    UpdateFavorites();
+                }
+                catch { }
+                
+                // 加载播放记录到列表
+                try
+                {
+                    ListHistory.ItemsSource = _userDataStore.GetHistory();
+                }
+                catch { }
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show(this, "加载频道失败：\n" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                Logger.Log("加载频道失败 " + ex.Message);
+                Logger.Error("加载频道失败 " + ex.Message);
             }
             finally
             {
@@ -1338,6 +1531,12 @@ namespace LibmpvIptvClient
                 if (sender is FrameworkElement fe && fe.DataContext is Channel ch)
                 {
                     ch.Favorite = !ch.Favorite;
+                    try
+                    {
+                        var key = UserDataStore.ComputeKey(ch);
+                        _userDataStore.SetFavorite(key, ch.Favorite);
+                    }
+                    catch { }
                     UpdateFavorites();
                 }
             }
@@ -1347,18 +1546,11 @@ namespace LibmpvIptvClient
         {
             try
             {
-                var favs = new List<Channel>();
-                foreach (var c in _channels)
-                {
-                    if (c?.Favorite == true) favs.Add(c);
-                }
-                // 去重保持顺序
-                var map = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var favs = new List<(string key, Channel ch)>();
+                foreach (var c in _channels) if (c?.Favorite == true) favs.Add((UserDataStore.ComputeKey(c), c));
+                var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var list = new List<Channel>();
-                foreach (var c in favs)
-                {
-                    if (map.Add(c.Name ?? "")) list.Add(c);
-                }
+                foreach (var pair in favs) if (set.Add(pair.key)) list.Add(pair.ch);
                 ListFavorites.ItemsSource = list;
             }
             catch { }
@@ -1408,6 +1600,7 @@ namespace LibmpvIptvClient
                 Logger.Log("开始播放 " + url);
                 _currentChannel = ch;
                 _currentSources = BuildSourcesForChannel(ch);
+                _currentUrl = url;
                 
                 // 重置超时计时器
                 _sourceTimeoutTimer.Stop();
@@ -1441,16 +1634,33 @@ namespace LibmpvIptvClient
                 }
                 UpdatePlayPauseIcon();
                 
+                // 写入播放记录（直播）
+                try
+                {
+                    var key = UserDataStore.ComputeKey(ch, url);
+                    _userDataStore.AddOrUpdateHistory(new HistoryItem
+                    {
+                        Key = key,
+                        Name = ch.Name,
+                        Logo = ch.Logo,
+                        Group = ch.Group,
+                        SourceUrl = url,
+                        PlayType = "live"
+                    });
+                    ListHistory.ItemsSource = _userDataStore.GetHistory();
+                }
+                catch { }
+                
                 // Hide placeholder and Show VideoHost
                 try 
                 { 
                     PlaceholderPanel.Visibility = Visibility.Collapsed; 
                     VideoHost.Visibility = Visibility.Visible;
                     // Update Status Indicator: Live
-                    // PlaybackStatusIndicator.Visibility = Visibility.Visible; // Hidden behind VideoHost due to Airspace
                     TxtPlaybackStatus.Text = "直播";
                     TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.White;
                     PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+                    try { TxtBottomPlaybackStatus.Text = "直播"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; } catch { }
                     
                     // Sync with Overlay
                     _playbackStatusText = "直播";
@@ -1690,6 +1900,7 @@ namespace LibmpvIptvClient
 
                 Logger.Log("播放回放: " + url);
                 _mpv?.LoadFile(url);
+                _currentUrl = url;
                 
                 // Update playing status
                 if (_currentPlayingProgram != null) _currentPlayingProgram.IsPlaying = false;
@@ -1706,10 +1917,10 @@ namespace LibmpvIptvClient
                 // Update Status Indicator: Catchup
                 try
                 {
-                    // PlaybackStatusIndicator.Visibility = Visibility.Visible;
                     TxtPlaybackStatus.Text = "回放";
                     TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange;
                     PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+                    try { TxtBottomPlaybackStatus.Text = "回放"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
                     
                     // Sync with Overlay
                     _playbackStatusText = "回放";
@@ -1717,10 +1928,27 @@ namespace LibmpvIptvClient
                     _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 }
                 catch { }
+                
+                // 写入播放记录（回放）
+                try
+                {
+                    var key = _currentChannel != null ? UserDataStore.ComputeKey(_currentChannel, url) : (prog.Title + "|" + url);
+                    _userDataStore.AddOrUpdateHistory(new HistoryItem
+                    {
+                        Key = key,
+                        Name = _currentChannel?.Name ?? prog.Title,
+                        Logo = _currentChannel?.Logo ?? "",
+                        Group = _currentChannel?.Group ?? "",
+                        SourceUrl = url,
+                        PlayType = "catchup"
+                    });
+                    ListHistory.ItemsSource = _userDataStore.GetHistory();
+                }
+                catch { }
             }
             catch (Exception ex)
             {
-                Logger.Log("回放失败: " + ex.Message);
+                Logger.Error("回放失败: " + ex.Message);
             }
         }
         string ReplaceTimePlaceholder(string input, string prefix, string suffix, DateTime start, DateTime end)
@@ -2199,7 +2427,7 @@ namespace LibmpvIptvClient
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log("Overlay reparent error: " + ex.Message);
+                    Logger.Error("Overlay reparent error: " + ex.Message);
                 }
             }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
@@ -2348,7 +2576,7 @@ namespace LibmpvIptvClient
             }
             catch (Exception ex)
             {
-                Logger.Log("ShowFullscreenEpg error: " + ex.Message);
+                Logger.Error("ShowFullscreenEpg error: " + ex.Message);
             }
         }
 

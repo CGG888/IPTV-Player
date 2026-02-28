@@ -113,6 +113,8 @@
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto"/>
@@ -145,7 +147,33 @@
         <TextBlock Grid.Row="8" Grid.Column="0" Text="时移范围 (小时)" VerticalAlignment="Center" Margin="0,12,16,0"/>
         <TextBox x:Name="TbTimeshiftHours" Grid.Row="8" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
 
-        <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+        <!-- CDN 管理 -->
+        <TextBlock Grid.Row="9" Grid.Column="0" Text="更新 CDN 线路" VerticalAlignment="Top" Margin="0,16,16,0"/>
+        <StackPanel Grid.Row="9" Grid.Column="1" Margin="0,16,0,0">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="TbNewCdn" Height="30" Grid.Column="0" ToolTip="例如 https://gh-proxy.org"/>
+            <Button Grid.Column="1" Content="添加" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click"/>
+          </Grid>
+          <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ListBox x:Name="ListCdn" Grid.Column="0" Height="140" />
+            <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8,0,0,0">
+              <Button Content="上移" Width="68" Click="BtnCdnUp_Click" />
+              <Button Content="下移" Width="68" Margin="0,6,0,0" Click="BtnCdnDown_Click"/>
+              <Button Content="删除" Width="68" Margin="0,6,0,0" Click="BtnCdnRemove_Click"/>
+              <Button Content="测速排序" Width="68" Margin="0,6,0,0" Click="BtnCdnSpeedTest_Click"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+
+        <StackPanel Grid.Row="11" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
           <Button Width="80" Margin="0,0,12,0" Content="调试日志" Click="BtnDebug_Click"/>
           <Button Width="80" Margin="0,0,12,0" Content="保存" IsDefault="True" Click="BtnSave_Click" Background="#35C759" BorderBrush="#35C759"/>
           <Button Width="80" Margin="0,0,0,0" Content="取消" IsCancel="True"/>

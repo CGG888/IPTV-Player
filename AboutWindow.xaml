@@ -48,7 +48,10 @@
                 <!-- Logo & App Name -->
                 <Image Source="iptv.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16"/>
                 <TextBlock Text="IPTV Player" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                <TextBlock x:Name="TxtVersion" Text="v1.0.0" Foreground="#AAA" FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,24"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <TextBlock x:Name="TxtVersion" Text="v1.0.0" Foreground="#AAA" FontSize="14" VerticalAlignment="Center"/>
+                    <Ellipse x:Name="BadgeNew" Width="8" Height="8" Fill="#FF3B30" Margin="6,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                </StackPanel>
 
                 <!-- Description -->
                 <TextBlock Text="基于 libmpv 开发的高性能 Windows IPTV 播放器。" Foreground="#CCC" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,4"/>

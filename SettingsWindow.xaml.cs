@@ -2,12 +2,16 @@ using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
+using System.Collections.ObjectModel;
+using System.Net.Http;
+using System.Diagnostics;
 
 namespace LibmpvIptvClient
 {
     public partial class SettingsWindow : Window
     {
         public PlaybackSettings Result { get; private set; } = new PlaybackSettings();
+        private ObservableCollection<string> _cdn = new ObservableCollection<string>();
         public SettingsWindow(PlaybackSettings current)
         {
             InitializeComponent();
@@ -20,6 +24,9 @@ namespace LibmpvIptvClient
             TbEpgUrl.Text = current.CustomEpgUrl;
             TbLogoUrl.Text = current.CustomLogoUrl;
             TbTimeshiftHours.Text = Math.Max(0, current.TimeshiftHours).ToString(CultureInfo.InvariantCulture);
+            // CDN
+            _cdn = new ObservableCollection<string>(current.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>());
+            ListCdn.ItemsSource = _cdn;
         }
         void BtnSave_Click(object sender, RoutedEventArgs e)
         {
@@ -33,6 +40,8 @@ namespace LibmpvIptvClient
             s.CustomEpgUrl = TbEpgUrl.Text?.Trim() ?? "";
             s.CustomLogoUrl = TbLogoUrl.Text?.Trim() ?? "";
             if (int.TryParse(TbTimeshiftHours.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var tsh)) s.TimeshiftHours = Math.Max(0, Math.Min(168, tsh));
+            // CDN
+            s.UpdateCdnMirrors = new System.Collections.Generic.List<string>(_cdn);
             Result = s;
             DialogResult = true;
             Close();
@@ -53,5 +62,75 @@ namespace LibmpvIptvClient
             Close();
         }
         public event Action? DebugRequested;
+
+        // CDN 管理交互
+        void BtnCdnAdd_Click(object sender, RoutedEventArgs e)
+        {
+            var t = (TbNewCdn.Text ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(t) || !t.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return;
+            if (!_cdn.Contains(t)) _cdn.Add(t);
+            TbNewCdn.Text = "";
+        }
+        void BtnCdnRemove_Click(object sender, RoutedEventArgs e)
+        {
+            var sel = ListCdn.SelectedItems;
+            if (sel == null || sel.Count == 0) return;
+            var toRemove = new System.Collections.Generic.List<string>();
+            foreach (var it in sel) if (it is string s) toRemove.Add(s);
+            foreach (var s in toRemove) _cdn.Remove(s);
+        }
+        void BtnCdnUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListCdn.SelectedItem is string s)
+            {
+                var idx = _cdn.IndexOf(s);
+                if (idx > 0)
+                {
+                    _cdn.RemoveAt(idx);
+                    _cdn.Insert(idx - 1, s);
+                    ListCdn.SelectedIndex = idx - 1;
+                }
+            }
+        }
+        void BtnCdnDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListCdn.SelectedItem is string s)
+            {
+                var idx = _cdn.IndexOf(s);
+                if (idx >= 0 && idx < _cdn.Count - 1)
+                {
+                    _cdn.RemoveAt(idx);
+                    _cdn.Insert(idx + 1, s);
+                    ListCdn.SelectedIndex = idx + 1;
+                }
+            }
+        }
+        async void BtnCdnSpeedTest_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_cdn.Count == 0) return;
+                var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(3);
+                var targets = new System.Collections.Generic.List<(string url, double ms)>();
+                foreach (var c in _cdn)
+                {
+                    var testUrl = c.TrimEnd('/') + "/https://github.com/favicon.ico";
+                    var sw = Stopwatch.StartNew();
+                    try
+                    {
+                        using var resp = await client.GetAsync(testUrl);
+                        sw.Stop();
+                        targets.Add((c, resp.IsSuccessStatusCode ? sw.Elapsed.TotalMilliseconds : double.MaxValue));
+                    }
+                    catch { targets.Add((c, double.MaxValue)); }
+                }
+                // 排序（成功优先、延迟小在前）
+                targets.Sort((a, b) => a.ms.CompareTo(b.ms));
+                _cdn.Clear();
+                foreach (var t in targets) _cdn.Add(t.url);
+            }
+            catch { }
+        }
     }
 }

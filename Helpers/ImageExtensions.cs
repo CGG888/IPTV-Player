@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using LibmpvIptvClient.Diagnostics;
 
 namespace LibmpvIptvClient.Helpers
 {
@@ -30,12 +31,16 @@ namespace LibmpvIptvClient.Helpers
             var handler = new HttpClientHandler
             {
                 AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-                AllowAutoRedirect = true
+                AllowAutoRedirect = true,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
             };
             _http = new HttpClient(handler);
-            // Reduced timeout to 5s to prevent long waits on bad URLs
-            _http.Timeout = TimeSpan.FromSeconds(5);
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+            // Increased timeout to 15s to allow slower servers
+            _http.Timeout = TimeSpan.FromSeconds(15);
+            // Simulate a common browser User-Agent
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
+            _http.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
+            _http.DefaultRequestHeaders.Add("Referer", "http://12.12.12.177:9443/"); // 尝试添加 Referer 绕过防盗链
         }
 
         public static string GetRemoteUrl(DependencyObject obj)
@@ -76,6 +81,7 @@ namespace LibmpvIptvClient.Helpers
 
                 try
                 {
+                    // Use captured context to ensure UI update happens on UI thread
                     var bitmap = await LoadImageAsync(url);
                     if (bitmap != null)
                     {
@@ -89,7 +95,7 @@ namespace LibmpvIptvClient.Helpers
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[ImageExtensions] Failed to load {url}: {ex.Message}");
+                    Logger.Error($"Failed to load {url}: {ex.Message}");
                     // Keep default image on failure
                 }
             }
@@ -97,13 +103,18 @@ namespace LibmpvIptvClient.Helpers
 
         private static async Task<BitmapImage?> LoadImageAsync(string url)
         {
+            if (string.IsNullOrWhiteSpace(url)) return null; // Pre-check to prevent null argument exceptions
+
             try
             {
                 string processedUrl = url.Trim();
+                
+                // Better URL normalization
                 if (processedUrl.StartsWith("//"))
                     processedUrl = "http:" + processedUrl;
                 else if (!processedUrl.Contains("://") && !Path.IsPathRooted(processedUrl))
                 {
+                    // If it looks like a domain, assume http
                     if (!File.Exists(Path.GetFullPath(processedUrl)) && processedUrl.Contains("."))
                         processedUrl = "http://" + processedUrl;
                 }
@@ -113,40 +124,73 @@ namespace LibmpvIptvClient.Helpers
                 if (processedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
                     // True async call
-                    data = await _http.GetByteArrayAsync(processedUrl);
+                    try 
+                    {
+                        data = await _http.GetByteArrayAsync(processedUrl);
+                    }
+                    catch (HttpRequestException he)
+                    {
+                        Logger.Error($"HTTP Request failed for {processedUrl}: {he.Message} Status: {he.StatusCode}");
+                        return null;
+                    }
                 }
                 else if (File.Exists(processedUrl))
                 {
                     data = await File.ReadAllBytesAsync(processedUrl);
                 }
+                else
+                {
+                    // URL is neither a valid http(s) url nor a local file path
+                    Logger.Warn($"Skipping invalid image source: {processedUrl} (Original: {url})");
+                    return null;
+                }
 
                 if (data != null && data.Length > 0)
                 {
-                    return await Task.Run(() =>
+                    // Check if it's HTML (common error for "200 OK" but not image)
+                    if (data.Length < 1024)
                     {
                         try
                         {
-                            using var ms = new MemoryStream(data);
+                            var header = System.Text.Encoding.ASCII.GetString(data, 0, Math.Min(data.Length, 100));
+                            if (header.Contains("<html") || header.Contains("<!DOCTYPE"))
+                            {
+                                Logger.Warn($"Received HTML instead of image for {url}");
+                                return null;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    // Create bitmap on UI thread or Frozen on background thread?
+                    // Best practice: Create on background, freeze, return.
+                    return await Task.Run(() =>
+                    {
+                        using var ms = new MemoryStream(data);
+                        
+                        try
+                        {
                             var img = new BitmapImage();
                             img.BeginInit();
                             img.CacheOption = BitmapCacheOption.OnLoad;
-                            img.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
+                            img.CreateOptions = BitmapCreateOptions.None; // Use default
                             img.StreamSource = ms;
-                            img.DecodePixelWidth = 160; // Downscale to save memory
                             img.EndInit();
                             img.Freeze();
                             return img;
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            // Log detailed error
+                            Logger.Error($"Bitmap decode error for {url}. Data len: {data.Length}. Error: {ex}");
                             return null;
                         }
                     });
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore download errors
+                Logger.Error($"Download error for {url}: {ex.Message}");
             }
             return null;
         }

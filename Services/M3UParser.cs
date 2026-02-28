@@ -96,6 +96,16 @@ namespace LibmpvIptvClient.Services
                 Catchup = attrs.GetValueOrDefault("catchup") ?? "",
                 CatchupSource = attrs.GetValueOrDefault("catchup-source") ?? ""
             };
+
+            // Fallback: If logo is empty, try to extract from #EXTINF: -1 logo="http://..."
+            if (string.IsNullOrEmpty(ch.Logo))
+            {
+                var logoMatch = Regex.Match(extinf, @"logo=[""']([^""']+)[""']");
+                if (logoMatch.Success)
+                {
+                    ch.Logo = logoMatch.Groups[1].Value;
+                }
+            }
             if (string.IsNullOrWhiteSpace(ch.Id))
             {
                 var key = (ch.Name + "|" + ch.Group).ToLowerInvariant();
@@ -152,6 +162,14 @@ namespace LibmpvIptvClient.Services
             };
             ch.Tag = src;
             ch.Sources.Add(src);
+
+            // 确保 Logo 不为空，使用默认图标
+            if (string.IsNullOrWhiteSpace(ch.Logo))
+            {
+                // 可以设置为特定的默认图标 URL，或者留空让前端处理
+                // ch.Logo = "pack://application:,,,/iptv.png"; 
+            }
+
             return ch;
         }
         static bool IsGzip(byte[] data) => data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B;
