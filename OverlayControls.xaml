@@ -14,24 +14,20 @@
         ShowActivated="False"
         PreviewMouseWheel="OnPreviewMouseWheel">
     <Window.Resources>
-      <SolidColorBrush x:Key="OverlayBg" Color="#CC000000"/>
-      <SolidColorBrush x:Key="OverlayFg" Color="#EEEEEE"/>
-      <SolidColorBrush x:Key="AccentBrush" Color="#FF35C759"/>
-      <SolidColorBrush x:Key="SliderInactiveBrush" Color="#333"/>
       <local:RangeToWidthConverter x:Key="RangeToWidth"/>
 
       <!-- Playback Status Indicator Style -->
       <Style x:Key="StatusIndicatorStyle" TargetType="Border">
-        <Setter Property="Background" Value="#80000000"/>
+        <Setter Property="Background" Value="{DynamicResource StatusIndicatorBackgroundBrush}"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="8,4"/>
         <Setter Property="IsHitTestVisible" Value="False"/>
       </Style>
 
       <Style x:Key="OverlayTagChip" TargetType="Border">
-        <Setter Property="Background" Value="#202020"/>
+        <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
         <Setter Property="CornerRadius" Value="4"/>
-        <Setter Property="BorderBrush" Value="#333"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ChipButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="6,2"/>
         <Setter Property="Margin" Value="6,0,0,0"/>
@@ -39,7 +35,7 @@
 
       <!-- 基础按钮样式 -->
       <Style x:Key="OverlayButtonBase" TargetType="{x:Type ButtonBase}">
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -57,10 +53,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#1AFFFFFF"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -75,20 +71,20 @@
         <Setter Property="Padding" Value="8,0"/>
         <Style.Triggers>
           <Trigger Property="IsChecked" Value="True">
-            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
           </Trigger>
         </Style.Triggers>
       </Style>
 
       <!-- 进度条样式 -->
       <Style x:Key="ThickSlider" TargetType="Slider">
-        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="Slider">
               <Grid Height="20" Background="Transparent">
-                <Border Height="2" CornerRadius="1" Background="{StaticResource SliderInactiveBrush}" VerticalAlignment="Center"/>
-                <Border Height="8" CornerRadius="4" Background="{StaticResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <Border Height="2" CornerRadius="1" Background="{DynamicResource SliderInactiveBrush}" VerticalAlignment="Center"/>
+                <Border Height="8" CornerRadius="4" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Left">
                   <Border.Width>
                     <MultiBinding Converter="{StaticResource RangeToWidth}">
                       <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ActualWidth"/>
@@ -114,7 +110,7 @@
                       <Thumb.Template>
                         <ControlTemplate TargetType="Thumb">
                             <Grid>
-                                <Ellipse Fill="White" Stroke="#101010" StrokeThickness="1">
+                                <Ellipse Fill="{DynamicResource SliderThumbFillBrush}" Stroke="{DynamicResource SliderThumbStrokeBrush}" StrokeThickness="1">
                                     <Ellipse.Effect>
                                         <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.5"/>
                                     </Ellipse.Effect>
@@ -141,7 +137,7 @@
       </Style>
     </Window.Resources>
 
-    <Border Background="{StaticResource OverlayBg}" CornerRadius="8" BorderBrush="#333" BorderThickness="1">
+  <Border Background="{DynamicResource OverlayBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
       <Grid Margin="12,0">
         <!-- Status Indicator (Moved to separate Canvas/Popup if needed, but here it's part of controls) -->
         <!-- Actually, user wants it in the bottom-left of video area. OverlayControls is bottom bar. -->
@@ -180,7 +176,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="静音" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
+                <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
                     <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                 </Button>
                 <Slider Grid.Column="1" x:Name="SliderVolume" Minimum="0" Maximum="100" 
@@ -200,7 +196,7 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <!-- Status Indicator (Left of controls) -->
                 <Border x:Name="StatusIndicatorInner" Style="{StaticResource StatusIndicatorStyle}" VerticalAlignment="Center" Margin="0,0,16,0" Visibility="Collapsed">
-                    <TextBlock x:Name="TxtStatusInner" Text="直播" Foreground="White" FontSize="14" FontWeight="Bold"/>
+                    <TextBlock x:Name="TxtStatusInner" Text="{DynamicResource EPG_Status_Live}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold"/>
                 </Border>
 
                 <Button x:Name="BtnPlayPause" Style="{StaticResource OverlayIconButton}" Click="BtnPlayPause_Click" FontSize="18">
@@ -217,35 +213,35 @@
                 </Button>
                 
                 <!-- 时间信息 -->
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <TextBlock x:Name="LblElapsed" Text="00:00" Foreground="#AAA" FontSize="12"/>
-                    <TextBlock Text=" / " Foreground="#666" FontSize="12"/>
-                    <TextBlock x:Name="LblDuration" Text="00:00" Foreground="#AAA" FontSize="12"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <TextBlock x:Name="LblElapsed" Text="00:00" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text=" / " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock x:Name="LblDuration" Text="00:00" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
                 </StackPanel>
                 <WrapPanel x:Name="TagPanelOverlay" VerticalAlignment="Center" Margin="12,0,0,0"/>
             </StackPanel>
 
             <!-- 中间：状态信息（与窗口保持一致，隐藏文本） -->
-            <TextBlock x:Name="LblInfo" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#DDD" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+            <TextBlock x:Name="LblInfo" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
 
             <!-- 右侧：工具 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <!-- FCC/UDP removed from here -->
-                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="切换源" Click="BtnSourceMenu_Click">
+                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click">
                     <ui:SymbolIcon Symbol="Shuffle"/>
                 </Button>
-                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="画面比例" Click="BtnRatio_Click">
+                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click">
                     <ui:SymbolIcon Symbol="Crop"/>
                 </Button>
-                <ToggleButton x:Name="CbTimeshift" Style="{StaticResource OverlayToggle}" ToolTip="时移">
+                <ToggleButton x:Name="CbTimeshift" Style="{StaticResource OverlayToggle}" ToolTip="{DynamicResource Overlay_Timeshift}">
                     <ui:SymbolIcon Symbol="Clock"/>
                 </ToggleButton>
                 
-                <ToggleButton x:Name="CbEpg" Style="{StaticResource OverlayToggle}" ToolTip="节目指南" Click="CbEpg_Checked">
+                <ToggleButton x:Name="CbEpg" Style="{StaticResource OverlayToggle}" ToolTip="{DynamicResource Overlay_EPG}" Click="CbEpg_Checked">
                     <ui:SymbolIcon Symbol="Calendar"/>
                 </ToggleButton>
 
-                <ToggleButton x:Name="CbDrawer" Style="{StaticResource OverlayToggle}" ToolTip="折叠频道表" Click="CbDrawer_Checked">
+                <ToggleButton x:Name="CbDrawer" Style="{StaticResource OverlayToggle}" ToolTip="{DynamicResource Overlay_ToggleDrawer}" Click="CbDrawer_Checked">
                     <ui:SymbolIcon Symbol="List"/>
                 </ToggleButton>
             </StackPanel>

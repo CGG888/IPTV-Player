@@ -30,12 +30,12 @@ namespace LibmpvIptvClient
 
             if (TxtName.Visibility == Visibility.Visible && string.IsNullOrEmpty(SourceName))
             {
-                System.Windows.MessageBox.Show(this, "请输入名称", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Prompt_InputName", "请输入名称"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (string.IsNullOrEmpty(SourceUrl))
             {
-                System.Windows.MessageBox.Show(this, "请输入地址", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Prompt_InputUrl", "请输入地址"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

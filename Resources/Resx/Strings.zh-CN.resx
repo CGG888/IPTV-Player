@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0</value></resheader>
+  <data name="Common_Tips"><value>提示</value></data>
+  <data name="Err_UnhandledTitle"><value>错误</value></data>
+  <data name="Err_Unknown"><value>未知错误</value></data>
+  <data name="Confirm_ExitApp"><value>确定要退出软件吗？</value></data>
+  <data name="Err_StartupFailed"><value>启动失败</value></data>
+  <data name="Msg_Checking"><value>检查中…</value></data>
+  <data name="Msg_Opening"><value>打开中…</value></data>
+  <data name="Msg_Loading"><value>加载中…</value></data>
+  <data name="Msg_FetchLicenseFailed"><value>无法获取许可证内容。</value></data>
+  <data name="Msg_FetchThirdPartyFailed"><value>无法获取第三方声明内容。</value></data>
+  <data name="Msg_NewVersionFound"><value>发现新版本 v{0}，是否查看更新？</value></data>
+  <data name="Msg_AlreadyLatest"><value>当前已是最新版本。</value></data>
+  <data name="LoadResult_NoChannels"><value>未从来源解析到任何频道：
+1) 检查 URL 或本地路径是否可访问
+2) 若为后端导出，确认参数有效
+3) 若为压缩/特殊编码，已自动尝试解码</value></data>
+  <data name="Err_LoadChannelsFailed"><value>加载频道失败：
+{0}</value></data>
+  <data name="Prompt_InputName"><value>请输入名称</value></data>
+  <data name="Prompt_InputUrl"><value>请输入地址</value></data>
+  <data name="Err_DownloadFailed"><value>下载失败：
+{0}</value></data>
+  <data name="Msg_InstallerNotFound"><value>未找到安装包，请先下载。</value></data>
+  <data name="Confirm_InstallUpdate"><value>即将关闭播放器并启动安装包，是否继续？</value></data>
+  <data name="Err_StartInstallerFailed"><value>无法启动安装包：
+{0}</value></data>
+  <data name="Confirm_DeleteSource"><value>确定要删除这个源吗？</value></data>
+</root>

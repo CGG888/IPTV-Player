@@ -2,28 +2,59 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         x:Class="LibmpvIptvClient.SettingsWindow"
-        Title="设置" Width="400" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Title="{DynamicResource UI_SettingsTitle}" Width="760" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" Icon="/iptv.png"
-        Background="#1F1F1F" Foreground="#EEE">
+        Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
   <WindowChrome.WindowChrome>
     <shell:WindowChrome CaptionHeight="40" GlassFrameThickness="0" CornerRadius="8" ResizeBorderThickness="0" UseAeroCaptionButtons="False"/>
   </WindowChrome.WindowChrome>
   <Window.Resources>
+      <Style x:Key="ChipButton" TargetType="{x:Type Button}">
+          <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
+          <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+          <Setter Property="BorderBrush" Value="{DynamicResource ChipButtonBorderBrush}"/>
+          <Setter Property="BorderThickness" Value="1"/>
+          <Setter Property="Padding" Value="12,6"/>
+          <Setter Property="MinWidth" Value="82"/>
+          <Setter Property="Height" Value="30"/>
+          <Setter Property="Cursor" Value="Hand"/>
+          <Setter Property="Template">
+              <Setter.Value>
+                  <ControlTemplate TargetType="{x:Type Button}">
+                      <Border x:Name="bd" CornerRadius="6" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True">
+                              <Setter TargetName="bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
+                              <Setter Property="BorderBrush" Value="{DynamicResource ChipButtonBorderBrush}"/>
+                          </Trigger>
+                          <Trigger Property="IsPressed" Value="True">
+                              <Setter TargetName="bd" Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
+                          </Trigger>
+                          <Trigger Property="IsEnabled" Value="False">
+                              <Setter Property="Opacity" Value="0.6"/>
+                          </Trigger>
+                      </ControlTemplate.Triggers>
+                  </ControlTemplate>
+              </Setter.Value>
+          </Setter>
+      </Style>
       <Style TargetType="TextBox">
-          <Setter Property="Background" Value="#333"/>
-          <Setter Property="Foreground" Value="White"/>
-          <Setter Property="BorderBrush" Value="#555"/>
+          <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
+          <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+          <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushCommon}"/>
           <Setter Property="Padding" Value="4,2"/>
           <Setter Property="VerticalContentAlignment" Value="Center"/>
       </Style>
       <Style TargetType="CheckBox">
-          <Setter Property="Foreground" Value="#EEE"/>
+          <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
           <Setter Property="VerticalContentAlignment" Value="Center"/>
       </Style>
       <Style TargetType="Button">
-          <Setter Property="Background" Value="#333"/>
-          <Setter Property="Foreground" Value="White"/>
-          <Setter Property="BorderBrush" Value="#555"/>
+          <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
+          <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+          <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushCommon}"/>
           <Setter Property="Padding" Value="8,4"/>
           <Setter Property="Template">
               <Setter.Value>
@@ -33,10 +64,10 @@
                       </Border>
                       <ControlTemplate.Triggers>
                           <Trigger Property="IsMouseOver" Value="True">
-                              <Setter Property="Background" Value="#444"/>
+                              <Setter Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
                           </Trigger>
                           <Trigger Property="IsPressed" Value="True">
-                              <Setter Property="Background" Value="#555"/>
+                              <Setter Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
                           </Trigger>
                       </ControlTemplate.Triggers>
                   </ControlTemplate>
@@ -68,14 +99,14 @@
           </Setter>
       </Style>
   </Window.Resources>
-  <Border Background="#1F1F1F" CornerRadius="8" BorderBrush="#333" BorderThickness="1">
+  <Border Background="{DynamicResource AppBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="40"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
-      <Border Grid.Row="0" Background="#181818" BorderBrush="#333" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+      <Border Grid.Row="0" Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
         <Grid Margin="12,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -84,7 +115,7 @@
           </Grid.ColumnDefinitions>
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <Image Source="/iptv.png" Width="18" Height="18" Margin="0,0,8,0"/>
-            <TextBlock Text="设置" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="{DynamicResource UI_SettingsTitle}" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
           </StackPanel>
           <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button.Style>
@@ -101,83 +132,234 @@
         </Grid>
       </Border>
 
-      <Grid Grid.Row="1" Margin="24">
+      <Grid Grid.Row="1" Margin="16,12,16,16">
         <Grid.RowDefinitions>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
-          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <!-- 抽屉式分类导航（左侧） + 内容（右侧） -->
+        <TabControl Grid.Row="0" x:Name="NavTabs" TabStripPlacement="Left" Background="{DynamicResource CardBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}">
+          <TabControl.Resources>
+            <Style TargetType="{x:Type TabItem}">
+              <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+              <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
+              <Setter Property="Padding" Value="14,10"/>
+              <Setter Property="Margin" Value="0,4,6,4"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                      <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsSelected" Value="True">
+                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                      </Trigger>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
+                      </Trigger>
+                      <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.6"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+          </TabControl.Resources>
 
-        <CheckBox x:Name="CbHwdec" Grid.Row="0" Grid.ColumnSpan="2" Content="启用硬件解码 (d3d11va)" Margin="0,0,0,16"/>
+          <!-- 界面（语言与外观） -->
+          <TabItem Header="{DynamicResource UI_TabInterface}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_Language}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <ComboBox x:Name="CbLanguage" Grid.Row="0" Grid.Column="1" Height="30" Width="220" SelectedIndex="0" Margin="0,0,0,0">
+                  <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag=""/>
+                  <ComboBoxItem Content="{DynamicResource UI_ChineseSimplified}" Tag="zh-CN"/>
+                  <ComboBoxItem Content="{DynamicResource UI_English}" Tag="en-US"/>
+                </ComboBox>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Appearance}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <ComboBox x:Name="CbTheme" Grid.Row="1" Grid.Column="1" Height="30" Width="220" Margin="0,12,0,0">
+                  <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag="System"/>
+                  <ComboBoxItem Content="{DynamicResource UI_Light}" Tag="Light"/>
+                  <ComboBoxItem Content="{DynamicResource UI_Dark}" Tag="Dark"/>
+                </ComboBox>
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{DynamicResource UI_LangThemeNote}" Foreground="#888" Margin="0,12,0,0"/>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="缓存秒数" VerticalAlignment="Center" Margin="0,0,16,0"/>
-        <TextBox x:Name="TbCacheSecs" Grid.Row="1" Grid.Column="1" Height="30"/>
+          <!-- 播放 -->
+          <TabItem Header="{DynamicResource UI_TabPlayback}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="demuxer-max-bytes (MiB)" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbMaxBytes" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <CheckBox x:Name="CbHwdec" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_EnableHwdec}" Margin="0,0,0,16"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="demuxer-max-back-bytes (MiB)" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbMaxBackBytes" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Playback_CacheSecs}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <TextBox x:Name="TbCacheSecs" Grid.Row="1" Grid.Column="1" Height="30"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="FCC 预取数量" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbFccPrefetch" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <TextBox x:Name="TbMaxBytes" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
 
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="超时换源 (秒)" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbSourceTimeout" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBackBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <TextBox x:Name="TbMaxBackBytes" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
 
-        <TextBlock Grid.Row="6" Grid.Column="0" Text="EPG 地址" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbEpgUrl" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Playback_FCCPrefetch}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <TextBox x:Name="TbFccPrefetch" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
 
-        <TextBlock Grid.Row="7" Grid.Column="0" Text="台标库地址" VerticalAlignment="Center" Margin="0,12,16,0" ToolTip="支持占位符 {name}，例如 http://site.com/{name}.png"/>
-        <TextBox x:Name="TbLogoUrl" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_Playback_TimeoutSec}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <TextBox x:Name="TbSourceTimeout" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
 
-        <TextBlock Grid.Row="8" Grid.Column="0" Text="时移范围 (小时)" VerticalAlignment="Center" Margin="0,12,16,0"/>
-        <TextBox x:Name="TbTimeshiftHours" Grid.Row="8" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+          <!-- EPG 与台标 -->
+          <TabItem Header="{DynamicResource UI_TabEpgLogo}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- CDN 管理 -->
-        <TextBlock Grid.Row="9" Grid.Column="0" Text="更新 CDN 线路" VerticalAlignment="Top" Margin="0,16,16,0"/>
-        <StackPanel Grid.Row="9" Grid.Column="1" Margin="0,16,0,0">
-          <Grid>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="TbNewCdn" Height="30" Grid.Column="0" ToolTip="例如 https://gh-proxy.org"/>
-            <Button Grid.Column="1" Content="添加" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click"/>
-          </Grid>
-          <Grid Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <ListBox x:Name="ListCdn" Grid.Column="0" Height="140" />
-            <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8,0,0,0">
-              <Button Content="上移" Width="68" Click="BtnCdnUp_Click" />
-              <Button Content="下移" Width="68" Margin="0,6,0,0" Click="BtnCdnDown_Click"/>
-              <Button Content="删除" Width="68" Margin="0,6,0,0" Click="BtnCdnRemove_Click"/>
-              <Button Content="测速排序" Width="68" Margin="0,6,0,0" Click="BtnCdnSpeedTest_Click"/>
-            </StackPanel>
-          </Grid>
-        </StackPanel>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_Epg_Url}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <TextBox x:Name="TbEpgUrl" Grid.Row="0" Grid.Column="1" Height="30"/>
 
-        <StackPanel Grid.Row="11" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
-          <Button Width="80" Margin="0,0,12,0" Content="调试日志" Click="BtnDebug_Click"/>
-          <Button Width="80" Margin="0,0,12,0" Content="保存" IsDefault="True" Click="BtnSave_Click" Background="#35C759" BorderBrush="#35C759"/>
-          <Button Width="80" Margin="0,0,0,0" Content="取消" IsCancel="True"/>
-        </StackPanel>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Epg_LogoUrl}" VerticalAlignment="Center" Margin="0,12,16,0" ToolTip="{DynamicResource UI_Epg_LogoUrl_Tip}"/>
+                <TextBox x:Name="TbLogoUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Epg_TimeshiftHours}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                <TextBox x:Name="TbTimeshiftHours" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 更新与镜像 -->
+          <TabItem Header="{DynamicResource UI_TabUpdateMirrors}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_CdnLines}" VerticalAlignment="Top" Margin="0,0,16,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <StackPanel Grid.Row="0" Grid.Column="1">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TbNewCdn" Height="30" Grid.Column="0" ToolTip="{DynamicResource UI_Cdn_Example}"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Add}" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click" Style="{StaticResource ChipButton}"/>
+                  </Grid>
+                  <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox x:Name="ListCdn" Grid.Column="0" Height="160" />
+                    <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8,0,0,0">
+                          <Button Content="{DynamicResource UI_MoveUp}" Width="68" Click="BtnCdnUp_Click" Style="{StaticResource ChipButton}"/>
+                          <Button Content="{DynamicResource UI_MoveDown}" Width="68" Margin="0,6,0,0" Click="BtnCdnDown_Click" Style="{StaticResource ChipButton}"/>
+                          <Button Content="{DynamicResource UI_Delete}" Width="68" Margin="0,6,0,0" Click="BtnCdnRemove_Click" Style="{StaticResource ChipButton}"/>
+                          <Button Content="{DynamicResource UI_SortBySpeed}" Width="68" Margin="0,6,0,0" Click="BtnCdnSpeedTest_Click" Style="{StaticResource ChipButton}"/>
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 关于 -->
+          <TabItem Header="{DynamicResource UI_TabAbout}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,12,16,12">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                      <Image Source="/iptv.png" Width="28" Height="28" Margin="0,0,8,0"/>
+                      <TextBlock Text="IPTV Player" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                      <TextBlock x:Name="TxtVersionInline" Text="v-" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" VerticalAlignment="Center"/>
+                      <Border x:Name="BadgeNewInline" Background="#FF3B30" CornerRadius="8" Margin="8,0,0,0" Padding="8,2" Visibility="Collapsed" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource About_NewBadge}" Foreground="White" FontSize="12" FontWeight="Bold"/>
+                      </Border>
+                    </StackPanel>
+                    <TextBlock Text="{DynamicResource About_Desc1}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/>
+                    <TextBlock Text="{DynamicResource About_Desc2}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                      <Button x:Name="BtnCheckUpdateInline" Content="{DynamicResource UI_CheckUpdate}" Width="100" Height="30" Click="BtnCheckUpdateInline_Click" Style="{StaticResource ChipButton}"/>
+                      <!-- <Button x:Name="BtnViewUpdate" Content="{DynamicResource UI_ViewUpdate}" Width="100" Height="30" Margin="12,0,0,0" Click="BtnViewUpdateInline_Click" Style="{StaticResource ChipButton}"/> -->
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,12,0,0">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_ProjectSupport}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0" HorizontalAlignment="Left">
+                      <TextBlock>
+                        <Hyperlink NavigateUri="https://github.com/CGG888/IPTV-Player" RequestNavigate="Inline_RequestNavigate" Foreground="#FFC107">
+                          <Run Text="{DynamicResource UI_GitHubHome}"/>
+                        </Hyperlink>
+                      </TextBlock>
+                      <TextBlock Text="  |  " Foreground="{DynamicResource TextSecondaryBrush}" Margin="6,0,6,0"/>
+                      <TextBlock>
+                        <Hyperlink NavigateUri="https://github.com/CGG888/IPTV-Player/issues" RequestNavigate="Inline_RequestNavigate" Foreground="#FFC107">
+                          <Run Text="{DynamicResource UI_Feedback}"/>
+                        </Hyperlink>
+                      </TextBlock>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                      <Button x:Name="BtnLicense" Content="{DynamicResource UI_License}" Width="100" Height="30" Click="BtnLicense_Click" Style="{StaticResource ChipButton}"/>
+                      <Button x:Name="BtnThirdParty" Content="{DynamicResource UI_ThirdParty}" Width="100" Height="30" Margin="12,0,0,0" Click="BtnThirdParty_Click" Style="{StaticResource ChipButton}"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+        </TabControl>
+
+        <!-- 底部操作条 -->
+        <DockPanel Grid.Row="1" LastChildFill="False" Margin="0,16,0,0">
+          <Button Width="96" Margin="0,0,12,0" Content="{DynamicResource UI_DebugLog}" Click="BtnDebug_Click" DockPanel.Dock="Right" Style="{StaticResource ChipButton}"/>
+          <Button Width="96" Margin="0,0,12,0" Content="{DynamicResource UI_Save}" IsDefault="True" Click="BtnSave_Click" DockPanel.Dock="Right" Style="{StaticResource AccentButtonStyle}"/>
+          <Button Width="96" Content="{DynamicResource UI_Cancel}" IsCancel="True" DockPanel.Dock="Right" Style="{StaticResource ChipButton}"/>
+        </DockPanel>
       </Grid>
     </Grid>
   </Border>

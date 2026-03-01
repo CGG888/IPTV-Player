@@ -27,29 +27,29 @@ namespace LibmpvIptvClient.Helpers
             var cm = new ContextMenu();
 
             // 1. File (Open)
-            var miFile = new MenuItem { Header = "打开" };
-            var miOpenFile = new MenuItem { Header = "打开文件..." };
+            var miFile = new MenuItem { Header = Localizer.S("Menu_File", "打开") };
+            var miOpenFile = new MenuItem { Header = Localizer.S("Menu_OpenFile", "打开文件...") };
             miOpenFile.Click += (s, args) => openFile?.Invoke();
             miFile.Items.Add(miOpenFile);
 
-            var miOpenUrl = new MenuItem { Header = "打开链接..." };
+            var miOpenUrl = new MenuItem { Header = Localizer.S("Menu_OpenUrl", "打开链接...") };
             miOpenUrl.Click += (s, args) => openUrl?.Invoke();
             miFile.Items.Add(miOpenUrl);
             cm.Items.Add(miFile);
 
             // 2. M3U Management
-            var miM3u = new MenuItem { Header = "M3U" };
-            var miAddFile = new MenuItem { Header = "添加 M3U 文件..." };
+            var miM3u = new MenuItem { Header = Localizer.S("Menu_M3U", "M3U") };
+            var miAddFile = new MenuItem { Header = Localizer.S("Menu_AddM3uFile", "添加 M3U 文件...") };
             miAddFile.Click += (s, args) => addM3uFile?.Invoke();
             miM3u.Items.Add(miAddFile);
 
-            var miAddUrl = new MenuItem { Header = "添加 M3U 地址..." };
+            var miAddUrl = new MenuItem { Header = Localizer.S("Menu_AddM3uUrl", "添加 M3U 地址...") };
             miAddUrl.Click += (s, args) => addM3uUrl?.Invoke();
             miM3u.Items.Add(miAddUrl);
 
             miM3u.Items.Add(new Separator());
 
-            var miEditM3u = new MenuItem { Header = "编辑 M3U" };
+            var miEditM3u = new MenuItem { Header = Localizer.S("Menu_EditM3u", "编辑 M3U") };
             if (AppSettings.Current.SavedSources != null && AppSettings.Current.SavedSources.Count > 0)
             {
                 foreach (var src in AppSettings.Current.SavedSources)
@@ -72,10 +72,10 @@ namespace LibmpvIptvClient.Helpers
             cm.Items.Add(miM3u);
 
             // 3. Performance Settings
-            var miPerf = new MenuItem { Header = "性能" };
+            var miPerf = new MenuItem { Header = Localizer.S("Menu_Performance", "性能") };
             var miFcc = new MenuItem 
             { 
-                Header = "FCC (快速切台)", 
+                Header = Localizer.S("Menu_FCC", "FCC (快速切台)"), 
                 IsCheckable = true, 
                 IsChecked = AppSettings.Current.FccPrefetchCount > 0 
             };
@@ -84,7 +84,7 @@ namespace LibmpvIptvClient.Helpers
 
             var miUdp = new MenuItem 
             { 
-                Header = "UDP (组播优化)", 
+                Header = Localizer.S("Menu_UDP", "UDP (组播优化)"), 
                 IsCheckable = true, 
                 IsChecked = AppSettings.Current.EnableUdpOptimization
             };
@@ -93,10 +93,10 @@ namespace LibmpvIptvClient.Helpers
             cm.Items.Add(miPerf);
 
             // 4. List Management
-            var miList = new MenuItem { Header = "列表" };
+            var miList = new MenuItem { Header = Localizer.S("Menu_List", "列表") };
             var miEpg = new MenuItem 
             { 
-                Header = "EPG", 
+                Header = Localizer.S("Menu_EPG", "EPG"), 
                 IsCheckable = true, 
                 IsChecked = isEpgChecked
             };
@@ -105,14 +105,14 @@ namespace LibmpvIptvClient.Helpers
 
             var miChannel = new MenuItem 
             { 
-                Header = "频道", 
+                Header = Localizer.S("Menu_Channel", "频道"), 
                 IsCheckable = true, 
                 IsChecked = isDrawerChecked
             };
             miChannel.Click += (s, args) => toggleDrawer?.Invoke(miChannel.IsChecked);
             miList.Items.Add(miChannel);
 
-            var miM3uList = new MenuItem { Header = "切换 M3U" };
+            var miM3uList = new MenuItem { Header = Localizer.S("Menu_SwitchM3u", "切换 M3U") };
             if (AppSettings.Current.SavedSources != null && AppSettings.Current.SavedSources.Count > 0)
             {
                 foreach (var src in AppSettings.Current.SavedSources)
@@ -136,22 +136,15 @@ namespace LibmpvIptvClient.Helpers
             miList.Items.Add(miM3uList);
             cm.Items.Add(miList);
 
-            cm.Items.Add(new Separator());
-
-            // 5. System
-            var miSystem = new MenuItem { Header = "系统" };
-            var miSettings = new MenuItem { Header = "设置" };
+            var miSettings = new MenuItem { Header = Localizer.S("Menu_Settings", "设置") };
+            try { miSettings.SetResourceReference(MenuItem.StyleProperty, "CenteredMenuItem"); } catch { }
             miSettings.Click += (s, args) => openSettings?.Invoke();
-            miSystem.Items.Add(miSettings);
-
-            var miAbout = new MenuItem { Header = "关于" };
-            miAbout.Click += (s, args) => showAbout?.Invoke();
-            miSystem.Items.Add(miAbout);
-
-            var miExit = new MenuItem { Header = "退出" };
+            cm.Items.Add(new Separator());
+            cm.Items.Add(miSettings);
+            var miExit = new MenuItem { Header = Localizer.S("Menu_Exit", "退出") };
+            try { miExit.SetResourceReference(MenuItem.StyleProperty, "CenteredMenuItem"); } catch { }
             miExit.Click += (s, args) => exitApp?.Invoke();
-            miSystem.Items.Add(miExit);
-            cm.Items.Add(miSystem);
+            cm.Items.Add(miExit);
 
             return cm;
         }

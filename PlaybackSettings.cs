@@ -27,6 +27,10 @@ namespace LibmpvIptvClient
         public int TimeshiftHours { get; set; } = 6;
         // 更新下载 CDN 持久化列表（仅前缀，例如 https://gh-proxy.org）
         public List<string> UpdateCdnMirrors { get; set; } = new List<string>();
+        // 界面语言（例如 zh-CN / en-US；为空表示跟随系统）
+        public string Language { get; set; } = "";
+        // 主题模式：System/Light/Dark
+        public string ThemeMode { get; set; } = "System";
 
         public static PlaybackSettings Load()
         {

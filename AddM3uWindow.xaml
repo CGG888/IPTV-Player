@@ -2,16 +2,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         x:Class="LibmpvIptvClient.AddM3uWindow"
-        Title="添加 M3U 地址" Height="220" Width="400"
+        Title="{DynamicResource Menu_AddM3uUrl}" Height="220" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" Icon="/iptv.png"
-        Background="Transparent" AllowsTransparency="True" Foreground="#EEE">
+        Background="Transparent" AllowsTransparency="True" Foreground="{DynamicResource TextPrimaryBrush}">
     
     <WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="40" GlassFrameThickness="0" CornerRadius="8" ResizeBorderThickness="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
 
-    <Border Background="#121212" CornerRadius="8" BorderBrush="#333" BorderThickness="1">
+    <Border Background="{DynamicResource AppBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="40"/>
@@ -19,7 +19,7 @@
             </Grid.RowDefinitions>
 
             <!-- Title Bar -->
-            <Border Grid.Row="0" Background="#181818" BorderBrush="#333" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" CornerRadius="8,8,0,0">
+            <Border Grid.Row="0" Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" CornerRadius="8,8,0,0">
                 <Grid Margin="12,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -28,7 +28,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source="/iptv.png" Width="18" Height="18" Margin="0,0,8,0"/>
-                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="46" Height="32" Background="Transparent" BorderThickness="0">
                         <Button.Style>
@@ -49,7 +49,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
-                        <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Button>
                 </Grid>
             </Border>
@@ -68,14 +68,14 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="LblName" Text="名称:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="#CCC"/>
-                <TextBox x:Name="TxtName" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="#333" Foreground="White" BorderBrush="#555" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
+                <TextBlock x:Name="LblName" Text="{DynamicResource M3U_Name}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBox x:Name="TxtName" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource InputTextBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
 
-                <TextBlock Text="地址:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="#CCC"/>
-                <TextBox x:Name="TxtUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="#333" Foreground="White" BorderBrush="#555" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
+                <TextBlock Text="{DynamicResource M3U_Url}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBox x:Name="TxtUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource InputTextBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
 
                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-                    <Button Content="确定" Width="80" Height="30" Click="BtnOk_Click" Background="#0078D7" Foreground="White" BorderThickness="0" Margin="0,0,10,0">
+                    <Button Content="{DynamicResource Common_OK}" Width="80" Height="30" Click="BtnOk_Click" Background="{DynamicResource PrimaryButtonBackgroundBrush}" Foreground="{DynamicResource PrimaryButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="4">
@@ -84,7 +84,7 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Content="取消" Width="80" Height="30" Click="BtnCancel_Click" Background="#444" Foreground="White" BorderThickness="0">
+                    <Button Content="{DynamicResource UI_Cancel}" Width="80" Height="30" Click="BtnCancel_Click" Background="{DynamicResource SecondaryButtonBackgroundBrush}" Foreground="{DynamicResource SecondaryButtonForegroundBrush}" BorderThickness="0">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="4">

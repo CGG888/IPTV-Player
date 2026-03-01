@@ -51,6 +51,8 @@ namespace LibmpvIptvClient
             {
                 var dlg = new UpdateDialog(_latest);
                 dlg.Owner = this;
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                dlg.Topmost = this.Topmost;
                 dlg.ShowDialog();
             }
             catch { }
@@ -78,7 +80,7 @@ namespace LibmpvIptvClient
                 {
                     BadgeNew.Visibility = Visibility.Visible;
                     // 只在打开时提示一次
-                    var r = ModernMessageBox.Show(this, $"发现新版本 v{_latest.Version}，是否查看更新？", "提示", MessageBoxButton.YesNo);
+                    var r = ModernMessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_NewVersionFound", "发现新版本 v{0}，是否查看更新？"), _latest.Version), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.YesNo);
                     if (r == true) BtnUpdate_Click(this, new RoutedEventArgs());
                 }
             }

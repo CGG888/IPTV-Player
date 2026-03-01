@@ -16,7 +16,7 @@
     <Window.Resources>
         <Style x:Key="TopBtnStyle" TargetType="ButtonBase">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#DDD"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Width" Value="46"/>
             <Setter Property="Height" Value="32"/>
@@ -29,10 +29,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#22FFFFFF"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -41,7 +41,7 @@
         </Style>
         <Style x:Key="TitleBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#DDD"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10,0"/>
             <Setter Property="Template">
@@ -50,12 +50,12 @@
                         <Border x:Name="bd" Background="{TemplateBinding Background}">
                             <StackPanel Orientation="Horizontal">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <TextBlock Text="▼" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="#AAA"/>
+                                <TextBlock Text="▼" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -63,12 +63,10 @@
             </Setter>
         </Style>
 
-        <SolidColorBrush x:Key="AccentBrush" Color="#FFC107"/>
-
         <Style TargetType="{x:Type ContextMenu}">
-            <Setter Property="Background" Value="#1F1F1F"/>
-            <Setter Property="Foreground" Value="#EEE"/>
-            <Setter Property="BorderBrush" Value="#333"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushCommon}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HasDropShadow" Value="True"/>
             <Setter Property="Grid.IsSharedSizeScope" Value="True"/>
@@ -85,7 +83,7 @@
 
         <Style TargetType="{x:Type MenuItem}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#EEE"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="Padding" Value="12,8"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -103,16 +101,16 @@
                                 </Grid.ColumnDefinitions>
                                 
                                 <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
-                                <Path x:Name="CheckMark" Data="M1,5 L4.5,8.5 L9,1" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="False"/>
+                                <Path x:Name="CheckMark" Data="M1,5 L4.5,8.5 L9,1" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="False"/>
 
                                 <ContentPresenter Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 
-                                <TextBlock Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="16,0,0,0" Foreground="#999" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="16,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
 
-                                <Path x:Name="Arrow" Grid.Column="3" Data="M0,0 L4,3.5 L0,7" Stroke="#999" StrokeThickness="1" Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                <Path x:Name="Arrow" Grid.Column="3" Data="M0,0 L4,3.5 L0,7" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1" Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                                 
                                 <Popup x:Name="Popup" Placement="Right" IsOpen="{TemplateBinding IsSubmenuOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
-                                    <Border x:Name="SubmenuBorder" SnapsToDevicePixels="True" Background="#1F1F1F" BorderBrush="#333" BorderThickness="1" CornerRadius="6" Padding="4" Grid.IsSharedSizeScope="True">
+                                    <Border x:Name="SubmenuBorder" SnapsToDevicePixels="True" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="6" Padding="4" Grid.IsSharedSizeScope="True">
                                         <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
                                     </Border>
                                 </Popup>
@@ -123,10 +121,10 @@
                                 <Setter TargetName="Arrow" Property="Visibility" Value="Visible"/>
                             </Trigger>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#333"/>
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="#666"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
@@ -142,7 +140,7 @@
         </Style>
 
         <Style TargetType="{x:Type Separator}">
-            <Setter Property="Background" Value="#333"/>
+            <Setter Property="Background" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="Height" Value="1"/>
             <Setter Property="Margin" Value="0,4"/>
             <Setter Property="Template">
@@ -155,7 +153,7 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="#CC101010" BorderBrush="#333" BorderThickness="0,0,0,1">
+    <Border Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" Opacity="0.9">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -168,7 +166,7 @@
                 <Button x:Name="BtnTitle" Click="BtnTitle_Click" Style="{StaticResource TitleBtnStyle}">
                     <StackPanel Orientation="Horizontal">
                         <Image Source="/iptv.png" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="IPTV Player" FontSize="14" FontWeight="Bold" Foreground="#DDD" VerticalAlignment="Center"/>
+                        <TextBlock Text="IPTV Player" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -176,8 +174,8 @@
             <!-- Right: Window Buttons -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <!-- 1. Topmost (Pin) -->
-                <ToggleButton x:Name="BtnPin" Style="{StaticResource TopBtnStyle}" Click="BtnPin_Click" ToolTip="置顶">
-                    <Path Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
+                <ToggleButton x:Name="BtnPin" Style="{StaticResource TopBtnStyle}" Click="BtnPin_Click" ToolTip="{DynamicResource Tooltip_PinTop}">
+                    <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
                           Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
                     <ToggleButton.Template>
                         <ControlTemplate TargetType="ToggleButton">
@@ -186,17 +184,17 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
                                     <Setter Property="Content">
                                         <Setter.Value>
                                             <!-- Pinned State (Yellow) -->
-                                            <Path Stroke="#FFC107" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                            <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
                                                   Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
                                         </Setter.Value>
                                     </Setter>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/>
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -205,20 +203,20 @@
 
                 <!-- 2. Minimize -->
                 <Button x:Name="BtnMin" Style="{StaticResource TopBtnStyle}" Click="BtnMin_Click">
-                    <Path Data="M4,12 H12" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Path Data="M4,12 H12" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
 
                 <!-- 3. Maximize/Restore -->
                 <Button x:Name="BtnMax" Style="{StaticResource TopBtnStyle}" Click="BtnMax_Click">
                     <!-- Restore Icon (Double Square) -->
-                    <Path Data="M4.5,6.5 H9.5 V11.5 H4.5 Z M6.5,6.5 V4.5 H11.5 V9.5 H9.5" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Path Data="M4.5,6.5 H9.5 V11.5 H4.5 Z M6.5,6.5 V4.5 H11.5 V9.5 H9.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
                 
                 <!-- 4. Fullscreen (Exit/Toggle) -->
                 <Button x:Name="BtnFullscreen" Style="{StaticResource TopBtnStyle}" Click="BtnFullscreen_Click">
                      <!-- Four outward arrows/corners (Yellow) -->
                      <Path Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
-                           Stroke="#FFC107" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                           Stroke="{DynamicResource AccentBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
 
                 <!-- 5. Close -->
@@ -227,13 +225,13 @@
                         <Style TargetType="ButtonBase" BasedOn="{StaticResource TopBtnStyle}">
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#E81123"/>
+                                    <Setter Property="Background" Value="{DynamicResource DangerButtonBackgroundBrush}"/>
                                     <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
                     </Button.Style>
-                    <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
             </StackPanel>
         </Grid>

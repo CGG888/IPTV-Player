@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
@@ -6,12 +7,17 @@ using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Diagnostics;
 
+using System.Text.Json;
 namespace LibmpvIptvClient
 {
     public partial class SettingsWindow : Window
     {
+        public event Action<PlaybackSettings>? ApplySettingsRequested;
         public PlaybackSettings Result { get; private set; } = new PlaybackSettings();
         private ObservableCollection<string> _cdn = new ObservableCollection<string>();
+        private readonly HttpClient _httpInline = new HttpClient();
+        private AboutWindow.ReleaseInfo? _latestInline;
+        private string _currentVersionInline = "0.0.0";
         public SettingsWindow(PlaybackSettings current)
         {
             InitializeComponent();
@@ -24,9 +30,44 @@ namespace LibmpvIptvClient
             TbEpgUrl.Text = current.CustomEpgUrl;
             TbLogoUrl.Text = current.CustomLogoUrl;
             TbTimeshiftHours.Text = Math.Max(0, current.TimeshiftHours).ToString(CultureInfo.InvariantCulture);
+            try
+            {
+                // 初始化界面：语言 & 主题
+                if (CbLanguage != null)
+                {
+                    var lang = (current.Language ?? "").Trim();
+                    int idx = 0;
+                    if (string.Equals(lang, "zh-CN", StringComparison.OrdinalIgnoreCase)) idx = 1;
+                    else if (string.Equals(lang, "en-US", StringComparison.OrdinalIgnoreCase)) idx = 2;
+                    CbLanguage.SelectedIndex = idx;
+                    CbLanguage.SelectionChanged += CbLanguage_SelectionChanged;
+                }
+                if (CbTheme != null)
+                {
+                    var theme = (current.ThemeMode ?? "System").Trim();
+                    int idx = string.Equals(theme, "Light", StringComparison.OrdinalIgnoreCase) ? 1
+                            : string.Equals(theme, "Dark", StringComparison.OrdinalIgnoreCase) ? 2 : 0;
+                    CbTheme.SelectedIndex = idx;
+                    CbTheme.SelectionChanged += CbTheme_SelectionChanged;
+                }
+            }
+            catch { }
             // CDN
             _cdn = new ObservableCollection<string>(current.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>());
             ListCdn.ItemsSource = _cdn;
+            try
+            {
+                var v = Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                    ?.InformationalVersion;
+                if (string.IsNullOrEmpty(v))
+                    v = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+                if (v != null && v.Contains("+")) v = v.Substring(0, v.IndexOf("+"));
+                _currentVersionInline = v ?? "0.0.0";
+                if (TxtVersionInline != null) TxtVersionInline.Text = $"v{_currentVersionInline}";
+            }
+            catch { }
+            _ = CheckUpdateInlineAsync(false);
         }
         void BtnSave_Click(object sender, RoutedEventArgs e)
         {
@@ -42,14 +83,122 @@ namespace LibmpvIptvClient
             if (int.TryParse(TbTimeshiftHours.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var tsh)) s.TimeshiftHours = Math.Max(0, Math.Min(168, tsh));
             // CDN
             s.UpdateCdnMirrors = new System.Collections.Generic.List<string>(_cdn);
+            // 界面
+            try
+            {
+                s.Language = GetSelectedTag(CbLanguage);
+                var themeTag = GetSelectedTag(CbTheme);
+                s.ThemeMode = string.IsNullOrWhiteSpace(themeTag) ? "System" : themeTag;
+            }
+            catch { }
             Result = s;
-            DialogResult = true;
-            Close();
+            ApplySettingsRequested?.Invoke(s);
+            // DialogResult = true;
+            // Close();
+        }
+        string GetSelectedTag(System.Windows.Controls.ComboBox cb)
+        {
+            try
+            {
+                if (cb?.SelectedItem is System.Windows.Controls.ComboBoxItem item)
+                {
+                    return (item.Tag ?? "").ToString() ?? "";
+                }
+            }
+            catch { }
+            return "";
+        }
+        void CbLanguage_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // Do nothing immediately. Apply on Save.
+        }
+        void CbTheme_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // Do nothing immediately. Apply on Save.
         }
         void BtnDebug_Click(object sender, RoutedEventArgs e)
         {
             DebugRequested?.Invoke();
         }
+        void BtnOpenAbout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var owner = this.Owner ?? this;
+                var dlg = new AboutWindow { Owner = owner, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                try { dlg.Topmost = this.Topmost; } catch { }
+                dlg.ShowDialog();
+            }
+            catch { }
+        }
+        async void BtnCheckUpdateInline_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (BtnCheckUpdateInline != null)
+                {
+                    BtnCheckUpdateInline.IsEnabled = false;
+                    var old = BtnCheckUpdateInline.Content;
+                    BtnCheckUpdateInline.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Checking", "检查中…");
+                    try { await CheckUpdateInlineAsync(true); }
+                    finally
+                    {
+                        BtnCheckUpdateInline.Content = old;
+                        BtnCheckUpdateInline.IsEnabled = true;
+                    }
+                }
+                else
+                {
+                    await CheckUpdateInlineAsync(true);
+                }
+            }
+            catch { }
+        }
+/*
+        void BtnViewUpdateInline_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (BtnViewUpdate != null)
+                {
+                    BtnViewUpdate.IsEnabled = false;
+                    var old = BtnViewUpdate.Content;
+                    BtnViewUpdate.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Opening", "打开中…");
+                    try
+                    {
+                        if (_latestInline == null)
+                        {
+                            _ = CheckUpdateInlineAsync(true);
+                            return;
+                        }
+                        var dlg = new UpdateDialog(_latestInline);
+                        dlg.Owner = this;
+                        dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                        dlg.Topmost = this.Topmost;
+                        dlg.ShowDialog();
+                    }
+                    finally
+                    {
+                        BtnViewUpdate.Content = old;
+                        BtnViewUpdate.IsEnabled = true;
+                    }
+                    return;
+                }
+                if (_latestInline == null)
+                {
+                    // 若尚未获取，则执行一次交互式检查
+                    _ = CheckUpdateInlineAsync(true);
+                    return;
+                }
+                var dlg2 = new UpdateDialog(_latestInline);
+                dlg2.Owner = this;
+                dlg2.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                dlg2.Topmost = this.Topmost;
+                dlg2.ShowDialog();
+            }
+            catch { }
+        }
+*/
         void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed && e.ClickCount == 1)
@@ -131,6 +280,243 @@ namespace LibmpvIptvClient
                 foreach (var t in targets) _cdn.Add(t.url);
             }
             catch { }
+        }
+        void Inline_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try { Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); } catch { }
+        }
+        async void BtnLicense_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (BtnLicense != null)
+                {
+                    BtnLicense.IsEnabled = false;
+                    var old = BtnLicense.Content;
+                    BtnLicense.Content = "加载中…";
+                    try
+                    {
+                        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                        var lic = System.IO.Path.Combine(baseDir, "LICENSE.txt");
+                        if (!System.IO.File.Exists(lic)) lic = System.IO.Path.Combine(baseDir, "license.txt");
+                        string content = "";
+                        if (System.IO.File.Exists(lic)) content = System.IO.File.ReadAllText(lic);
+                        if (string.IsNullOrEmpty(content))
+                        {
+                            try
+                            {
+                                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/LICENSE.txt", cts.Token);
+                            }
+                            catch { }
+                        }
+                        if (string.IsNullOrEmpty(content))
+                        {
+                            ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_FetchLicenseFailed", "无法获取许可证内容。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                            return;
+                        }
+                        var dlg = new TextViewerDialog(LibmpvIptvClient.Helpers.Localizer.S("UI_License", "开源许可证"), content) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = this.Topmost };
+                        dlg.ShowDialog();
+                    }
+                    finally
+                    {
+                        BtnLicense.Content = old;
+                        BtnLicense.IsEnabled = true;
+                    }
+                    return;
+                }
+                var baseDir2 = AppDomain.CurrentDomain.BaseDirectory;
+                var lic2 = System.IO.Path.Combine(baseDir2, "LICENSE.txt");
+                if (!System.IO.File.Exists(lic2)) lic2 = System.IO.Path.Combine(baseDir2, "license.txt");
+                string content2 = "";
+                if (System.IO.File.Exists(lic2)) content2 = System.IO.File.ReadAllText(lic2);
+                if (string.IsNullOrEmpty(content2))
+                {
+                    try
+                    {
+                        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                        content2 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/LICENSE.txt", cts.Token);
+                    }
+                    catch { }
+                }
+                if (string.IsNullOrEmpty(content2))
+                {
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_FetchLicenseFailed", "无法获取许可证内容。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                    return;
+                }
+                var dlg2 = new TextViewerDialog(LibmpvIptvClient.Helpers.Localizer.S("UI_License", "开源许可证"), content2) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = this.Topmost };
+                dlg2.ShowDialog();
+            }
+            catch { }
+        }
+        async void BtnThirdParty_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (BtnThirdParty != null)
+                {
+                    BtnThirdParty.IsEnabled = false;
+                    var old = BtnThirdParty.Content;
+                    BtnThirdParty.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Loading", "加载中…");
+                    try
+                    {
+                        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                        var third = System.IO.Path.Combine(baseDir, "THIRD-PARTY-NOTICES.txt");
+                        if (!System.IO.File.Exists(third)) third = System.IO.Path.Combine(baseDir, "Third-Party-Notices.txt");
+                        string content = "";
+                        if (System.IO.File.Exists(third)) content = System.IO.File.ReadAllText(third);
+                        if (string.IsNullOrEmpty(content))
+                        {
+                            try
+                            {
+                                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/THIRD-PARTY-NOTICES.txt", cts.Token);
+                            }
+                            catch { }
+                        }
+                        if (string.IsNullOrEmpty(content))
+                        {
+                            ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_FetchThirdPartyFailed", "无法获取第三方声明内容。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                            return;
+                        }
+                        var dlg = new TextViewerDialog(LibmpvIptvClient.Helpers.Localizer.S("UI_ThirdParty", "第三方声明"), content) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = this.Topmost };
+                        dlg.ShowDialog();
+                    }
+                    finally
+                    {
+                        BtnThirdParty.Content = old;
+                        BtnThirdParty.IsEnabled = true;
+                    }
+                    return;
+                }
+                var baseDir3 = AppDomain.CurrentDomain.BaseDirectory;
+                var third2 = System.IO.Path.Combine(baseDir3, "THIRD-PARTY-NOTICES.txt");
+                if (!System.IO.File.Exists(third2)) third2 = System.IO.Path.Combine(baseDir3, "Third-Party-Notices.txt");
+                string content3 = "";
+                if (System.IO.File.Exists(third2)) content3 = System.IO.File.ReadAllText(third2);
+                if (string.IsNullOrEmpty(content3))
+                {
+                    try
+                    {
+                        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                        content3 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/THIRD-PARTY-NOTICES.txt", cts.Token);
+                    }
+                    catch { }
+                }
+                if (string.IsNullOrEmpty(content3))
+                {
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_FetchThirdPartyFailed", "无法获取第三方声明内容。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                    return;
+                }
+                var dlg3 = new TextViewerDialog(LibmpvIptvClient.Helpers.Localizer.S("UI_ThirdParty", "第三方声明"), content3) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = this.Topmost };
+                dlg3.ShowDialog();
+            }
+            catch { }
+        }
+        async System.Threading.Tasks.Task CheckUpdateInlineAsync(bool interactive)
+        {
+            try
+            {
+                _httpInline.DefaultRequestHeaders.UserAgent.ParseAdd("IPTV-Player/UpdateCheck");
+                _httpInline.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+                var latest = await FetchLatestReleaseInlineAsync("https://api.github.com/repos/CGG888/IPTV-Player/releases/latest");
+                if (latest == null) return;
+                _latestInline = latest;
+                if (IsNewerInline(_latestInline.Version, _currentVersionInline))
+                {
+                    if (BadgeNewInline != null) BadgeNewInline.Visibility = Visibility.Visible;
+                    if (interactive)
+                    {
+                var r = ModernMessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_NewVersionFound", "发现新版本 v{0}，是否查看更新？"), _latestInline.Version), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.YesNo);
+                        if (r == true)
+                        {
+                            try
+                            {
+                                var dlg = new UpdateDialog(_latestInline);
+                                dlg.Owner = this;
+                                dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                                dlg.Topmost = this.Topmost;
+                                dlg.ShowDialog();
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                else
+                {
+                    if (interactive) ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_AlreadyLatest", "当前已是最新版本。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                }
+            }
+            catch { }
+        }
+        static bool IsNewerInline(string remote, string local)
+        {
+            try
+            {
+                Version vr = new Version(remote.Split('-')[0].TrimStart('v', 'V'));
+                Version vl = new Version(local.Split('-')[0].TrimStart('v', 'V'));
+                return vr > vl;
+            }
+            catch { return false; }
+        }
+        private async System.Threading.Tasks.Task<AboutWindow.ReleaseInfo?> FetchLatestReleaseInlineAsync(string apiUrl)
+        {
+            var urls = new System.Collections.Generic.List<string> { apiUrl };
+            var cdnList = LibmpvIptvClient.AppSettings.Current.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>();
+            try
+            {
+                if (cdnList.Count == 0)
+                {
+                    var cdnFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docs", "screenshots", "cdn.md");
+                    if (System.IO.File.Exists(cdnFile))
+                    {
+                        foreach (var line in System.IO.File.ReadAllLines(cdnFile))
+                        {
+                            var p = line.Trim();
+                            if (p.StartsWith("http")) cdnList.Add(p);
+                        }
+                    }
+                    LibmpvIptvClient.AppSettings.Current.UpdateCdnMirrors = cdnList;
+                    LibmpvIptvClient.AppSettings.Current.Save();
+                }
+                foreach (var p in cdnList)
+                    urls.Add(p.TrimEnd('/') + "/" + apiUrl);
+            }
+            catch { }
+            foreach (var url in urls)
+            {
+                try
+                {
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                    using var resp = await _httpInline.GetAsync(url, cts.Token);
+                    if (!resp.IsSuccessStatusCode) continue;
+                    var json = await resp.Content.ReadAsStringAsync(cts.Token);
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+                    var tag = root.TryGetProperty("tag_name", out var tagEl) ? (tagEl.GetString() ?? "") : "";
+                    var body = root.TryGetProperty("body", out var bEl) ? (bEl.GetString() ?? "") : "";
+                    string assetUrl = "";
+                    string assetName = "";
+                    if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array && assets.GetArrayLength() > 0)
+                    {
+                        System.Text.Json.JsonElement? chosen = null;
+                        foreach (var a in assets.EnumerateArray())
+                        {
+                            if (a.TryGetProperty("name", out var n) && (n.GetString() ?? "").EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                chosen = a; break;
+                            }
+                        }
+                        if (chosen == null) chosen = assets[0];
+                        assetUrl = chosen.Value.GetProperty("browser_download_url").GetString() ?? "";
+                        assetName = chosen.Value.GetProperty("name").GetString() ?? "";
+                    }
+                    var ver = (tag ?? root.GetProperty("name").GetString() ?? "").Trim().TrimStart('v', 'V');
+                    return new AboutWindow.ReleaseInfo { Version = ver, Notes = body ?? "", DownloadUrl = assetUrl, FileName = assetName };
+                }
+                catch { }
+            }
+            return null;
         }
     }
 }

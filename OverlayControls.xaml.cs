@@ -244,10 +244,11 @@ namespace LibmpvIptvClient
             {
                 TagPanelOverlay.Children.Clear();
                 var style = TryFindResource("OverlayTagChip") as System.Windows.Style;
+                var brush = TryFindResource("TextPrimaryBrush") as System.Windows.Media.Brush ?? System.Windows.Media.Brushes.Gray;
                 foreach (var t in tags)
                 {
-                    var b = new Border { Style = style };
-                    var tb = new TextBlock { Text = t, Foreground = System.Windows.Media.Brushes.White, FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+                    var b = new System.Windows.Controls.Border { Style = style };
+                    var tb = new TextBlock { Text = t, Foreground = brush, FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
                     b.Child = tb;
                     TagPanelOverlay.Children.Add(b);
                 }

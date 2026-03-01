@@ -26,7 +26,7 @@ namespace LibmpvIptvClient
             InitializeComponent();
             _info = info;
             TxtNewVer.Text = info?.Version ?? "-";
-            TxtNotes.Text = info?.Notes ?? "（无更新说明）";
+            TxtNotes.Text = info?.Notes ?? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Update_NoNotes", "（无更新说明）");
             LoadMirrors(info?.DownloadUrl ?? "");
         }
 
@@ -36,7 +36,7 @@ namespace LibmpvIptvClient
             {
                 if (!string.IsNullOrWhiteSpace(officialUrl))
                 {
-                    CbMirrors.Items.Add(new Mirror { Name = "官方", Url = officialUrl });
+                    CbMirrors.Items.Add(new Mirror { Name = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Update_Official", "官方"), Url = officialUrl });
                 }
                 var cdnList = LibmpvIptvClient.AppSettings.Current.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>();
                 if (cdnList.Count == 0)
@@ -59,7 +59,7 @@ namespace LibmpvIptvClient
                     // 把官方URL映射到 CDN 前缀
                     var mapped = !string.IsNullOrWhiteSpace(officialUrl) ? (u.TrimEnd('/') + "/" + officialUrl) : u;
                     _cdnCount++;
-                    CbMirrors.Items.Add(new Mirror { Name = _cdnCount == 1 ? "CDN" : $"CDN-{_cdnCount}", Url = mapped });
+                    CbMirrors.Items.Add(new Mirror { Name = _cdnCount == 1 ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Update_Cdn", "CDN") : $"{LibmpvIptvClient.Helpers.ResxLocalizer.Get("Update_Cdn", "CDN")}-{_cdnCount}", Url = mapped });
                 }
                 if (CbMirrors.Items.Count > 0) CbMirrors.SelectedIndex = 0;
             }
@@ -77,7 +77,7 @@ namespace LibmpvIptvClient
                 if (string.IsNullOrWhiteSpace(url)) return;
                 BtnDownload.IsEnabled = false;
                 Pb.Value = 0;
-                TxtProgress.Text = "准备...";
+                TxtProgress.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_Preparing", "准备...");
 
                 var tmp = System.IO.Path.GetTempPath();
                 var fileName = _info?.FileName;
@@ -112,17 +112,18 @@ namespace LibmpvIptvClient
                                 var speedKb = speed / 1024.0;
                                 var percent = total > 0 ? (readTotal * 100.0 / total) : 0;
                                 var eta = speed > 0 ? TimeSpan.FromSeconds(Math.Max(0, (total - readTotal) / speed)) : TimeSpan.Zero;
-                                TxtProgress.Text = $"{doneMb:0.0}/{totalMb:0.0} MB  |  {percent:0}%  |  {speedKb:0.0} KB/s  |  预计 {eta:mm\\:ss}";
+                                var etaLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_ETA", "预计");
+                                TxtProgress.Text = $"{doneMb:0.0}/{totalMb:0.0} MB  |  {percent:0}%  |  {speedKb:0.0} KB/s  |  {etaLabel} {eta:mm\\:ss}";
                             }, DispatcherPriority.Background);
                         }
                     }
                 }
-                TxtProgress.Text += "  |  100% 完成";
+                TxtProgress.Text += "  |  100% " + LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_Complete", "完成");
                 BtnInstall.IsEnabled = true;
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show(this, "下载失败：\n" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_DownloadFailed", "下载失败：\n{0}"), ex.Message), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 BtnDownload.IsEnabled = true;
             }
         }
@@ -131,19 +132,22 @@ namespace LibmpvIptvClient
         {
             try
             {
-                if (!File.Exists(_downloadPath))
-                {
-                    System.Windows.MessageBox.Show(this, "未找到安装包，请先下载。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                var r = System.Windows.MessageBox.Show(this, "即将关闭播放器并启动安装包，是否继续？", "安装更新", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (r != MessageBoxResult.Yes) return;
+            if (!File.Exists(_downloadPath))
+            {
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_InstallerNotFound", "未找到安装包，请先下载。"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            var r = ModernMessageBox.Show(this,
+                LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_InstallUpdate", "即将关闭播放器并启动安装包，是否继续？"),
+                LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"),
+                MessageBoxButton.YesNo);
+                if (r != true) return;
                 Process.Start(new ProcessStartInfo(_downloadPath) { UseShellExecute = true });
                 System.Windows.Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show(this, "无法启动安装包：\n" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_StartInstallerFailed", "无法启动安装包：\n{0}"), ex.Message), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

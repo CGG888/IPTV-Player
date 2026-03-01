@@ -1,0 +1,53 @@
+<Window x:Class="LibmpvIptvClient.TextViewerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource UI_TextViewer}" Width="720" Height="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        WindowStyle="None"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Icon="/iptv.png">
+    <Border Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="12,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="LblTitle" Text="{DynamicResource UI_TextViewer}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Click="BtnClose_Click" Background="Transparent" BorderThickness="0" Width="46" Height="32">
+                        <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Button>
+                </Grid>
+            </Border>
+            <Grid Grid.Row="1" Margin="12,10,12,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TxtSearch" Grid.Column="0" Height="30" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" Padding="6,0" VerticalContentAlignment="Center" />
+                <Button Grid.Column="1" Content="{DynamicResource UI_Prev}" Width="72" Height="30" Margin="8,0,0,0" Click="BtnPrev_Click" Style="{StaticResource ChipButton}"/>
+                <Button Grid.Column="2" Content="{DynamicResource UI_Next}" Width="72" Height="30" Margin="8,0,0,0" Click="BtnNext_Click" Style="{StaticResource ChipButton}"/>
+                <Button Grid.Column="3" Content="{DynamicResource UI_CopyAll}" Width="84" Height="30" Margin="8,0,0,0" Click="BtnCopyAll_Click" Style="{StaticResource ChipButton}"/>
+            </Grid>
+            <ScrollViewer Grid.Row="2" Margin="12,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <TextBox x:Name="TxtContent" Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrushCommon}"
+                         FontFamily="Consolas" FontSize="12"
+                         AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap" IsReadOnly="True"
+                         VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden"/>
+            </ScrollViewer>
+            <DockPanel Grid.Row="3" Margin="12,10,12,12" LastChildFill="False">
+                <Button Content="{DynamicResource Common_Close}" Width="80" DockPanel.Dock="Right" Click="BtnClose_Click" Style="{StaticResource ChipButton}"/>
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>

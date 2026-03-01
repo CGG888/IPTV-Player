@@ -21,14 +21,14 @@ namespace LibmpvIptvClient
             SourceName = TxtName.Text.Trim();
             SourceUrl = TxtUrl.Text.Trim();
 
-            if (string.IsNullOrEmpty(SourceName))
+            if (string.IsNullOrWhiteSpace(TxtName.Text))
             {
-                System.Windows.MessageBox.Show(this, "请输入名称", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Prompt_InputName", "请输入名称"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrEmpty(SourceUrl))
+            if (string.IsNullOrWhiteSpace(TxtUrl.Text))
             {
-                System.Windows.MessageBox.Show(this, "请输入地址", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Prompt_InputUrl", "请输入地址"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -38,7 +38,7 @@ namespace LibmpvIptvClient
 
         private void BtnDelete_Click(object sender, RoutedEventArgs e)
         {
-            if (System.Windows.MessageBox.Show(this, "确定要删除这个源吗？", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_DeleteSource", "确定要删除这个源吗？"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 IsDeleteRequested = true;
                 DialogResult = true;

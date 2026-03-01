@@ -113,6 +113,34 @@ namespace LibmpvIptvClient
             try { VideoPanel.DoubleClick += MainPanel_DoubleClick; } catch { }
             try { VideoPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
             _sourceTimeoutTimer.Tick += OnSourceTimeout;
+            App.LanguageChanged += OnLanguageChanged;
+        }
+        void OnLanguageChanged()
+        {
+            try
+            {
+                ApplyChannelFilter();
+                UpdateEpgDateUI();
+                
+                // Update Playback Status Text
+                if (_timeshiftActive)
+                {
+                    _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
+                }
+                else if (_currentPlayingProgram != null) // Catchup/Replay
+                {
+                     _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
+                }
+                else
+                {
+                     _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                }
+                
+                if (TxtPlaybackStatus != null) TxtPlaybackStatus.Text = _playbackStatusText;
+                if (TxtBottomPlaybackStatus != null) TxtBottomPlaybackStatus.Text = _playbackStatusText;
+                _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+            }
+            catch { }
         }
         void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
@@ -253,7 +281,7 @@ namespace LibmpvIptvClient
 
         async void PromptOpenUrl()
         {
-            var dlg = new AddM3uWindow { Owner = this, Title = "打开链接" };
+            var dlg = new AddM3uWindow { Owner = this, Title = LibmpvIptvClient.Helpers.Localizer.S("Menu_OpenUrl", "打开链接") };
             dlg.HideNameField(); // Hide name input for simple URL opening
             
             if (dlg.ShowDialog() == true)
@@ -298,9 +326,9 @@ namespace LibmpvIptvClient
             _channels.Clear();
             var ch = new Channel 
             { 
-                Name = "网络流", 
+                Name = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Network", "网络流"), 
                 Tag = new Source { Url = url },
-                Group = "网络流",
+                Group = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Network", "网络流"),
                 Logo = "/iptv.png"
             };
             ch.Sources = new List<Source> { (Source)ch.Tag };
@@ -339,17 +367,15 @@ namespace LibmpvIptvClient
         void ShowAbout()
         {
             var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
-            var dlg = new AboutWindow();
-            dlg.Owner = owner;
-            dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            if (owner.Topmost) dlg.Topmost = true;
+            var dlg = new AboutWindow { Owner = owner, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            try { dlg.Topmost = _isFullscreen; } catch { }
             dlg.ShowDialog();
         }
 
         void ExitApp()
         {
             var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
-            if (ModernMessageBox.Show(owner, "确定要退出软件吗？", "退出", MessageBoxButton.YesNo) == true)
+            if (ModernMessageBox.Show(owner, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_ExitApp", "确定要退出软件吗？"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.YesNo) == true)
             {
                 // Force exit fullscreen to cleanup handles and overlays
                 if (_isFullscreen) ToggleFullscreen(false);
@@ -441,7 +467,7 @@ namespace LibmpvIptvClient
             catch (Exception ex)
             {
                 try { Logger.Error("初始化失败 " + ex.ToString()); } catch { }
-                System.Windows.MessageBox.Show(this, ex.Message, "启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(this, ex.Message, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_StartupFailed", "启动失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
                 return;
             }
@@ -654,16 +680,22 @@ namespace LibmpvIptvClient
                 _timeshiftStart = _timeshiftMax;
                 // 初始游标放在最右侧（Now），便于直接拖动回退
                 _timeshiftCursorSec = Math.Max(0, (_timeshiftMax - _timeshiftMin).TotalSeconds);
-                try { _overlayWpf?.SetPlaybackStatus("时移", System.Windows.Media.Brushes.Orange); } catch { }
+                _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
+                _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusTimeshiftBrush");
+                try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                 try { _overlayWpf?.SetTimeshift(true); } catch { }
                 try { if (CbTimeshift != null) CbTimeshift.IsChecked = true; } catch { }
-                try { TxtPlaybackStatus.Text = "时移"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
-                try { TxtBottomPlaybackStatus.Text = "时移"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                try { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
+                try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 ApplyTimeshiftUi();
             }
             else
             {
-                try { _overlayWpf?.SetPlaybackStatus("直播", System.Windows.Media.Brushes.White); } catch { }
+                _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusLiveBrush");
+                try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                try { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
+                try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 try { _overlayWpf?.SetTimeshift(false); } catch { }
                 try { if (CbTimeshift != null) CbTimeshift.IsChecked = false; } catch { }
                 // 返回直播：重新播放当前频道的直播源
@@ -711,9 +743,19 @@ namespace LibmpvIptvClient
                 url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
-                _playbackStatusText = "时移";
-                _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
+                if (_timeshiftActive)
+                {
+                    _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
+                    _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusTimeshiftBrush");
+                }
+                else
+                {
+                    _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
+                    _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                }
                 try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
+                try { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
+                try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 
                 // 写入播放记录（时移）
                 try
@@ -741,23 +783,23 @@ namespace LibmpvIptvClient
                 if (ListHistory.SelectedItem is HistoryItem hi)
                 {
                     // 非直播类型：优先按记录URL播放，确保状态正确
-                    if (hi.PlayTypeLabel != "直播" && _mpv != null && !string.IsNullOrWhiteSpace(hi.SourceUrl))
+                    if ((hi.PlayTypeLabel != "直播" && hi.PlayTypeLabel != LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播")) && _mpv != null && !string.IsNullOrWhiteSpace(hi.SourceUrl))
                     {
                         _mpv.LoadFile(hi.SourceUrl);
                         _currentUrl = hi.SourceUrl;
-                        if (hi.PlayTypeLabel == "回放")
+                        if (hi.PlayTypeLabel == "回放" || hi.PlayTypeLabel == LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放"))
                         {
-                            _playbackStatusText = "回放";
-                            _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
-                            try { TxtPlaybackStatus.Text = "回放"; TxtBottomPlaybackStatus.Text = "回放"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                            _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
+                            _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                            try { TxtPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                             try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                             _timeshiftActive = false; try { CbTimeshift.IsChecked = false; } catch { }
                         }
-                        else if (hi.PlayTypeLabel == "时移")
+                        else if (hi.PlayTypeLabel == "时移" || hi.PlayTypeLabel == LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移"))
                         {
-                            _playbackStatusText = "时移";
-                            _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
-                            try { TxtPlaybackStatus.Text = "时移"; TxtBottomPlaybackStatus.Text = "时移"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                            _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
+                            _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusTimeshiftBrush");
+                            try { TxtPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                             try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                             // 不强制切到时移UI，避免依赖当前频道 catchup-source；仅同步文案
                         }
@@ -780,9 +822,9 @@ namespace LibmpvIptvClient
                     {
                         _mpv.LoadFile(hi.SourceUrl);
                         _currentUrl = hi.SourceUrl;
-                        _playbackStatusText = "直播";
-                        _playbackStatusBrush = System.Windows.Media.Brushes.White;
-                        try { TxtPlaybackStatus.Text = "直播"; TxtBottomPlaybackStatus.Text = "直播"; TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; } catch { }
+                        _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                        _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusLiveBrush");
+                        try { TxtPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                         try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                         _paused = false;
                         UpdatePlayPauseIcon();
@@ -849,7 +891,7 @@ namespace LibmpvIptvClient
                 var key = _currentChannel != null ? UserDataStore.ComputeKey(_currentChannel, _currentUrl) : (_currentUrl ?? "");
                 var pos = _mpv.GetTimePos() ?? 0;
                 var dur = _mpv.GetDuration() ?? 0;
-                var name = _currentChannel?.Name ?? "未命名";
+                var name = _currentChannel?.Name ?? LibmpvIptvClient.Helpers.ResxLocalizer.Get("App_Untitled", "未命名");
                 var logo = _currentChannel?.Logo ?? "";
                 var group = _currentChannel?.Group ?? "";
                 var srcUrl = _currentUrl;
@@ -1042,25 +1084,37 @@ namespace LibmpvIptvClient
             var dlg = new SettingsWindow(AppSettings.Current) { Owner = owner };
             dlg.DebugRequested += () => BtnDebug_Click(this, new RoutedEventArgs());
             try { dlg.Topmost = _isFullscreen; } catch { }
-            if (dlg.ShowDialog() == true)
+            
+            dlg.ApplySettingsRequested += (settings) =>
             {
-                AppSettings.Current.Hwdec = dlg.Result.Hwdec;
-                AppSettings.Current.CacheSecs = dlg.Result.CacheSecs;
-                AppSettings.Current.DemuxerMaxBytesMiB = dlg.Result.DemuxerMaxBytesMiB;
-                AppSettings.Current.DemuxerMaxBackBytesMiB = dlg.Result.DemuxerMaxBackBytesMiB;
-                AppSettings.Current.FccPrefetchCount = dlg.Result.FccPrefetchCount;
-                AppSettings.Current.SourceTimeoutSec = dlg.Result.SourceTimeoutSec;
-                AppSettings.Current.CustomEpgUrl = dlg.Result.CustomEpgUrl;
-                AppSettings.Current.CustomLogoUrl = dlg.Result.CustomLogoUrl;
-                AppSettings.Current.TimeshiftHours = dlg.Result.TimeshiftHours;
-                AppSettings.Current.UpdateCdnMirrors = dlg.Result.UpdateCdnMirrors;
+                AppSettings.Current.Hwdec = settings.Hwdec;
+                AppSettings.Current.CacheSecs = settings.CacheSecs;
+                AppSettings.Current.DemuxerMaxBytesMiB = settings.DemuxerMaxBytesMiB;
+                AppSettings.Current.DemuxerMaxBackBytesMiB = settings.DemuxerMaxBackBytesMiB;
+                AppSettings.Current.FccPrefetchCount = settings.FccPrefetchCount;
+                AppSettings.Current.SourceTimeoutSec = settings.SourceTimeoutSec;
+                AppSettings.Current.CustomEpgUrl = settings.CustomEpgUrl;
+                AppSettings.Current.CustomLogoUrl = settings.CustomLogoUrl;
+                AppSettings.Current.TimeshiftHours = settings.TimeshiftHours;
+                AppSettings.Current.UpdateCdnMirrors = settings.UpdateCdnMirrors;
+                // 界面设置
+                AppSettings.Current.Language = settings.Language;
+                AppSettings.Current.ThemeMode = settings.ThemeMode;
                 AppSettings.Current.Save(); // Save to disk
                 if (_mpv != null)
                 {
                     _mpv.SetSettings(AppSettings.Current);
                     _mpv.Initialize();
                 }
-            }
+                try
+                {
+                    App.ApplyLanguage(AppSettings.Current.Language);
+                    App.ApplyTheme(AppSettings.Current.ThemeMode);
+                }
+                catch { }
+            };
+
+            dlg.ShowDialog();
         }
         void SetDrawerCollapsed(bool collapsed)
         {
@@ -1080,6 +1134,10 @@ namespace LibmpvIptvClient
             }
             try { CbDrawer.IsChecked = !collapsed; } catch { }
             try { _overlayWpf?.SetDrawerVisible(!collapsed); } catch { }
+        }
+        void BtnDrawerCollapse_Click(object sender, RoutedEventArgs e)
+        {
+            try { SetDrawerCollapsed(true); } catch { }
         }
         void PositionOverlay()
         {
@@ -1337,6 +1395,7 @@ namespace LibmpvIptvClient
                     _mpv.Dispose();
                     _mpv = null;
                 }
+                App.LanguageChanged -= OnLanguageChanged;
             }
             catch { }
         }
@@ -1363,7 +1422,7 @@ namespace LibmpvIptvClient
                 ApplyChannelFilter();
                 if (_channels.Count == 0 && !silent)
                 {
-                    System.Windows.MessageBox.Show(this, "未从来源解析到任何频道：\n1) 检查 URL 或本地路径是否可访问\n2) 若为后端导出，确认参数有效\n3) 若为压缩/特殊编码，已自动尝试解码", "加载结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.MessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("LoadResult_NoChannels", "未从来源解析到任何频道：\n1) 检查 URL 或本地路径是否可访问\n2) 若为后端导出，确认参数有效\n3) 若为压缩/特殊编码，已自动尝试解码"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                     Logger.Log("未解析到频道");
                 }
                 else Logger.Log("解析频道数量 " + _channels.Count);
@@ -1415,7 +1474,7 @@ namespace LibmpvIptvClient
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show(this, "加载频道失败：\n" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_LoadChannelsFailed", "加载频道失败：\n{0}"), ex.Message), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 Logger.Error("加载频道失败 " + ex.Message);
             }
             finally
@@ -1448,7 +1507,13 @@ namespace LibmpvIptvClient
             var distinct = DistinctByName(baseList);
             // “所有频道”保持全局序号（GlobalIndex），不重新编号
             ListChannels.ItemsSource = distinct;
-            try { TxtCount.Text = string.IsNullOrEmpty(key) ? $"共 {_channels.Count} 个频道" : $"筛选到 {distinct.Count} / {_channels.Count}"; } catch { }
+            try 
+            { 
+                TxtCount.Text = string.IsNullOrEmpty(key) 
+                    ? string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_CountAll", "共 {0} 个频道"), _channels.Count) 
+                    : string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_FilteredCount", "筛选到 {0} / {1}"), distinct.Count, _channels.Count); 
+            } 
+            catch { }
             UpdateGroups();
         }
         List<Channel> DistinctByNamePreserveOrder(IEnumerable<Channel> list)
@@ -1657,14 +1722,14 @@ namespace LibmpvIptvClient
                     PlaceholderPanel.Visibility = Visibility.Collapsed; 
                     VideoHost.Visibility = Visibility.Visible;
                     // Update Status Indicator: Live
-                    TxtPlaybackStatus.Text = "直播";
-                    TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.White;
-                    PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
-                    try { TxtBottomPlaybackStatus.Text = "直播"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.White; } catch { }
+                    _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                    _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusLiveBrush");
+                    TxtPlaybackStatus.Text = _playbackStatusText;
+                    TxtPlaybackStatus.Foreground = _playbackStatusBrush;
+                    // PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+                    try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                     
                     // Sync with Overlay
-                    _playbackStatusText = "直播";
-                    _playbackStatusBrush = System.Windows.Media.Brushes.White;
                     _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 } 
                 catch { }
@@ -1705,6 +1770,15 @@ namespace LibmpvIptvClient
             {
                 RefreshEpgList(_currentChannel);
             }
+        }
+        void BtnEpgCollapse_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                CbEpg.IsChecked = false;
+                CbEpg_Click(CbEpg, new RoutedEventArgs());
+            }
+            catch { }
         }
         private class EpgDateItem
         {
@@ -1773,7 +1847,7 @@ namespace LibmpvIptvClient
                 var end = today.AddHours(i + 1);
                 list.Add(new EpgProgram
                 {
-                    Title = "精彩节目",
+                    Title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Featured", "精彩节目"),
                     Start = start,
                     End = end
                 });
@@ -1785,7 +1859,7 @@ namespace LibmpvIptvClient
         {
             if (_availableDates.Count == 0)
             {
-                TxtCurrentDate.Text = "无数据";
+                TxtCurrentDate.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_NoData", "无数据");
                 BtnPrevDay.IsEnabled = false;
                 BtnNextDay.IsEnabled = false;
                 return;
@@ -1802,9 +1876,9 @@ namespace LibmpvIptvClient
             var d = _currentEpgDate;
             var today = DateTime.Today;
             string label = d.ToString("MM-dd");
-            if (d == today) label = "今天";
-            else if (d == today.AddDays(1)) label = "明天";
-            else if (d == today.AddDays(-1)) label = "昨天";
+            if (d == today) label = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Today", "今天");
+            else if (d == today.AddDays(1)) label = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Tomorrow", "明天");
+            else if (d == today.AddDays(-1)) label = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Yesterday", "昨天");
             TxtCurrentDate.Text = label;
 
             // Buttons
@@ -1866,7 +1940,7 @@ namespace LibmpvIptvClient
         {
             if (sender is System.Windows.Controls.ListBoxItem item && item.DataContext is EpgProgram prog)
             {
-                if (prog.Status == "回放" && _currentChannel != null)
+                if ((prog.Status == "回放" || prog.Status == LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放")) && _currentChannel != null)
                 {
                     PlayCatchup(_currentChannel, prog);
                     e.Handled = true;
@@ -1917,13 +1991,13 @@ namespace LibmpvIptvClient
                 // Update Status Indicator: Catchup
                 try
                 {
-                    TxtPlaybackStatus.Text = "回放";
+                    TxtPlaybackStatus.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
                     TxtPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange;
                     PlaybackStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
-                    try { TxtBottomPlaybackStatus.Text = "回放"; TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
+                    try { TxtBottomPlaybackStatus.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放"); TxtBottomPlaybackStatus.Foreground = System.Windows.Media.Brushes.Orange; } catch { }
                     
                     // Sync with Overlay
-                    _playbackStatusText = "回放";
+                    _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
                     _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
                     _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 }
@@ -1994,7 +2068,7 @@ namespace LibmpvIptvClient
         string SourceLabel(Source s)
         {
             var parts = new List<string>();
-            parts.Add(IsMulticast(s.Url) ? "组播" : "单播");
+            parts.Add(IsMulticast(s.Url) ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Multicast", "组播") : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Unicast", "单播"));
             
             if (s.Quality != null)
             {
@@ -2016,12 +2090,12 @@ namespace LibmpvIptvClient
         {
             var menu = new System.Windows.Controls.ContextMenu();
             var options = new[] { 
-                ("默认", "default"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Default", "默认"), "default"),
                 ("16:9", "16:9"),
                 ("4:3", "4:3"),
-                ("拉伸", "stretch"),
-                ("填充", "fill"),
-                ("裁剪", "crop")
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Stretch", "拉伸"), "stretch"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Fill", "填充"), "fill"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Crop", "裁剪"), "crop")
             };
             foreach (var (label, val) in options)
             {
@@ -2809,6 +2883,7 @@ namespace LibmpvIptvClient
             {
                 TagPanel.Children.Clear();
                 var style = TagPanel.TryFindResource("TagChip") as System.Windows.Style;
+                var brush = TagPanel.TryFindResource("TextPrimaryBrush") as System.Windows.Media.Brush ?? System.Windows.Media.Brushes.Gray;
                 foreach (var t in tags)
                 {
                     var border = new System.Windows.Controls.Border
@@ -2818,7 +2893,7 @@ namespace LibmpvIptvClient
                     var tb = new System.Windows.Controls.TextBlock
                     {
                         Text = t,
-                        Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xDD, 0xDD, 0xDD)),
+                        Foreground = brush,
                         FontSize = 11,
                         VerticalAlignment = VerticalAlignment.Center
                     };

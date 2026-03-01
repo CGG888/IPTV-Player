@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Common_Tips"><value>Info</value></data>
+  <data name="Err_UnhandledTitle"><value>Error</value></data>
+  <data name="Err_Unknown"><value>Unknown error</value></data>
+  <data name="Confirm_ExitApp"><value>Are you sure you want to exit?</value></data>
+  <data name="Err_StartupFailed"><value>Startup failed</value></data>
+  <data name="Msg_Checking"><value>Checking…</value></data>
+  <data name="Msg_Opening"><value>Opening…</value></data>
+  <data name="Msg_Loading"><value>Loading…</value></data>
+  <data name="Msg_FetchLicenseFailed"><value>Unable to fetch license content.</value></data>
+  <data name="Msg_FetchThirdPartyFailed"><value>Unable to fetch third-party notices.</value></data>
+  <data name="Msg_NewVersionFound"><value>New version v{0} found. View updates?</value></data>
+  <data name="Msg_AlreadyLatest"><value>You are up to date.</value></data>
+  <data name="LoadResult_NoChannels"><value>No channels parsed from source:
+1) Check URL or local path accessibility
+2) Validate backend export parameters
+3) For compressed/special encoding, decoding was attempted</value></data>
+  <data name="Err_LoadChannelsFailed"><value>Failed to load channels:
+{0}</value></data>
+  <data name="Prompt_InputName"><value>Please enter name</value></data>
+  <data name="Prompt_InputUrl"><value>Please enter URL</value></data>
+  <data name="Err_DownloadFailed"><value>Download failed:
+{0}</value></data>
+  <data name="Msg_InstallerNotFound"><value>Installer not found. Please download first.</value></data>
+  <data name="Confirm_InstallUpdate"><value>The player will close and the installer will start. Continue?</value></data>
+  <data name="Err_StartInstallerFailed"><value>Failed to start installer:
+{0}</value></data>
+  <data name="Confirm_DeleteSource"><value>Are you sure to delete this source?</value></data>
+</root>
