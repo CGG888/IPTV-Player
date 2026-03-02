@@ -13,7 +13,9 @@
   <sys:String x:Key="UI_Light">Light</sys:String>
   <sys:String x:Key="UI_Dark">Dark</sys:String>
   <sys:String x:Key="UI_ChineseSimplified">Simplified Chinese</sys:String>
+  <sys:String x:Key="UI_ChineseTraditional">Traditional Chinese</sys:String>
   <sys:String x:Key="UI_English">English</sys:String>
+  <sys:String x:Key="UI_Russian">Russian</sys:String>
 
   <sys:String x:Key="UI_CdnLines">CDN Lines</sys:String>
   <sys:String x:Key="UI_Add">Add</sys:String>
@@ -75,6 +77,10 @@
   <sys:String x:Key="Common_OK">OK</sys:String>
   <sys:String x:Key="Common_Cancel">Cancel</sys:String>
   <sys:String x:Key="Favorite_Toggle">Favorite/Unfavorite</sys:String>
+  
+  <!-- Exit Dialog -->
+  <sys:String x:Key="Dlg_ExitTitle">Exit</sys:String>
+  <sys:String x:Key="Confirm_ExitApp">Are you sure you want to exit?</sys:String>
   
   <!-- EPG -->
   <sys:String x:Key="EPG_Title">Program Guide</sys:String>
@@ -167,4 +173,9 @@
   <sys:String x:Key="Ratio_Crop">Crop</sys:String>
   <sys:String x:Key="Stream_Multicast">Multicast</sys:String>
   <sys:String x:Key="Stream_Unicast">Unicast</sys:String>
+  
+  <!-- Dialogs -->
+  <sys:String x:Key="Msg_ConfirmExit">Are you sure you want to exit?</sys:String>
+  <sys:String x:Key="Btn_Yes">Yes</sys:String>
+  <sys:String x:Key="Btn_No">No</sys:String>
 </ResourceDictionary>

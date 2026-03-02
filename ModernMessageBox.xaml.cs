@@ -20,18 +20,17 @@ namespace LibmpvIptvClient
                 if (TxtLink.Inlines.FirstInline is System.Windows.Documents.Hyperlink hl)
                 {
                     hl.NavigateUri = new Uri(linkUrl);
-                    // Use a more descriptive text if possible, or just the URL
-                    // For now, hardcoded "GitHub Repository" in XAML or we can change it dynamically
                     if (linkUrl.Contains("github.com"))
                     {
                         var firstInline = hl.Inlines.FirstInline;
+                        var linkText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Link_GitHubRepo", "访问 GitHub 项目主页");
                         if (firstInline is System.Windows.Documents.Run run)
                         {
-                            run.Text = "访问 GitHub 项目主页";
+                            run.Text = linkText;
                         }
                         else if (firstInline is System.Windows.Documents.InlineUIContainer uiContainer && uiContainer.Child is System.Windows.Controls.TextBlock tb)
                         {
-                            tb.Text = "访问 GitHub 项目主页";
+                            tb.Text = linkText;
                         }
                     }
                 }
@@ -41,15 +40,15 @@ namespace LibmpvIptvClient
             {
                 BtnYes.Visibility = Visibility.Visible;
                 BtnNo.Visibility = Visibility.Visible;
-                BtnYes.Content = "是";
-                BtnNo.Content = "否";
+                BtnYes.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Btn_Yes", "是");
+                BtnNo.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Btn_No", "否");
             }
             else if (buttons == MessageBoxButton.OKCancel)
             {
                 BtnYes.Visibility = Visibility.Visible;
                 BtnNo.Visibility = Visibility.Visible;
-                BtnYes.Content = "确定";
-                BtnNo.Content = "取消";
+                BtnYes.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_OK", "确定");
+                BtnNo.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Cancel", "取消");
             }
             else
             {

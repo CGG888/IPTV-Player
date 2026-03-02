@@ -89,7 +89,13 @@ namespace LibmpvIptvClient
                     catch { }
                 }
                 foreach (var r in toRemove) app.Resources.MergedDictionaries.Remove(r);
-                string code = ci.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? "zh-CN" : "en-US";
+                string code;
+                if (ci.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+                    code = ci.Name.IndexOf("TW", StringComparison.OrdinalIgnoreCase) >= 0 ? "zh-TW" : "zh-CN";
+                else if (ci.Name.StartsWith("ru", StringComparison.OrdinalIgnoreCase))
+                    code = "ru-RU";
+                else
+                    code = "en-US";
                 var dict = new ResourceDictionary { Source = new Uri($"Resources/Strings.{code}.xaml", UriKind.Relative) };
                 app.Resources.MergedDictionaries.Add(dict);
                 LanguageChanged?.Invoke();

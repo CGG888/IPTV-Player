@@ -186,7 +186,9 @@
                 <ComboBox x:Name="CbLanguage" Grid.Row="0" Grid.Column="1" Height="30" Width="220" SelectedIndex="0" Margin="0,0,0,0">
                   <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag=""/>
                   <ComboBoxItem Content="{DynamicResource UI_ChineseSimplified}" Tag="zh-CN"/>
+                  <ComboBoxItem Content="{DynamicResource UI_ChineseTraditional}" Tag="zh-TW"/>
                   <ComboBoxItem Content="{DynamicResource UI_English}" Tag="en-US"/>
+                  <ComboBoxItem Content="{DynamicResource UI_Russian}" Tag="ru-RU"/>
                 </ComboBox>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Appearance}" VerticalAlignment="Center" Margin="0,12,16,0"/>
                 <ComboBox x:Name="CbTheme" Grid.Row="1" Grid.Column="1" Height="30" Width="220" Margin="0,12,0,0">

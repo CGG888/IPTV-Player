@@ -121,6 +121,7 @@ namespace LibmpvIptvClient
             {
                 ApplyChannelFilter();
                 UpdateEpgDateUI();
+                UpdateEpgDisplay(); // Force refresh EPG list to update localized status
                 
                 // Update Playback Status Text
                 if (_timeshiftActive)
@@ -375,12 +376,11 @@ namespace LibmpvIptvClient
         void ExitApp()
         {
             var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
-            if (ModernMessageBox.Show(owner, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_ExitApp", "确定要退出软件吗？"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.YesNo) == true)
+            var msg = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_ExitApp", "确定要退出软件吗？");
+            var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Dlg_ExitTitle", "退出");
+            if (ModernMessageBox.Show(owner, msg, title, MessageBoxButton.YesNo) == true)
             {
-                // Force exit fullscreen to cleanup handles and overlays
                 if (_isFullscreen) ToggleFullscreen(false);
-                
-                // Ensure MPV is stopped and detached before closing window
                 try
                 {
                     _mpv?.Stop();

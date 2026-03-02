@@ -1,0 +1,168 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <sys:String x:Key="UI_TabInterface">Интерфейс</sys:String>
+  <sys:String x:Key="UI_TabPlayback">Воспроизведение</sys:String>
+  <sys:String x:Key="UI_TabEpgLogo">Программа и логотипы</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">Обновления и зеркала</sys:String>
+  <sys:String x:Key="UI_TabAbout">О программе</sys:String>
+
+  <sys:String x:Key="UI_Language">Язык</sys:String>
+  <sys:String x:Key="UI_Appearance">Внешний вид</sys:String>
+  <sys:String x:Key="UI_FollowSystem">Следовать системе</sys:String>
+  <sys:String x:Key="UI_Light">Светлая</sys:String>
+  <sys:String x:Key="UI_Dark">Тёмная</sys:String>
+  <sys:String x:Key="UI_ChineseSimplified">Упрощённый китайский</sys:String>
+  <sys:String x:Key="UI_ChineseTraditional">Традиционный китайский</sys:String>
+  <sys:String x:Key="UI_English">Английский</sys:String>
+  <sys:String x:Key="UI_Russian">Русский</sys:String>
+
+  <sys:String x:Key="UI_CdnLines">CDN</sys:String>
+  <sys:String x:Key="UI_Add">Добавить</sys:String>
+  <sys:String x:Key="UI_MoveUp">Вверх</sys:String>
+  <sys:String x:Key="UI_MoveDown">Вниз</sys:String>
+  <sys:String x:Key="UI_Delete">Удалить</sys:String>
+  <sys:String x:Key="UI_SortBySpeed">Сортировать по скорости</sys:String>
+
+  <sys:String x:Key="UI_CheckUpdate">Проверить обновления</sys:String>
+  <sys:String x:Key="UI_ViewUpdate">Просмотреть обновления</sys:String>
+  <sys:String x:Key="UI_ProjectSupport">Проект и поддержка</sys:String>
+  <sys:String x:Key="UI_GitHubHome">GitHub</sys:String>
+  <sys:String x:Key="UI_Feedback">Обратная связь</sys:String>
+  <sys:String x:Key="UI_License">Лицензия</sys:String>
+  <sys:String x:Key="UI_ThirdParty">Сторонние уведомления</sys:String>
+
+  <sys:String x:Key="UI_Save">Сохранить</sys:String>
+  <sys:String x:Key="UI_Cancel">Отмена</sys:String>
+  <sys:String x:Key="UI_DebugLog">Журнал отладки</sys:String>
+  <sys:String x:Key="UI_Clear">Очистить</sys:String>
+  <sys:String x:Key="UI_SettingsTitle">Настройки</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">Язык и тема применяются сразу; сохранение действует при следующем запуске.</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Tip">Поддерживается {name}, напр. http://site.com/{name}.png</sys:String>
+  <sys:String x:Key="UI_Cdn_Example">напр. https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_TextViewer">Просмотр текста</sys:String>
+  <sys:String x:Key="UI_Prev">Предыдущий</sys:String>
+  <sys:String x:Key="UI_Next">Следующий</sys:String>
+  <sys:String x:Key="UI_CopyAll">Копировать всё</sys:String>
+  <sys:String x:Key="Common_Close">Закрыть</sys:String>
+  <sys:String x:Key="Common_Tips">Сведения</sys:String>
+  <sys:String x:Key="Err_UnhandledTitle">Ошибка</sys:String>
+  <sys:String x:Key="Err_Unknown">Неизвестная ошибка</sys:String>
+  <sys:String x:Key="Msg_Checking">Проверка…</sys:String>
+  <sys:String x:Key="Msg_Opening">Открытие…</sys:String>
+  <sys:String x:Key="Msg_Loading">Загрузка…</sys:String>
+  <sys:String x:Key="Msg_FetchLicenseFailed">Не удалось получить содержимое лицензии.</sys:String>
+  <sys:String x:Key="Msg_FetchThirdPartyFailed">Не удалось получить сторонние уведомления.</sys:String>
+  <sys:String x:Key="Msg_NewVersionFound">Найдена новая версия v{0}. Посмотреть обновления?</sys:String>
+  <sys:String x:Key="Msg_AlreadyLatest">У вас последняя версия.</sys:String>
+  <sys:String x:Key="Err_DownloadFailed">Ошибка загрузки:&#x0a;{0}</sys:String>
+  <sys:String x:Key="Msg_InstallerNotFound">Установщик не найден. Пожалуйста, скачайте.</sys:String>
+  <sys:String x:Key="Confirm_InstallUpdate">Плеер будет закрыт и запустится установщик. Продолжить?</sys:String>
+  <sys:String x:Key="Err_StartInstallerFailed">Не удалось запустить установщик:&#x0a;{0}</sys:String>
+  <sys:String x:Key="Favorite_Toggle">В избранное/убрать</sys:String>
+
+  <sys:String x:Key="Update_Title">Обновление ПО</sys:String>
+  <sys:String x:Key="Update_LatestVersion">Последняя версия:</sys:String>
+  <sys:String x:Key="Update_DownloadLine">Зеркало загрузки:</sys:String>
+  <sys:String x:Key="Update_Notes">Список изменений</sys:String>
+  <sys:String x:Key="Update_Download">Скачать</sys:String>
+  <sys:String x:Key="Update_Install">Установить обновление</sys:String>
+
+  <!-- Exit Dialog -->
+  <sys:String x:Key="Dlg_ExitTitle">Выход</sys:String>
+  <sys:String x:Key="Confirm_ExitApp">Вы уверены, что хотите выйти?</sys:String>
+
+  <!-- EPG -->
+  <sys:String x:Key="EPG_Title">Программа передач</sys:String>
+  <sys:String x:Key="EPG_Collapse">Свернуть программу</sys:String>
+  <sys:String x:Key="EPG_PrevDay">Предыдущий день</sys:String>
+  <sys:String x:Key="EPG_Today">Сегодня</sys:String>
+  <sys:String x:Key="EPG_NextDay">Следующий день</sys:String>
+  <sys:String x:Key="EPG_Status_Live">Прямой эфир</sys:String>
+  <sys:String x:Key="EPG_Status_Playback">Запись</sys:String>
+  <sys:String x:Key="EPG_Status_Timeshift">Таймшифт</sys:String>
+  <sys:String x:Key="EPG_Status_Scheduled">Запланировано</sys:String>
+  <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ Запись</sys:String>
+  <sys:String x:Key="EPG_Yesterday">Вчера</sys:String>
+  <sys:String x:Key="EPG_Tomorrow">Завтра</sys:String>
+  <sys:String x:Key="EPG_Featured">Рекомендуемое</sys:String>
+  <sys:String x:Key="EPG_NoData">Нет данных</sys:String>
+
+  <!-- Drawer -->
+  <sys:String x:Key="Drawer_Title">Список каналов</sys:String>
+  <sys:String x:Key="Drawer_Collapse">Свернуть список</sys:String>
+  <sys:String x:Key="Drawer_Clear">Очистить</sys:String>
+  <sys:String x:Key="Drawer_CountAll">Всего {0} каналов</sys:String>
+  <sys:String x:Key="Drawer_FilteredCount">{0} / {1} отфильтровано</sys:String>
+  <sys:String x:Key="Tab_AllChannels">Все каналы</sys:String>
+  <sys:String x:Key="Tab_Groups">Группы</sys:String>
+  <sys:String x:Key="Tab_History">История</sys:String>
+  <sys:String x:Key="Tab_Favorites">Избранное</sys:String>
+  <sys:String x:Key="History_Title">История</sys:String>
+  <sys:String x:Key="History_DeleteSelected">Удалить выбранные</sys:String>
+  <sys:String x:Key="History_ClearAll">Очистить всё</sys:String>
+  <sys:String x:Key="History_Context_DeleteOne">Удалить это</sys:String>
+
+  <!-- Menu -->
+  <sys:String x:Key="Menu_File">Открыть</sys:String>
+  <sys:String x:Key="Menu_OpenFile">Открыть файл...</sys:String>
+  <sys:String x:Key="Menu_OpenUrl">Открыть URL...</sys:String>
+  <sys:String x:Key="Menu_M3U">M3U</sys:String>
+  <sys:String x:Key="Menu_AddM3uFile">Добавить M3U файл...</sys:String>
+  <sys:String x:Key="Menu_AddM3uUrl">Добавить M3U URL...</sys:String>
+  <sys:String x:Key="Menu_EditM3u">Редактировать M3U</sys:String>
+  <sys:String x:Key="Menu_Performance">Производительность</sys:String>
+  <sys:String x:Key="Menu_FCC">FCC (быстрое переключение)</sys:String>
+  <sys:String x:Key="Menu_UDP">UDP (оптимизация мульткаста)</sys:String>
+  <sys:String x:Key="Menu_List">Список</sys:String>
+  <sys:String x:Key="Menu_EPG">EPG</sys:String>
+  <sys:String x:Key="Menu_Channel">Каналы</sys:String>
+  <sys:String x:Key="Menu_SwitchM3u">Сменить M3U</sys:String>
+  <sys:String x:Key="Menu_Settings">Настройки</sys:String>
+  <sys:String x:Key="Menu_Exit">Выход</sys:String>
+
+  <!-- Overlay tooltips -->
+  <sys:String x:Key="Overlay_Mute">Без звука</sys:String>
+  <sys:String x:Key="Overlay_SwitchSource">Сменить источник</sys:String>
+  <sys:String x:Key="Overlay_AspectRatio">Соотношение</sys:String>
+  <sys:String x:Key="Overlay_Timeshift">Таймшифт</sys:String>
+  <sys:String x:Key="Overlay_EPG">Программа</sys:String>
+  <sys:String x:Key="Overlay_ToggleDrawer">Свернуть список</sys:String>
+  <sys:String x:Key="Tooltip_PinTop">Поверх всех</sys:String>
+
+  <!-- Playback/Stream -->
+  <sys:String x:Key="UI_Playback_EnableHwdec">Включить аппаратное декодирование (d3d11va)</sys:String>
+  <sys:String x:Key="UI_Playback_CacheSecs">Кэш (сек)</sys:String>
+  <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
+  <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>
+  <sys:String x:Key="UI_Playback_FCCPrefetch">Предзагрузка FCC</sys:String>
+  <sys:String x:Key="UI_Playback_TimeoutSec">Таймаут источника (сек)</sys:String>
+
+  <!-- EPG page -->
+  <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl">URL логотипов</sys:String>
+  <sys:String x:Key="UI_Epg_TimeshiftHours">Диапазон таймшифта (часы)</sys:String>
+
+  <!-- About -->
+  <sys:String x:Key="About_TitleBar">О IPTV Player</sys:String>
+  <sys:String x:Key="About_Desc1">Высокопроизводительный IPTV-плеер для Windows на базе libmpv.</sys:String>
+  <sys:String x:Key="About_Desc2">Поддержка M3U, EPG, записи и др.</sys:String>
+  <sys:String x:Key="About_Update">Обновить</sys:String>
+  <sys:String x:Key="App_DescShort">IPTV-плеер: мультикаст/уникаст, EPG, запись, таймшифт</sys:String>
+
+  <!-- M3U Edit -->
+  <sys:String x:Key="M3U_EditTitle">Редактировать M3U URL</sys:String>
+  <sys:String x:Key="M3U_Name">Имя:</sys:String>
+  <sys:String x:Key="M3U_Url">URL:</sys:String>
+  <sys:String x:Key="Common_Delete">Удалить</sys:String>
+
+  <!-- Playback/Stream -->
+  <sys:String x:Key="Stream_Network">Сетевой поток</sys:String>
+  <sys:String x:Key="App_Untitled">Без названия</sys:String>
+  <sys:String x:Key="Ratio_Default">По умолчанию</sys:String>
+  <sys:String x:Key="Ratio_Stretch">Растянуть</sys:String>
+  <sys:String x:Key="Ratio_Fill">Заполнить</sys:String>
+  <sys:String x:Key="Ratio_Crop">Обрезать</sys:String>
+  <sys:String x:Key="Stream_Multicast">Мультикаст</sys:String>
+  <sys:String x:Key="Stream_Unicast">Уникаст</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,168 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <sys:String x:Key="UI_TabInterface">介面</sys:String>
+  <sys:String x:Key="UI_TabPlayback">播放</sys:String>
+  <sys:String x:Key="UI_TabEpgLogo">EPG 與台標</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">更新與鏡像</sys:String>
+  <sys:String x:Key="UI_TabAbout">關於</sys:String>
+
+  <sys:String x:Key="UI_Language">語言</sys:String>
+  <sys:String x:Key="UI_Appearance">外觀</sys:String>
+  <sys:String x:Key="UI_FollowSystem">跟隨系統</sys:String>
+  <sys:String x:Key="UI_Light">淺色</sys:String>
+  <sys:String x:Key="UI_Dark">深色</sys:String>
+  <sys:String x:Key="UI_ChineseSimplified">簡體中文</sys:String>
+  <sys:String x:Key="UI_ChineseTraditional">繁體中文</sys:String>
+  <sys:String x:Key="UI_English">English</sys:String>
+  <sys:String x:Key="UI_Russian">俄語</sys:String>
+
+  <sys:String x:Key="UI_CdnLines">CDN 線路</sys:String>
+  <sys:String x:Key="UI_Add">新增</sys:String>
+  <sys:String x:Key="UI_MoveUp">上移</sys:String>
+  <sys:String x:Key="UI_MoveDown">下移</sys:String>
+  <sys:String x:Key="UI_Delete">刪除</sys:String>
+  <sys:String x:Key="UI_SortBySpeed">依速度排序</sys:String>
+
+  <sys:String x:Key="UI_CheckUpdate">檢查更新</sys:String>
+  <sys:String x:Key="UI_ViewUpdate">查看更新</sys:String>
+  <sys:String x:Key="UI_ProjectSupport">專案與支援</sys:String>
+  <sys:String x:Key="UI_GitHubHome">GitHub 專案首頁</sys:String>
+  <sys:String x:Key="UI_Feedback">問題回報</sys:String>
+  <sys:String x:Key="UI_License">開源授權</sys:String>
+  <sys:String x:Key="UI_ThirdParty">第三方聲明</sys:String>
+
+  <sys:String x:Key="UI_Save">儲存</sys:String>
+  <sys:String x:Key="UI_Cancel">取消</sys:String>
+  <sys:String x:Key="UI_DebugLog">除錯日誌</sys:String>
+  <sys:String x:Key="UI_Clear">清除</sys:String>
+  <sys:String x:Key="UI_SettingsTitle">設定</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">語言與主題即時套用，儲存後下次啟動保留。</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Tip">支援 {name} 佔位符，例如 http://site.com/{name}.png</sys:String>
+  <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_TextViewer">文字檢視器</sys:String>
+  <sys:String x:Key="UI_Prev">上一個</sys:String>
+  <sys:String x:Key="UI_Next">下一個</sys:String>
+  <sys:String x:Key="UI_CopyAll">複製全部</sys:String>
+  <sys:String x:Key="Common_Close">關閉</sys:String>
+  <sys:String x:Key="Common_Tips">提示</sys:String>
+  <sys:String x:Key="Err_UnhandledTitle">錯誤</sys:String>
+  <sys:String x:Key="Err_Unknown">未知錯誤</sys:String>
+  <sys:String x:Key="Msg_Checking">檢查中…</sys:String>
+  <sys:String x:Key="Msg_Opening">開啟中…</sys:String>
+  <sys:String x:Key="Msg_Loading">載入中…</sys:String>
+  <sys:String x:Key="Msg_FetchLicenseFailed">無法取得授權內容。</sys:String>
+  <sys:String x:Key="Msg_FetchThirdPartyFailed">無法取得第三方聲明。</sys:String>
+  <sys:String x:Key="Msg_NewVersionFound">發現新版本 v{0}，是否查看更新？</sys:String>
+  <sys:String x:Key="Msg_AlreadyLatest">目前已是最新版本。</sys:String>
+  <sys:String x:Key="Err_DownloadFailed">下載失敗：&#x0a;{0}</sys:String>
+  <sys:String x:Key="Msg_InstallerNotFound">未找到安裝檔，請先下載。</sys:String>
+  <sys:String x:Key="Confirm_InstallUpdate">即將關閉播放器並啟動安裝程式，是否繼續？</sys:String>
+  <sys:String x:Key="Err_StartInstallerFailed">無法啟動安裝程式：&#x0a;{0}</sys:String>
+  <sys:String x:Key="Favorite_Toggle">收藏/取消收藏</sys:String>
+
+  <sys:String x:Key="Update_Title">軟體更新</sys:String>
+  <sys:String x:Key="Update_LatestVersion">最新版本：</sys:String>
+  <sys:String x:Key="Update_DownloadLine">下載線路：</sys:String>
+  <sys:String x:Key="Update_Notes">更新內容</sys:String>
+  <sys:String x:Key="Update_Download">下載</sys:String>
+  <sys:String x:Key="Update_Install">安裝更新</sys:String>
+
+  <!-- Exit Dialog -->
+  <sys:String x:Key="Dlg_ExitTitle">離開</sys:String>
+  <sys:String x:Key="Confirm_ExitApp">確定要退出軟體嗎？</sys:String>
+
+  <!-- EPG -->
+  <sys:String x:Key="EPG_Title">節目指南</sys:String>
+  <sys:String x:Key="EPG_Collapse">收合節目指南</sys:String>
+  <sys:String x:Key="EPG_PrevDay">前一天</sys:String>
+  <sys:String x:Key="EPG_Today">今天</sys:String>
+  <sys:String x:Key="EPG_NextDay">後一天</sys:String>
+  <sys:String x:Key="EPG_Status_Live">直播</sys:String>
+  <sys:String x:Key="EPG_Status_Playback">回看</sys:String>
+  <sys:String x:Key="EPG_Status_Timeshift">時移</sys:String>
+  <sys:String x:Key="EPG_Status_Scheduled">預約</sys:String>
+  <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ 回看</sys:String>
+  <sys:String x:Key="EPG_Yesterday">昨天</sys:String>
+  <sys:String x:Key="EPG_Tomorrow">明天</sys:String>
+  <sys:String x:Key="EPG_Featured">精選</sys:String>
+  <sys:String x:Key="EPG_NoData">無資料</sys:String>
+
+  <!-- Drawer -->
+  <sys:String x:Key="Drawer_Title">頻道列表</sys:String>
+  <sys:String x:Key="Drawer_Collapse">收合頻道列表</sys:String>
+  <sys:String x:Key="Drawer_Clear">清除</sys:String>
+  <sys:String x:Key="Drawer_CountAll">共 {0} 個頻道</sys:String>
+  <sys:String x:Key="Drawer_FilteredCount">篩選 {0} / {1}</sys:String>
+  <sys:String x:Key="Tab_AllChannels">所有頻道</sys:String>
+  <sys:String x:Key="Tab_Groups">分組</sys:String>
+  <sys:String x:Key="Tab_History">歷史</sys:String>
+  <sys:String x:Key="Tab_Favorites">收藏</sys:String>
+  <sys:String x:Key="History_Title">歷史</sys:String>
+  <sys:String x:Key="History_DeleteSelected">刪除所選</sys:String>
+  <sys:String x:Key="History_ClearAll">清空全部</sys:String>
+  <sys:String x:Key="History_Context_DeleteOne">刪除此項</sys:String>
+
+  <!-- Menu -->
+  <sys:String x:Key="Menu_File">打開</sys:String>
+  <sys:String x:Key="Menu_OpenFile">打開檔案...</sys:String>
+  <sys:String x:Key="Menu_OpenUrl">打開連結...</sys:String>
+  <sys:String x:Key="Menu_M3U">M3U</sys:String>
+  <sys:String x:Key="Menu_AddM3uFile">新增 M3U 檔案...</sys:String>
+  <sys:String x:Key="Menu_AddM3uUrl">新增 M3U 位址...</sys:String>
+  <sys:String x:Key="Menu_EditM3u">編輯 M3U</sys:String>
+  <sys:String x:Key="Menu_Performance">效能</sys:String>
+  <sys:String x:Key="Menu_FCC">FCC（快速切台）</sys:String>
+  <sys:String x:Key="Menu_UDP">UDP（組播優化）</sys:String>
+  <sys:String x:Key="Menu_List">列表</sys:String>
+  <sys:String x:Key="Menu_EPG">EPG</sys:String>
+  <sys:String x:Key="Menu_Channel">頻道</sys:String>
+  <sys:String x:Key="Menu_SwitchM3u">切換 M3U</sys:String>
+  <sys:String x:Key="Menu_Settings">設定</sys:String>
+  <sys:String x:Key="Menu_Exit">退出</sys:String>
+
+  <!-- Overlay tooltips -->
+  <sys:String x:Key="Overlay_Mute">靜音</sys:String>
+  <sys:String x:Key="Overlay_SwitchSource">切換來源</sys:String>
+  <sys:String x:Key="Overlay_AspectRatio">畫面比例</sys:String>
+  <sys:String x:Key="Overlay_Timeshift">時移</sys:String>
+  <sys:String x:Key="Overlay_EPG">節目指南</sys:String>
+  <sys:String x:Key="Overlay_ToggleDrawer">折疊頻道列表</sys:String>
+  <sys:String x:Key="Tooltip_PinTop">置頂</sys:String>
+
+  <!-- Playback/Stream -->
+  <sys:String x:Key="UI_Playback_EnableHwdec">啟用硬體解碼 (d3d11va)</sys:String>
+  <sys:String x:Key="UI_Playback_CacheSecs">快取秒數</sys:String>
+  <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
+  <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>
+  <sys:String x:Key="UI_Playback_FCCPrefetch">FCC 預取數量</sys:String>
+  <sys:String x:Key="UI_Playback_TimeoutSec">超時換源 (秒)</sys:String>
+
+  <!-- EPG page -->
+  <sys:String x:Key="UI_Epg_Url">EPG 位址</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl">台標庫位址</sys:String>
+  <sys:String x:Key="UI_Epg_TimeshiftHours">時移範圍 (小時)</sys:String>
+
+  <!-- About -->
+  <sys:String x:Key="About_TitleBar">關於 IPTV Player</sys:String>
+  <sys:String x:Key="About_Desc1">基於 libmpv 的高效能 Windows IPTV 播放器。</sys:String>
+  <sys:String x:Key="About_Desc2">支援 M3U、EPG、回看等功能。</sys:String>
+  <sys:String x:Key="About_Update">更新</sys:String>
+  <sys:String x:Key="App_DescShort">支援組播/單播、EPG、回看與時移的播放器</sys:String>
+
+  <!-- M3U Edit -->
+  <sys:String x:Key="M3U_EditTitle">編輯 M3U 位址</sys:String>
+  <sys:String x:Key="M3U_Name">名稱:</sys:String>
+  <sys:String x:Key="M3U_Url">位址:</sys:String>
+  <sys:String x:Key="Common_Delete">刪除</sys:String>
+
+  <!-- Playback/Stream -->
+  <sys:String x:Key="Stream_Network">網路串流</sys:String>
+  <sys:String x:Key="App_Untitled">未命名</sys:String>
+  <sys:String x:Key="Ratio_Default">預設</sys:String>
+  <sys:String x:Key="Ratio_Stretch">拉伸</sys:String>
+  <sys:String x:Key="Ratio_Fill">填滿</sys:String>
+  <sys:String x:Key="Ratio_Crop">裁切</sys:String>
+  <sys:String x:Key="Stream_Multicast">組播</sys:String>
+  <sys:String x:Key="Stream_Unicast">單播</sys:String>
+</ResourceDictionary>

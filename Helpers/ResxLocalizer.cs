@@ -28,16 +28,15 @@ namespace LibmpvIptvClient.Helpers
             lock (_lock)
             {
                 _cache.Clear();
-                // Try exact, then parent, then neutral
                 var baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 var folder = Path.Combine(baseDir, "Resources", "Resx");
                 var tried = new List<string>();
                 if (!Directory.Exists(folder)) return;
                 string[] candidates = new[]
                 {
-                    Path.Combine(folder, $"Strings.{_culture.Name}.resx"),
-                    Path.Combine(folder, $"Strings.{_culture.TwoLetterISOLanguageName}.resx"),
                     Path.Combine(folder, "Strings.resx"),
+                    Path.Combine(folder, $"Strings.{_culture.TwoLetterISOLanguageName}.resx"),
+                    Path.Combine(folder, $"Strings.{_culture.Name}.resx"),
                 };
                 foreach (var f in candidates)
                 {
@@ -54,18 +53,18 @@ namespace LibmpvIptvClient.Helpers
         {
             lock (_lock)
             {
+                try
+                {
+                    var app = System.Windows.Application.Current;
+                    if (app != null)
+                    {
+                        var val = app.TryFindResource(key) as string;
+                        if (!string.IsNullOrEmpty(val)) return val!;
+                    }
+                }
+                catch { }
                 if (_cache.TryGetValue(key, out var v) && !string.IsNullOrEmpty(v)) return v;
             }
-            try
-            {
-                var app = System.Windows.Application.Current;
-                if (app != null)
-                {
-                    var val = app.TryFindResource(key) as string;
-                    if (!string.IsNullOrEmpty(val)) return val!;
-                }
-            }
-            catch { }
             return fallback;
         }
 

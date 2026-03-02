@@ -31,4 +31,8 @@
   <data name="Err_StartInstallerFailed"><value>无法启动安装包：
 {0}</value></data>
   <data name="Confirm_DeleteSource"><value>确定要删除这个源吗？</value></data>
+  <data name="Dlg_ExitTitle"><value>退出</value></data>
+  <data name="Btn_Yes"><value>是</value></data>
+  <data name="Btn_No"><value>否</value></data>
+  <data name="Link_GitHubRepo"><value>访问 GitHub 项目主页</value></data>
 </root>

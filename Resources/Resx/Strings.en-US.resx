@@ -31,4 +31,8 @@
   <data name="Err_StartInstallerFailed"><value>Failed to start installer:
 {0}</value></data>
   <data name="Confirm_DeleteSource"><value>Are you sure to delete this source?</value></data>
+  <data name="Dlg_ExitTitle"><value>Exit</value></data>
+  <data name="Btn_Yes"><value>Yes</value></data>
+  <data name="Btn_No"><value>No</value></data>
+  <data name="Link_GitHubRepo"><value>Visit GitHub project page</value></data>
 </root>

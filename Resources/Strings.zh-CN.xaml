@@ -13,7 +13,9 @@
   <sys:String x:Key="UI_Light">浅色</sys:String>
   <sys:String x:Key="UI_Dark">深色</sys:String>
   <sys:String x:Key="UI_ChineseSimplified">简体中文</sys:String>
+  <sys:String x:Key="UI_ChineseTraditional">繁体中文</sys:String>
   <sys:String x:Key="UI_English">English</sys:String>
+  <sys:String x:Key="UI_Russian">俄语</sys:String>
 
   <sys:String x:Key="UI_CdnLines">CDN线路</sys:String>
   <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
@@ -67,6 +69,12 @@
   <sys:String x:Key="Confirm_InstallUpdate">即将关闭播放器并启动安装包，是否继续？</sys:String>
   <sys:String x:Key="Err_StartInstallerFailed">无法启动安装包：&#x0a;{0}</sys:String>
   <sys:String x:Key="Favorite_Toggle">收藏/取消收藏</sys:String>
+  
+  <!-- 退出弹窗 -->
+  <sys:String x:Key="Dlg_ExitTitle">退出</sys:String>
+  <sys:String x:Key="Confirm_ExitApp">确定要退出软件吗？</sys:String>
+  <sys:String x:Key="Btn_Yes">是</sys:String>
+  <sys:String x:Key="Btn_No">否</sys:String>
   
   <!-- EPG -->
   <sys:String x:Key="EPG_Title">节目指南</sys:String>

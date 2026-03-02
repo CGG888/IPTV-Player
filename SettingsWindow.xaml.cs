@@ -38,7 +38,9 @@ namespace LibmpvIptvClient
                     var lang = (current.Language ?? "").Trim();
                     int idx = 0;
                     if (string.Equals(lang, "zh-CN", StringComparison.OrdinalIgnoreCase)) idx = 1;
-                    else if (string.Equals(lang, "en-US", StringComparison.OrdinalIgnoreCase)) idx = 2;
+                    else if (string.Equals(lang, "zh-TW", StringComparison.OrdinalIgnoreCase)) idx = 2;
+                    else if (string.Equals(lang, "en-US", StringComparison.OrdinalIgnoreCase)) idx = 3;
+                    else if (string.Equals(lang, "ru-RU", StringComparison.OrdinalIgnoreCase)) idx = 4;
                     CbLanguage.SelectedIndex = idx;
                     CbLanguage.SelectionChanged += CbLanguage_SelectionChanged;
                 }

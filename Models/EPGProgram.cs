@@ -16,9 +16,9 @@ namespace LibmpvIptvClient.Models
             get 
             {
                 var now = DateTime.Now;
-                if (now >= Start && now < End) return "直播";
-                if (now >= End) return "回放";
-                return "预约";
+                if (now >= Start && now < End) return LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                if (now >= End) return LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
+                return LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Scheduled", "预约");
             }
         }
     }
