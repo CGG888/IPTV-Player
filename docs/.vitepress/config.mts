@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "SrcBox",
   description: "A modern IPTV player based on libmpv",
-  base: "/SrcBox/",
+  base: "/",
   
   // Favicon configuration
   head: [
