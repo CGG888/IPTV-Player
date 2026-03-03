@@ -6,7 +6,7 @@
         ResizeMode="CanResize"
         WindowStyle="None"
         Background="{DynamicResource AppBackgroundBrush}"
-        Icon="/iptv.png">
+        Icon="pack://application:,,,/srcbox.ico">
     <Border Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>

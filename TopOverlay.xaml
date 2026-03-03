@@ -3,7 +3,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         x:Class="LibmpvIptvClient.TopOverlay"
         Title="TopOverlay"
-        Icon="/iptv.png"
+        Icon="pack://application:,,,/srcbox.ico"
         Height="40" Width="800"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -165,8 +165,8 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,0">
                 <Button x:Name="BtnTitle" Click="BtnTitle_Click" Style="{StaticResource TitleBtnStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/iptv.png" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="IPTV Player" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <Image Source="/srcbox.png" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource App_Name}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

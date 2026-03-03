@@ -1,12 +1,12 @@
 ; Script generated for Inno Setup
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
-#define MyAppName "IPTV Player"
-#define MyAppVersion "1.0.5"
+#define MyAppName "SrcBox"
+#define MyAppVersion "1.0.6"
 #define MyAppPublisher "CGG888"
-#define MyAppExeName "IPTV_Player.exe"
+#define MyAppExeName "SrcBox.exe"
 
-#define DefaultRepoURL "https://github.com/CGG888/IPTV-Player"
+#define DefaultRepoURL "https://github.com/CGG888/SrcBox"
 #define GitOriginURL GetEnv("GIT_ORIGIN_URL")
 #define GitRepoURLEnv GetEnv("GIT_REPO_URL")
 #define GitIssuesURLEnv GetEnv("GIT_ISSUES_URL")
@@ -51,8 +51,8 @@ DisableProgramGroupPage=yes
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 OutputDir=Output
-OutputBaseFilename=IPTV_Player_Setup_{#MyAppVersion}
-SetupIconFile=iptv.ico
+OutputBaseFilename=SrcBox_Setup_{#MyAppVersion}
+SetupIconFile=srcbox.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

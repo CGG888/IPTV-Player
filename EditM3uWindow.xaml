@@ -4,7 +4,7 @@
         x:Class="LibmpvIptvClient.EditM3uWindow"
         Title="{DynamicResource M3U_EditTitle}" Height="220" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        WindowStyle="None" Icon="/iptv.png"
+        WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
         Background="Transparent" AllowsTransparency="True" Foreground="{DynamicResource TextPrimaryBrush}">
     
     <WindowChrome.WindowChrome>
@@ -27,7 +27,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Image Source="/iptv.png" Width="18" Height="18" Margin="0,0,8,0"/>
+                        <Image Source="/srcbox.png" Width="18" Height="18" Margin="0,0,8,0"/>
                         <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="46" Height="32" Background="Transparent" BorderThickness="0">

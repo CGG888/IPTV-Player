@@ -35,3 +35,11 @@ desktop.ini
 docs/screenshots/命令.md
 docs/screenshots/cdn.md
 docs/screenshots/推荐分类.md
+/node_modules
+docs/public/screenshots/命令.md
+docs/public/screenshots/推荐分类.md
+
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+/.git_backup/*

@@ -1,4 +1,4 @@
-# IPTV Player (Windows / WPF)
+# SrcBox (Windows / WPF)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
@@ -7,7 +7,7 @@
 
 [English](./README_EN.md) | [中文](./README.md)
 
-**IPTV Player** is a high-performance, modern IPTV player designed for the Windows platform.
+**SrcBox** is a high-performance, modern IPTV player designed for the Windows platform.
 
 Built on the powerful **libmpv** playback core and combined with a modern **WPF** interface, it delivers a smooth and stable live viewing experience. It supports core features like M3U playlists, EPG (Electronic Program Guide), and Catchup (Replay), while offering deep optimizations for IPTV scenarios (such as FCC fast channel switching and UDP multicast optimization), making it the ideal choice for watching live TV on your PC.
 
@@ -36,7 +36,7 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
 
 ## Overview
 
-**IPTV Player** uses `libmpv-2.dll` as its playback core, hosting the video window via `WindowsFormsHost`. It provides features such as IPTV channel lists, grouping, EPG, catchup/replay, and source switching.
+**SrcBox** uses `libmpv-2.dll` as its playback core, hosting the video window via `WindowsFormsHost`. It provides features such as IPTV channel lists, grouping, EPG, catchup/replay, and source switching.
 
 - Entry Window: [MainWindow.xaml](./MainWindow.xaml)
 - libmpv Wrapper: [MpvPlayer.cs](./MpvPlayer.cs)
@@ -59,7 +59,7 @@ This project is developed using **C# / WPF**. The core architecture is as follow
 ### Project Structure
 
 ```text
-📂 IPTV-Player
+📂 SrcBox
 ├── 📂 Models          # Data Models (Channel, EpgProgram, Source)
 ├── 📂 Services        # Core Services (M3U Parsing, EPG, Channel Mgmt)
 ├── 📂 Resources       # Resources (Localization, Styles, Fonts)

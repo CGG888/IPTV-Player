@@ -6,11 +6,13 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>IPTV_Player</AssemblyName>
-    <ApplicationIcon>iptv.ico</ApplicationIcon>
-    <Version>1.0.5</Version>
-    <AssemblyVersion>1.0.5.0</AssemblyVersion>
-    <FileVersion>1.0.5.0</FileVersion>
+    <AssemblyName>SrcBox</AssemblyName>
+    <ApplicationIcon>srcbox.ico</ApplicationIcon>
+    <Product>SrcBox</Product>
+    <AssemblyTitle>SrcBox</AssemblyTitle>
+    <Version>1.0.6</Version>
+    <AssemblyVersion>1.0.6.0</AssemblyVersion>
+    <FileVersion>1.0.6.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
@@ -31,7 +33,7 @@
     <None Update="libmpv-2.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Resource Include="iptv.png" />
-    <Resource Include="iptv.ico" />
+    <Resource Include="srcbox.png" />
+    <Resource Include="srcbox.ico" />
   </ItemGroup>
 </Project>

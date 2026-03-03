@@ -71,9 +71,9 @@ namespace LibmpvIptvClient
         {
             try
             {
-                _http.DefaultRequestHeaders.UserAgent.ParseAdd("IPTV-Player/UpdateCheck");
+                _http.DefaultRequestHeaders.UserAgent.ParseAdd("SrcBox/UpdateCheck");
                 _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-                var latest = await FetchLatestReleaseAsync("https://api.github.com/repos/CGG888/IPTV-Player/releases/latest");
+                var latest = await FetchLatestReleaseAsync("https://api.github.com/repos/CGG888/SrcBox/releases/latest");
                 if (latest == null) return;
                 _latest = latest;
                 if (IsNewer(_latest.Version, _currentVersion))

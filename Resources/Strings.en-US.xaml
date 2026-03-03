@@ -6,6 +6,7 @@
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>
   <sys:String x:Key="UI_TabUpdateMirrors">Updates &amp; Mirrors</sys:String>
   <sys:String x:Key="UI_TabAbout">About</sys:String>
+  <sys:String x:Key="App_Name">SrcBox</sys:String>
 
   <sys:String x:Key="UI_Language">Language</sys:String>
   <sys:String x:Key="UI_Appearance">Appearance</sys:String>
@@ -152,7 +153,7 @@
   <sys:String x:Key="UI_Epg_TimeshiftHours">Timeshift range (hours)</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">About IPTV Player</sys:String>
+  <sys:String x:Key="About_TitleBar">About SrcBox</sys:String>
   <sys:String x:Key="About_Desc1">High-performance Windows IPTV player powered by libmpv.</sys:String>
   <sys:String x:Key="About_Desc2">Supports M3U playlists, EPG, catch-up and more.</sys:String>
   <sys:String x:Key="About_Update">Update</sys:String>

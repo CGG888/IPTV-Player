@@ -6,6 +6,7 @@
   <sys:String x:Key="UI_TabEpgLogo">EPG与台标</sys:String>
   <sys:String x:Key="UI_TabUpdateMirrors">更新与镜像</sys:String>
   <sys:String x:Key="UI_TabAbout">关于</sys:String>
+  <sys:String x:Key="App_Name">源匣 (SrcBox)</sys:String>
 
   <sys:String x:Key="UI_Language">语言</sys:String>
   <sys:String x:Key="UI_Appearance">外观</sys:String>
@@ -148,7 +149,7 @@
   <sys:String x:Key="UI_Epg_TimeshiftHours">时移范围 (小时)</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">关于 IPTV Player</sys:String>
+  <sys:String x:Key="About_TitleBar">关于 源匣 (SrcBox)</sys:String>
   <sys:String x:Key="About_Desc1">基于 libmpv 开发的高性能 Windows IPTV 播放器。</sys:String>
   <sys:String x:Key="About_Desc2">支持 M3U 播放列表、EPG 节目指南、回看等功能。</sys:String>
   <sys:String x:Key="About_Update">更新</sys:String>

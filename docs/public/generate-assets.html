@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SrcBox Asset Generator</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f9ff; color: #334155; }
+        .container { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        h1 { color: #0f172a; }
+        .preview { display: flex; gap: 20px; margin: 20px 0; align-items: flex-end; }
+        .item { text-align: center; }
+        img { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        .status { margin-top: 10px; color: #059669; font-weight: bold; }
+        .instruction { background: #fff1f2; border-left: 4px solid #f43f5e; padding: 1rem; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SrcBox Asset Generator</h1>
+        <p>This tool converts the vector SVG logo into PNG and ICO formats required for the website.</p>
+        
+        <div class="preview">
+            <div class="item">
+                <p>Original SVG</p>
+                <img id="svg-preview" src="./logo.svg" width="128" height="128" alt="SVG Preview">
+            </div>
+            <div class="item">
+                <p>Generated PNG (512px)</p>
+                <canvas id="canvas-png" width="512" height="512" style="width: 128px; height: 128px; border: 1px solid #ccc;"></canvas>
+            </div>
+            <div class="item">
+                <p>Generated ICO (32px)</p>
+                <canvas id="canvas-ico" width="32" height="32" style="width: 32px; height: 32px; border: 1px solid #ccc;"></canvas>
+            </div>
+        </div>
+
+        <button onclick="generateAndDownload()">Download Assets</button>
+        <div id="status" class="status"></div>
+
+        <div class="instruction">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Click the <strong>"Download Assets"</strong> button above.</li>
+                <li>It will download <code>logo.png</code> and <code>favicon.ico</code>.</li>
+                <li>Move these downloaded files into your <code>docs/public/</code> folder, replacing any existing ones.</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const svgImg = document.getElementById('svg-preview');
+        const canvasPng = document.getElementById('canvas-png');
+        const canvasIco = document.getElementById('canvas-ico');
+        const status = document.getElementById('status');
+
+        // Draw SVG to Canvas when image loads
+        svgImg.onload = function() {
+            const ctxPng = canvasPng.getContext('2d');
+            ctxPng.drawImage(svgImg, 0, 0, 512, 512);
+
+            const ctxIco = canvasIco.getContext('2d');
+            ctxIco.drawImage(svgImg, 0, 0, 32, 32);
+        };
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function generateAndDownload() {
+            // Download PNG
+            downloadCanvas(canvasPng, 'logo.png');
+            
+            // Download ICO (simulated as PNG, most modern browsers support PNG favicons, but let's try to name it .ico for compatibility or just use PNG for favicon)
+            // Note: True .ico binary format is complex to generate in pure JS without libraries. 
+            // However, simply renaming a 32x32 PNG to .ico often works in many contexts, or we can just use the PNG as favicon in config.
+            // Let's download as favicon.ico (content is PNG) - Windows might complain, but web browsers are fine.
+            // Actually, let's just download as favicon.png and logo.png. Modern web uses PNG favicons.
+            // User asked for "ico", let's try to do best effort.
+            
+            downloadCanvas(canvasIco, 'favicon.ico'); 
+            
+            status.textContent = "Downloads started! Check your downloads folder.";
+        }
+    </script>
+</body>
+</html>

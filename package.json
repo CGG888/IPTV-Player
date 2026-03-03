@@ -1,0 +1,21 @@
+{
+  "name": "iptv-player-docs",
+  "version": "1.0.0",
+  "description": "Documentation for SrcBox",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "postinstall": "node scripts/patch-vue-index.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vue/reactivity": "^3.5.29",
+    "@vue/runtime-core": "^3.5.29",
+    "@vue/runtime-dom": "^3.5.29",
+    "vitepress": "^1.0.0"
+  }
+}

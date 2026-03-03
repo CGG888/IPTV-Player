@@ -4,7 +4,7 @@
         xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         x:Class="LibmpvIptvClient.FullscreenWindow"
         Title="FS"
-        Icon="/iptv.png"
+        Icon="pack://application:,,,/srcbox.ico"
         WindowStyle="None"
         WindowState="Maximized"
         Topmost="False"

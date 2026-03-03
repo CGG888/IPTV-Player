@@ -308,7 +308,7 @@ namespace LibmpvIptvClient
                             try
                             {
                                 using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
-                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/LICENSE.txt", cts.Token);
+                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/SrcBox/main/LICENSE.txt", cts.Token);
                             }
                             catch { }
                         }
@@ -337,7 +337,7 @@ namespace LibmpvIptvClient
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
-                        content2 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/LICENSE.txt", cts.Token);
+                        content2 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/SrcBox/main/LICENSE.txt", cts.Token);
                     }
                     catch { }
                 }
@@ -372,7 +372,7 @@ namespace LibmpvIptvClient
                             try
                             {
                                 using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
-                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/THIRD-PARTY-NOTICES.txt", cts.Token);
+                                content = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/SrcBox/main/THIRD-PARTY-NOTICES.txt", cts.Token);
                             }
                             catch { }
                         }
@@ -401,7 +401,7 @@ namespace LibmpvIptvClient
                     try
                     {
                         using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
-                        content3 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/IPTV-Player/main/THIRD-PARTY-NOTICES.txt", cts.Token);
+                        content3 = await _httpInline.GetStringAsync("https://raw.githubusercontent.com/CGG888/SrcBox/main/THIRD-PARTY-NOTICES.txt", cts.Token);
                     }
                     catch { }
                 }
@@ -419,9 +419,9 @@ namespace LibmpvIptvClient
         {
             try
             {
-                _httpInline.DefaultRequestHeaders.UserAgent.ParseAdd("IPTV-Player/UpdateCheck");
+                _httpInline.DefaultRequestHeaders.UserAgent.ParseAdd("SrcBox/UpdateCheck");
                 _httpInline.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-                var latest = await FetchLatestReleaseInlineAsync("https://api.github.com/repos/CGG888/IPTV-Player/releases/latest");
+                var latest = await FetchLatestReleaseInlineAsync("https://api.github.com/repos/CGG888/SrcBox/releases/latest");
                 if (latest == null) return;
                 _latestInline = latest;
                 if (IsNewerInline(_latestInline.Version, _currentVersionInline))

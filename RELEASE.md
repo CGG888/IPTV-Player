@@ -1,4 +1,4 @@
-# IPTV Player 发行版说明
+# SrcBox 发行版说明
 
 ## 简介
 - 目标：产出可分发的 Windows 安装包（Inno Setup）与可选的便携包（Portable）。
@@ -10,7 +10,7 @@
 - 硬件：支持 d3d11 的显卡以获得硬件解码
 
 ## 发行物组成
-- 安装包：Output\IPTV_Player_Setup_{版本号}.exe
+- 安装包：Output\SrcBox_Setup_{版本号}.exe
 - 便携包（可选）：bin\Release\net8.0-windows\win-x64\publish\ 目录整体压缩为 zip
 - 许可材料：
   - LICENSE.txt（MIT）
@@ -31,7 +31,7 @@
    - 从 Git 提取 `origin` 与 `describe`，注入为环境变量
    - 检测 `iscc`，如存在则自动编译 `setup.iss` 生成安装包至 `Output\`
 3. 结束后检查：
-   - `Output\IPTV_Player_Setup_{版本号}.exe`
+- `Output\SrcBox_Setup_{版本号}.exe`
    - `publish\` 目录用于便携包打包
 
 ### 手动：无 iscc 的情况下
@@ -49,7 +49,7 @@
    - THIRD-PARTY-NOTICES.txt
 
 ## 运行验证
-1. 首次启动 IPTV Player
+1. 首次启动 SrcBox
 2. 在“设置”填写 EPG 与台标库地址（可选，台标模板支持 `{name}`）
 3. 加载 M3U 源并播放，检查：
    - 解码方式为 d3d11va（可在设置中关闭）
@@ -64,9 +64,9 @@
 ## GitHub Releases 发布流程
 1. 打 Tag：`git tag vX.Y.Z && git push origin vX.Y.Z`
 2. 打开 GitHub -> Releases -> Draft a new release
-3. 标题：`IPTV Player vX.Y.Z`；正文：变更摘要、已知问题、注意事项
+3. 标题：`SrcBox vX.Y.Z`；正文：变更摘要、已知问题、注意事项
 4. 附件：
-   - Output\IPTV_Player_Setup_{版本号}.exe
+- Output\SrcBox_Setup_{版本号}.exe
    - Portable zip（可选）
 5. 发布后验证下载与安装完整性
 
@@ -78,4 +78,3 @@
 ## 许可证
 - 主项目：MIT（见 LICENSE.txt）
 - 第三方组件与声明：见 THIRD-PARTY-NOTICES.txt
-

@@ -167,7 +167,7 @@ namespace LibmpvIptvClient.Services
             if (string.IsNullOrWhiteSpace(ch.Logo))
             {
                 // 可以设置为特定的默认图标 URL，或者留空让前端处理
-                // ch.Logo = "pack://application:,,,/iptv.png"; 
+                // ch.Logo = "pack://application:,,,/srcbox.png"; 
             }
 
             return ch;

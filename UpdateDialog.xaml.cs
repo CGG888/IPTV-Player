@@ -81,7 +81,7 @@ namespace LibmpvIptvClient
 
                 var tmp = System.IO.Path.GetTempPath();
                 var fileName = _info?.FileName;
-                if (string.IsNullOrWhiteSpace(fileName)) fileName = "IPTV_Player_Update.exe";
+                if (string.IsNullOrWhiteSpace(fileName)) fileName = "SrcBox_Update.exe";
                 _downloadPath = System.IO.Path.Combine(tmp, fileName);
                 if (File.Exists(_downloadPath)) try { File.Delete(_downloadPath); } catch { }
 

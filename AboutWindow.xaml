@@ -8,7 +8,7 @@
         WindowStyle="None"
         Background="{DynamicResource AppBackgroundBrush}"
         ShowInTaskbar="True"
-        Icon="/iptv.png">
+        Icon="pack://application:,,,/srcbox.ico">
 
     <Border Background="{DynamicResource AppBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8">
         <Grid>
@@ -21,7 +21,7 @@
             <!-- Title Bar -->
             <Grid Grid.Row="0" Background="{DynamicResource TitleBarBrush}">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Image Source="iptv.ico" Width="16" Height="16" Margin="0,0,8,0"/>
+                    <Image Source="srcbox.ico" Width="16" Height="16" Margin="0,0,8,0"/>
                     <TextBlock Text="{DynamicResource About_TitleBar}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" 
@@ -46,8 +46,8 @@
             <!-- Content -->
             <StackPanel Grid.Row="1" Margin="32,24" HorizontalAlignment="Center">
                 <!-- Logo & App Name -->
-                <Image Source="iptv.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                <TextBlock Text="IPTV Player" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <Image Source="srcbox.ico" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <TextBlock Text="{DynamicResource App_Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
                     <TextBlock x:Name="TxtVersion" Text="v1.0.0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" VerticalAlignment="Center"/>
                     <Ellipse x:Name="BadgeNew" Width="8" Height="8" Fill="{DynamicResource StatusLiveBrush}" Margin="6,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
@@ -60,13 +60,13 @@
                 <!-- Links -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <TextBlock>
-                        <Hyperlink NavigateUri="https://github.com/CGG888/IPTV-Player" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
+                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
                             <Run Text="{DynamicResource UI_GitHubHome}"/>
                         </Hyperlink>
                     </TextBlock>
                     <TextBlock Text="  |  " Foreground="{DynamicResource TextSecondaryBrush}"/>
                     <TextBlock>
-                        <Hyperlink NavigateUri="https://github.com/CGG888/IPTV-Player/issues" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
+                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox/issues" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentBrush}">
                             <Run Text="{DynamicResource UI_Feedback}"/>
                         </Hyperlink>
                     </TextBlock>

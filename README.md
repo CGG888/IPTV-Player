@@ -1,4 +1,4 @@
-# IPTV Player（Windows / WPF）
+# 源匣（SrcBox）（Windows / WPF）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
@@ -7,7 +7,7 @@
 
 [English](./README_EN.md) | [中文](./README.md)
 
-**IPTV Player** 是一款专为 Windows 平台打造的高性能、现代化的 IPTV 播放器。
+**源匣（SrcBox）** 是一款专为 Windows 平台打造的高性能、现代化的 IPTV 播放器。
 
 它基于强大的 **libmpv** 播放内核构建，结合 **WPF** 的现代化界面设计，为您带来流畅、稳定的直播观看体验。不仅支持 M3U 播放列表、EPG 电子节目单、回看等核心功能，还针对 IPTV 场景进行了深度优化（如 FCC 快速切台、UDP 组播优化），是您在 PC 上观看电视直播的理想选择。
 
@@ -36,7 +36,7 @@
 
 ## 项目概览
 
-**IPTV Player** 以 `libmpv-2.dll` 为播放内核，通过 `WindowsFormsHost` 承载视频窗口句柄，提供 IPTV 频道列表、分组、EPG、回放、源切换等功能。
+**源匣（SrcBox）** 以 `libmpv-2.dll` 为播放内核，通过 `WindowsFormsHost` 承载视频窗口句柄，提供 IPTV 频道列表、分组、EPG、回放、源切换等功能。
 
 - 播放器入口窗口：[MainWindow.xaml](./MainWindow.xaml)
 - libmpv 绑定封装：[MpvPlayer.cs](./MpvPlayer.cs)
@@ -59,7 +59,7 @@
 ### 项目结构
 
 ```text
-📂 IPTV-Player
+📂 SrcBox
 ├── 📂 Models          # 数据模型 (Channel, EpgProgram, Source)
 ├── 📂 Services        # 核心服务 (M3U解析, EPG下载, 频道管理)
 ├── 📂 Resources       # 资源文件 (多语言字符串, 样式, 字体)

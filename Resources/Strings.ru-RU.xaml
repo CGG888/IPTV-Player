@@ -6,6 +6,7 @@
   <sys:String x:Key="UI_TabEpgLogo">Программа и логотипы</sys:String>
   <sys:String x:Key="UI_TabUpdateMirrors">Обновления и зеркала</sys:String>
   <sys:String x:Key="UI_TabAbout">О программе</sys:String>
+  <sys:String x:Key="App_Name">SrcBox</sys:String>
 
   <sys:String x:Key="UI_Language">Язык</sys:String>
   <sys:String x:Key="UI_Appearance">Внешний вид</sys:String>
@@ -144,7 +145,7 @@
   <sys:String x:Key="UI_Epg_TimeshiftHours">Диапазон таймшифта (часы)</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">О IPTV Player</sys:String>
+  <sys:String x:Key="About_TitleBar">О SrcBox</sys:String>
   <sys:String x:Key="About_Desc1">Высокопроизводительный IPTV-плеер для Windows на базе libmpv.</sys:String>
   <sys:String x:Key="About_Desc2">Поддержка M3U, EPG, записи и др.</sys:String>
   <sys:String x:Key="About_Update">Обновить</sys:String>

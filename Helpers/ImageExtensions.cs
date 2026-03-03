@@ -20,7 +20,7 @@ namespace LibmpvIptvClient.Helpers
         {
             try
             {
-                _defaultImage = new BitmapImage(new Uri("pack://application:,,,/iptv.png"));
+                _defaultImage = new BitmapImage(new Uri("pack://application:,,,/srcbox.png"));
                 _defaultImage.Freeze();
             }
             catch

@@ -6,9 +6,9 @@
         xmlns:local="clr-namespace:LibmpvIptvClient"
         xmlns:helpers="clr-namespace:LibmpvIptvClient.Helpers"
         x:Class="LibmpvIptvClient.MainWindow"
-        Title="IPTV Player" Width="1280" Height="720" WindowStartupLocation="CenterScreen"
+        Title="{DynamicResource App_Name}" Width="1280" Height="720" WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow" ResizeMode="CanResize"
-        Icon="pack://application:,,,/iptv.ico">
+        Icon="pack://application:,,,/srcbox.ico">
     
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40" GlassFrameThickness="0" CornerRadius="0" ResizeBorderThickness="4" UseAeroCaptionButtons="False"/>
@@ -25,7 +25,7 @@
             </Style>
         </Grid.Style>
         <Grid.Resources>
-            <BitmapImage x:Key="DefaultLogo" UriSource="iptv.ico"/>
+            <BitmapImage x:Key="DefaultLogo" UriSource="srcbox.ico"/>
             <local:RangeToWidthConverter x:Key="RangeToWidth"/>
             <local:BoolToStarConverter x:Key="BoolToStar"/>
             
@@ -391,8 +391,8 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,0">
                     <Button x:Name="BtnAppTitle" Click="BtnAppTitle_Click" Style="{StaticResource TitleBtnStyle}">
                         <StackPanel Orientation="Horizontal">
-                            <Image Source="/iptv.png" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="IPTV Player" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <Image Source="/srcbox.png" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource App_Name}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -618,8 +618,8 @@
             
             <!-- Placeholder (Visible when not playing) -->
             <StackPanel x:Name="PlaceholderPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Visible" IsHitTestVisible="False">
-                <Image Source="/iptv.png" Width="64" Height="64" Margin="0,0,0,16" RenderOptions.BitmapScalingMode="HighQuality"/>
-                <TextBlock Text="IPTV Player" Foreground="#EEEEEE" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <Image Source="/srcbox.png" Width="64" Height="64" Margin="0,0,0,16" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="{DynamicResource App_Name}" Foreground="#EEEEEE" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                 <TextBlock Text="{DynamicResource App_DescShort}" Foreground="#CCCCCC" FontSize="14" HorizontalAlignment="Center"/>
             </StackPanel>
 

@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Left Face Gradient: Tech Blue -->
+    <linearGradient id="leftFace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/> <!-- blue-500 -->
+      <stop offset="100%" stop-color="#1d4ed8"/> <!-- blue-700 -->
+    </linearGradient>
+    
+    <!-- Right Face Gradient: Vivid Purple -->
+    <linearGradient id="rightFace" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/> <!-- violet-500 -->
+      <stop offset="100%" stop-color="#6d28d9"/> <!-- violet-700 -->
+    </linearGradient>
+    
+    <!-- Top Face Gradient: Lighter Blue/Cyan -->
+    <linearGradient id="topFace" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/> <!-- blue-400 -->
+      <stop offset="100%" stop-color="#2563eb"/> <!-- blue-600 -->
+    </linearGradient>
+    
+    <!-- Glow Effect for Core -->
+    <filter id="coreGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Group Centered -->
+  <g transform="translate(256 256)">
+    <!-- Cube Structure (Isometric View) -->
+    <!-- Top Face -->
+    <path d="M0 -200 L173 -100 L0 0 L-173 -100 Z" fill="url(#topFace)"/>
+    
+    <!-- Right Face -->
+    <path d="M0 0 L173 -100 L173 100 L0 200 Z" fill="url(#rightFace)"/>
+    
+    <!-- Left Face -->
+    <path d="M0 0 L0 200 L-173 100 L-173 -100 Z" fill="url(#leftFace)"/>
+    
+    <!-- Inner Energy Core (Play Symbol) -->
+    <!-- White Play Triangle with Glow -->
+    <path d="M-50 -80 L90 0 L-50 80 Z" fill="white" filter="url(#coreGlow)" opacity="0.95"/>
+    
+    <!-- Optional: Subtle "S" shape or Circuit lines overlay? No, keep it clean. -->
+  </g>
+</svg>

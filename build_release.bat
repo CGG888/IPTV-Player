@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   IPTV Player Build Script
+echo   SrcBox Build Script
 echo ========================================================
 
 echo.
@@ -21,8 +21,8 @@ if %errorlevel% neq 0 (
 )
 
 :: Rename the executable if needed (handled by AssemblyName in csproj)
-if not exist "bin\Release\net8.0-windows\win-x64\publish\IPTV_Player.exe" (
-    echo [WARNING] Expected IPTV_Player.exe not found. Did you update the csproj AssemblyName?
+if not exist "bin\Release\net8.0-windows\win-x64\publish\SrcBox.exe" (
+    echo [WARNING] Expected SrcBox.exe not found. Did you update the csproj AssemblyName?
 )
 
 setlocal EnableDelayedExpansion

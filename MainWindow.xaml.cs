@@ -330,7 +330,7 @@ namespace LibmpvIptvClient
                 Name = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Network", "网络流"), 
                 Tag = new Source { Url = url },
                 Group = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Network", "网络流"),
-                Logo = "/iptv.png"
+                Logo = "/srcbox.png"
             };
             ch.Sources = new List<Source> { (Source)ch.Tag };
             _channels.Add(ch);
