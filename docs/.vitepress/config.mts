@@ -71,6 +71,48 @@ export default defineConfig({
         }
       }
     },
+    'zh-TW': {
+      label: '繁體中文',
+      lang: 'zh-TW',
+      link: '/zh-TW/',
+      themeConfig: {
+        nav: [
+          { text: '首頁', link: '/zh-TW/' },
+          { text: '指南', link: '/zh-TW/guide/' },
+          { text: '下載', link: 'https://github.com/CGG888/SrcBox/releases' },
+          { text: '問題反饋', link: 'https://github.com/CGG888/SrcBox/issues' }
+        ],
+        sidebar: [
+          {
+            text: '指南',
+            items: [
+              { text: '專案介紹', link: '/zh-TW/guide/' },
+              { text: '功能特性', link: '/zh-TW/guide/features' },
+              { text: '技術架構', link: '/zh-TW/guide/architecture' },
+              { text: '開發指南', link: '/zh-TW/guide/development' },
+              { text: '配置說明', link: '/zh-TW/guide/configuration' },
+              { text: '國際化', link: '/zh-TW/i18n' },
+              { text: '路線圖', link: '/zh-TW/guide/roadmap' },
+              { text: '常見問題', link: '/zh-TW/guide/faq' }
+            ]
+          }
+        ],
+        outline: {
+          label: '頁面導航'
+        },
+        docFooter: {
+          prev: '上一頁',
+          next: '下一頁'
+        },
+        lastUpdated: {
+          text: '最後更新於'
+        },
+        editLink: {
+          pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
+          text: '在 GitHub 上編輯此頁'
+        }
+      }
+    },
     en: {
       label: 'English',
       lang: 'en',
@@ -100,6 +142,48 @@ export default defineConfig({
         editLink: {
           pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
           text: 'Edit this page on GitHub'
+        }
+      }
+    },
+    ru: {
+      label: 'Русский',
+      lang: 'ru',
+      link: '/ru/',
+      themeConfig: {
+        nav: [
+          { text: 'Главная', link: '/ru/' },
+          { text: 'Руководство', link: '/ru/guide/' },
+          { text: 'Скачать', link: 'https://github.com/CGG888/SrcBox/releases' },
+          { text: 'Проблемы', link: 'https://github.com/CGG888/SrcBox/issues' }
+        ],
+        sidebar: [
+          {
+            text: 'Руководство',
+            items: [
+              { text: 'Обзор', link: '/ru/guide/' },
+              { text: 'Возможности', link: '/ru/guide/features' },
+              { text: 'Архитектура', link: '/ru/guide/architecture' },
+              { text: 'Разработка', link: '/ru/guide/development' },
+              { text: 'Настройка', link: '/ru/guide/configuration' },
+              { text: 'Интернационализация', link: '/ru/i18n' },
+              { text: 'Дорожная карта', link: '/ru/guide/roadmap' },
+              { text: 'FAQ', link: '/ru/guide/faq' }
+            ]
+          }
+        ],
+        outline: {
+          label: 'Навигация'
+        },
+        docFooter: {
+          prev: 'Назад',
+          next: 'Вперед'
+        },
+        lastUpdated: {
+          text: 'Последнее обновление'
+        },
+        editLink: {
+          pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
+          text: 'Редактировать на GitHub'
         }
       }
     }
