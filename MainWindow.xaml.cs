@@ -112,6 +112,8 @@ namespace LibmpvIptvClient
             // 主视频区域双击切换全屏
             try { VideoPanel.DoubleClick += MainPanel_DoubleClick; } catch { }
             try { VideoPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
+            try { VideoPanel.MouseClick += VideoPanel_MouseClick; } catch { }
+            this.MouseRightButtonUp += MainWindow_MouseRightButtonUp;
             _sourceTimeoutTimer.Tick += OnSourceTimeout;
             App.LanguageChanged += OnLanguageChanged;
         }
@@ -243,7 +245,15 @@ namespace LibmpvIptvClient
 
         void BtnAppTitle_Click(object sender, RoutedEventArgs e)
         {
-            var cm = LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
+            var cm = CreateAppMenu();
+            BtnAppTitle.ContextMenu = cm;
+            BtnAppTitle.ContextMenu.PlacementTarget = BtnAppTitle;
+            BtnAppTitle.ContextMenu.IsOpen = true;
+        }
+
+        ContextMenu CreateAppMenu()
+        {
+            return LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
                 openFile: PromptOpenFile,
                 openUrl: PromptOpenUrl,
                 addM3uFile: PromptAddM3uFile,
@@ -274,10 +284,27 @@ namespace LibmpvIptvClient
                 isEpgChecked: CbEpg.IsChecked == true,
                 isDrawerChecked: !_drawerCollapsed
             );
+        }
 
-            BtnAppTitle.ContextMenu = cm;
-            BtnAppTitle.ContextMenu.PlacementTarget = BtnAppTitle;
-            BtnAppTitle.ContextMenu.IsOpen = true;
+        void VideoPanel_MouseClick(object? sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                Dispatcher.Invoke(() => 
+                {
+                    var cm = CreateAppMenu();
+                    cm.IsOpen = true;
+                });
+            }
+        }
+
+        void MainWindow_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            // Avoid showing menu if right-clicking on specific controls that might handle it
+            // But for now, global right click is requested
+            var cm = CreateAppMenu();
+            cm.IsOpen = true;
+            e.Handled = true;
         }
 
         async void PromptOpenUrl()

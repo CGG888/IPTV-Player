@@ -52,9 +52,27 @@ namespace LibmpvIptvClient
         {
             mpv_set_property_string(_handle, name, value);
         }
-        void SetupTsOptions(string url)
+        void SetupProtocolOptions(string url)
         {
             var u = url.ToLowerInvariant();
+            
+            // 1. RTSP Special Handling
+            if (u.StartsWith("rtsp://"))
+            {
+                SetString("rtsp-transport", "tcp"); // Force TCP for stability
+                SetString("user-agent", "VLC/3.0.18Libmpv"); // Fake UA
+                // Enable cache for RTSP to allow smoother playback
+                SetString("cache", _settings.CacheSecs > 0 ? "yes" : "no");
+                if (_settings.CacheSecs > 0)
+                    SetString("cache-secs", _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                // RTSP doesn't need forced demuxer, let ffmpeg handle it
+                SetString("demuxer-lavf-format", ""); 
+                SetString("demuxer-lavf-probesize", "32"); // Fast probe
+                SetString("demuxer-lavf-analyzeduration", "0");
+                return;
+            }
+
+            // 2. TS / MPEG-TS / UDP Handling
             var looksTs = u.Contains("/rtp/") || u.EndsWith(".ts") || u.Contains("proto=http") || u.StartsWith("udp://");
             if (looksTs)
             {
@@ -81,6 +99,8 @@ namespace LibmpvIptvClient
             {
                 // 清空强制格式，恢复自动探测
                 SetString("demuxer-lavf-format", "");
+                // Ensure default cache settings for other protocols (like http/hls)
+                SetString("cache", "yes");
             }
         }
         public string? GetString(string name)
@@ -104,7 +124,7 @@ namespace LibmpvIptvClient
         }
         public void LoadFile(string url)
         {
-            SetupTsOptions(url);
+            SetupProtocolOptions(url);
             var args = new string[] { "loadfile", url, null! };
             mpv_command(_handle, args);
             Logger.Log("mpv loadfile 调用完成");
@@ -114,12 +134,12 @@ namespace LibmpvIptvClient
             SetFlag("prefetch-playlist", true);
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
-            SetupTsOptions(url);
+            SetupProtocolOptions(url);
             var loadCurrent = new string[] { "loadfile", url, "replace", null! };
             mpv_command(_handle, loadCurrent);
             if (!string.IsNullOrWhiteSpace(nextUrl))
             {
-                SetupTsOptions(nextUrl!);
+                SetupProtocolOptions(nextUrl!);
                 var loadNext = new string[] { "loadfile", nextUrl!, "append-play", null! };
                 mpv_command(_handle, loadNext);
                 Logger.Log("已预取下一频道");
@@ -131,13 +151,13 @@ namespace LibmpvIptvClient
             SetFlag("prefetch-playlist", true);
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
-            SetupTsOptions(url);
+            SetupProtocolOptions(url);
             var loadCurrent = new string[] { "loadfile", url, "replace", null! };
             mpv_command(_handle, loadCurrent);
             foreach (var n in nextUrls)
             {
                 if (string.IsNullOrWhiteSpace(n)) continue;
-                SetupTsOptions(n);
+                SetupProtocolOptions(n);
                 var loadNext = new string[] { "loadfile", n, "append-play", null! };
                 mpv_command(_handle, loadNext);
             }
