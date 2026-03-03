@@ -1,23 +1,23 @@
-# Roadmap
+# 路线图 (Roadmap)
 
-We are dedicated to continuously improving the IPTV viewing experience.
+我们致力于持续提升 IPTV 观看体验。
 
-## Future Plans
+## 未来计划
 
-- [ ] **AI Recommendation**: Personalized content suggestions based on viewing habits.
-- [ ] **Multi-view**: Picture-in-Picture (PiP) and Mosaic view support.
-- [ ] **Cloud PVR**: Remote recording to connected cloud storage.
-- [ ] **Advanced A/V**: HDR10+ dynamic metadata support, 8K 120fps decoding optimization.
-- [ ] **Interactive Features**: Voice barrage (Speech-to-Text), low-latency cloud gaming entry.
-- [ ] **Copyright Protection**: Blockchain-based copyright verification.
+- [ ] **智能推荐**：基于观看习惯的 AI 节目推荐。
+- [ ] **多视角同屏**：支持多源拼屏观看（画中画/四分屏）。
+- [ ] **云端录制 (PVR)**：支持连接远程存储进行节目录制。
+- [ ] **高级视听体验**：HDR10+ 动态元数据支持、8K 120fps 解码优化。
+- [ ] **互动功能**：语音弹幕（语音转字幕）、低延迟云游戏入口。
+- [ ] **版权保护**：区块链版权校验（防篡改溯源）。
 
-## Completed Features
+## 已实现功能
 
-- [x] **Timeshift**: Replay-based timeshifting via `catchup-source` with real-time seeking.
-- [x] **EPG**: XMLTV (gz) parsing and display.
-- [x] **Catchup**: Template-based automatic replay URL generation.
-- [x] **M3U Parsing**: Local/Remote playlist support with `#EXTINF` attributes.
-- [x] **Channel Mgmt**: Grouping, search, and favorites.
-- [x] **Live Optimization**: FCC fast switching, UDP multicast optimization, auto-source switching.
-- [x] **Hardware Decoding**: Enabled `d3d11va` by default.
-- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (CN/EN).
+- [x] **时移 (Time-Shift)**：基于 `catchup-source` 的回放式时移，支持实时拖动回看。
+- [x] **EPG 电子节目单**：支持 XMLTV (gz) 解析与展示。
+- [x] **频道回看**：基于模板自动生成回放 URL。
+- [x] **M3U 解析**：支持本地/远程列表及 `#EXTINF` 扩展属性。
+- [x] **频道管理**：分组、搜索、收藏功能。
+- [x] **直播优化**：FCC 快速切台、UDP 组播优化、自动换源。
+- [x] **硬件解码**：默认开启 `d3d11va`。
+- [x] **UI/UX**：全屏悬浮控制、侧边抽屉、多语言支持（中/英）。

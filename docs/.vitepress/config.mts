@@ -30,44 +30,13 @@ export default defineConfig({
   // Internationalization
   locales: {
     root: {
-      label: 'English',
-      lang: 'en',
+      label: '简体中文',
+      lang: 'zh',
       link: '/',
       themeConfig: {
         nav: [
-          { text: 'Home', link: '/' },
-          { text: 'Guide', link: '/guide/' },
-          { text: 'Download', link: 'https://github.com/CGG888/SrcBox/releases' },
-          { text: 'Issues', link: 'https://github.com/CGG888/SrcBox/issues' }
-        ],
-        sidebar: [
-          {
-            text: 'Guide',
-            items: [
-              { text: 'Introduction', link: '/guide/' },
-              { text: 'Features', link: '/guide/features' },
-              { text: 'Architecture', link: '/guide/architecture' },
-              { text: 'Development', link: '/guide/development' },
-              { text: 'Configuration', link: '/guide/configuration' },
-              { text: 'Roadmap', link: '/guide/roadmap' },
-              { text: 'FAQ', link: '/guide/faq' }
-            ]
-          }
-        ],
-        editLink: {
-          pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
-          text: 'Edit this page on GitHub'
-        }
-      }
-    },
-    zh: {
-      label: '简体中文',
-      lang: 'zh',
-      link: '/zh/',
-      themeConfig: {
-        nav: [
-          { text: '首页', link: '/zh/' },
-          { text: '指南', link: '/zh/guide/' },
+          { text: '首页', link: '/' },
+          { text: '指南', link: '/guide/' },
           { text: '下载', link: 'https://github.com/CGG888/SrcBox/releases' },
           { text: '问题反馈', link: 'https://github.com/CGG888/SrcBox/issues' }
         ],
@@ -75,13 +44,14 @@ export default defineConfig({
           {
             text: '指南',
             items: [
-              { text: '项目介绍', link: '/zh/guide/' },
-              { text: '功能特性', link: '/zh/guide/features' },
-              { text: '技术架构', link: '/zh/guide/architecture' },
-              { text: '开发指南', link: '/zh/guide/development' },
-              { text: '配置说明', link: '/zh/guide/configuration' },
-              { text: '路线图', link: '/zh/guide/roadmap' },
-              { text: '常见问题', link: '/zh/guide/faq' }
+              { text: '项目介绍', link: '/guide/' },
+              { text: '功能特性', link: '/guide/features' },
+              { text: '技术架构', link: '/guide/architecture' },
+              { text: '开发指南', link: '/guide/development' },
+              { text: '配置说明', link: '/guide/configuration' },
+              { text: '国际化', link: '/i18n' },
+              { text: '路线图', link: '/guide/roadmap' },
+              { text: '常见问题', link: '/guide/faq' }
             ]
           }
         ],
@@ -98,6 +68,38 @@ export default defineConfig({
         editLink: {
           pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
           text: '在 GitHub 上编辑此页'
+        }
+      }
+    },
+    en: {
+      label: 'English',
+      lang: 'en',
+      link: '/en/',
+      themeConfig: {
+        nav: [
+          { text: 'Home', link: '/en/' },
+          { text: 'Guide', link: '/en/guide/' },
+          { text: 'Download', link: 'https://github.com/CGG888/SrcBox/releases' },
+          { text: 'Issues', link: 'https://github.com/CGG888/SrcBox/issues' }
+        ],
+        sidebar: [
+          {
+            text: 'Guide',
+            items: [
+              { text: 'Introduction', link: '/en/guide/' },
+              { text: 'Features', link: '/en/guide/features' },
+              { text: 'Architecture', link: '/en/guide/architecture' },
+              { text: 'Development', link: '/en/guide/development' },
+              { text: 'Configuration', link: '/en/guide/configuration' },
+              { text: 'Internationalization', link: '/en/i18n' },
+              { text: 'Roadmap', link: '/en/guide/roadmap' },
+              { text: 'FAQ', link: '/en/guide/faq' }
+            ]
+          }
+        ],
+        editLink: {
+          pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
+          text: 'Edit this page on GitHub'
         }
       }
     }

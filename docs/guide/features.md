@@ -1,46 +1,46 @@
-# Features
+# 功能特性
 
-## Core Playback
-- **Playback Control**: Play/Pause, Stop, Seek, Fast Forward/Rewind.
-- **Volume Control**: Slider adjustment, mute support (0-100).
-- **Status Indicators**: Live/Replay/Timeshift status displayed in overlay.
+## 核心播放功能
+- **播放控制**: 播放/暂停、停止、快进/快退、拖动进度。
+- **音量调节**: 滑块调节，支持静音（0-100）。
+- **状态标识**: 全屏条显示直播/回放/时移状态。
 
-## IPTV Specifics
+## IPTV 专用功能
 
-### M3U Parsing
-Supports local/remote M3U playlists, compatible with UTF-8/GB18030 encoding. Supports `#EXTINF` extended attributes.
+### M3U 解析
+支持本地/远程 M3U 列表，兼容 UTF-8/GB18030 编码。支持 `#EXTINF` 扩展属性。
 
-### EPG Support
-XMLTV (gz) format support with automatic day switching and `tvg-id` matching.
+### EPG 节目单
+支持 XMLTV (gz) 格式，按日切换，自动匹配 `tvg-id`。
 
-### Catchup (Replay)
-Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`).
+### 回放 (Catchup)
+基于模板自动生成回放 URL（如 `{utc:yyyyMMddHHmmss}`）。
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/catchup.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-### Timeshift
-Seek back in live stream history (depends on `catchup-source`).
+### 时移 (Time-Shift)
+拖动进度条回看直播历史（依赖 `catchup-source`）。
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/timeshift.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-### Channel Management
-Grouping, Search, and Favorites (runtime-only).
+### 频道管理
+分组、搜索、收藏（运行时有效）。
 
-### Optimization (FCC)
-Fast Channel Change and UDP multicast optimization.
+### 直播优化 (FCC)
+FCC 快速切台与 UDP 组播优化。
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-## Fullscreen & Overlay
-- **Double-click Fullscreen**: Toggle fullscreen by double-clicking the video area.
-- **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
-- **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
+## 全屏与悬浮层
+- **双击全屏**: 在视频区域双击切换全屏。
+- **悬浮控制条**: 全屏下鼠标移动到底部自动显示，支持播放控制与 EPG 切换。
+- **侧边抽屉**: 全屏下鼠标贴边显示频道列表（右侧）或 EPG（左侧）。

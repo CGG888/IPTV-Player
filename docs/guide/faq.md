@@ -1,18 +1,18 @@
-# FAQ
+# 常见问题 (FAQ)
 
-## General
-**Q: How do I change the language?**
-A: Go to Settings > Interface > Language and select your preferred language.
+## 一般问题
+**Q: 如何切换语言？**
+A: 进入“设置 > 界面 > 语言”，选择您偏好的语言。
 
-**Q: Does it support remote M3U files?**
-A: Yes, you can load playlists from a URL or a local file.
+**Q: 支持远程 M3U 文件吗？**
+A: 支持，您可以加载本地或远程 URL 的播放列表。
 
-**Q: Why is there no sound?**
-A: Some IPTV streams have slow audio probing. We set `probesize=32` to speed up playback start, which might cause brief silence initially. Try switching tracks or restarting the stream.
+**Q: 为什么有画面无声音？**
+A: 部分 IPTV 源音频探测较慢，已设置 `probesize=32` 加速起播，可能导致短暂无声。可尝试切换音轨或重启播放。
 
-## Troubleshooting
-**Q: The app crashes on startup.**
-A: Ensure `libmpv-2.dll` is placed in the output directory (`bin\Debug\net8.0-windows\`).
+## 故障排查
+**Q: 程序启动即崩溃？**
+A: 请确保 `libmpv-2.dll` 已放置在运行目录 (`bin\Debug\net8.0-windows\`)。
 
-**Q: EPG shows "No Data".**
-A: Check if the XMLTV URL is accessible and in GZIP format. Ensure `tvg-id` matches.
+**Q: EPG 显示“无数据”？**
+A: 检查 XMLTV URL 是否可访问，是否为 GZIP 格式，以及 `tvg-id` 是否匹配。

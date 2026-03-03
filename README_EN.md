@@ -125,26 +125,15 @@ We are dedicated to continuously improving the IPTV viewing experience. Here are
 
 ## Internationalization
 
-This project supports multi-language switching (currently Simplified Chinese and English).
+This project supports multi-language switching (currently Simplified Chinese, Traditional Chinese, English, Russian).
 
-> **Note**: The English translation is primarily AI-generated and may contain inaccuracies. If you find any errors, PRs are highly welcome!
+For detailed internationalization guides and how to contribute translations, please refer to the **[Internationalization Documentation](https://srcbox.top/en/i18n)**.
 
-### Terminology
+### Quick Contribution
 
-| Chinese | English | Notes |
-| :--- | :--- | :--- |
-| 直播 | Live | |
-| 回放 | Replay | Formerly "Playback" |
-| 时移 | Timeshift | |
-| 节目单 | EPG / Program Guide | |
-| 频道 | Channel | |
-| 源 | Source | |
-
-### Contributing Translations
-
-1. Locate `Resources/Strings.en-US.xaml`.
-2. Modify the corresponding `String` values.
-3. Submit a PR with a description of the changes (e.g., "Fix grammar" or "Improve phrasing").
+1.  Locate `Strings.en-US.xaml` in the `Resources/` directory.
+2.  Copy and rename it to the target language code (e.g., `Strings.fr-FR.xaml`).
+3.  Translate the content and submit a Pull Request.
 
 ---
 

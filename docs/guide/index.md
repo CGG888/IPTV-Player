@@ -1,10 +1,10 @@
-# Guide
+# 指南
 
-Welcome to the SrcBox documentation. Please select a topic from the sidebar or use the search function.
+欢迎使用 源匣（SrcBox） 文档。请从左侧边栏选择主题或使用搜索功能。
 
-## Topics
+## 主题
 
-- [Introduction](./)
-- [Features](./features)
-- [Configuration](./configuration)
-- [FAQ](./faq)
+- [项目介绍](./)
+- [功能特性](./features)
+- [配置说明](./configuration)
+- [常见问题](./faq)

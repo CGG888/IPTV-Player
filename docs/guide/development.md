@@ -1,53 +1,53 @@
-# Development Guide
+# 开发指南
 
-## Prerequisites
+## 环境依赖
 
-- **OS**: Windows 10 / 11 (x64)
-- **IDE**: Visual Studio 2022 or JetBrains Rider
-- **SDK**: .NET 8.0 SDK
-- **Dependency**: `libmpv-2.dll` (Must be manually placed in the output directory)
+- **操作系统**：Windows 10 / 11 (x64)
+- **开发工具**：Visual Studio 2022 或 JetBrains Rider
+- **SDK**：.NET 8.0 SDK
+- **依赖库**：`libmpv-2.dll` (必须手动放置在输出目录)
 
-## Build & Run
+## 编译与运行
 
 ```powershell
-# Restore dependencies
+# 还原依赖
 dotnet restore
 
-# Build (Debug)
+# 编译（Debug）
 dotnet build
 
-# Run
+# 运行
 dotnet run
 ```
 
-> **Note**: Ensure `libmpv-2.dll` is placed in `bin\Debug\net8.0-windows\` before running, otherwise the app will crash.
+> **注意**：运行前请确保 `libmpv-2.dll` 已放置在 `bin\Debug\net8.0-windows\` 目录下，否则程序会闪退或报错。
 
-## Troubleshooting
+## 故障排查
 
-| Issue | Possible Cause | Solution |
+| 现象 | 可能原因 | 解决方案 |
 | :--- | :--- | :--- |
-| **Crash on startup** | Missing `libmpv-2.dll` | Download x64 dll and place in run dir |
-| **Video but no audio** | Audio probe timeout | Normal optimization; try switching tracks or restarting |
-| **EPG "No Data"** | Network or format issue | Check XMLTV URL accessibility and GZIP format |
-| **Settings not saving** | Permission denied | Ensure write permission to app directory |
+| **程序启动即崩溃** | 缺少 `libmpv-2.dll` | 下载对应架构的 dll 放入运行目录 |
+| **有画面无声音** | 音频流探测超时 | 属正常优化策略，可尝试切换音轨或重启播放 |
+| **EPG 显示“无数据”** | 网络问题或格式不支持 | 检查 XMLTV URL 是否可访问，是否为 GZIP 格式 |
+| **设置不保存** | 权限不足 | 确保程序目录有写入权限 |
 
-## Contribution
+## 测试与贡献
 
-### Workflow
+### 贡献流程
 
-1. **Fork** the repository.
-2. Create a feature branch: `git checkout -b feature/AmazingFeature`.
-3. Commit changes: `git commit -m 'feat: Add some AmazingFeature'` (Follow [Conventional Commits](https://www.conventionalcommits.org/)).
-4. Push branch: `git push origin feature/AmazingFeature`.
-5. Submit a **Pull Request**.
+1. **Fork** 本仓库。
+2. 创建特性分支：`git checkout -b feature/AmazingFeature`。
+3. 提交代码：`git commit -m 'feat: Add some AmazingFeature'` (请遵循 [Conventional Commits](https://www.conventionalcommits.org/))。
+4. 推送分支：`git push origin feature/AmazingFeature`。
+5. 提交 **Pull Request**。
 
-### Code Style
+### 代码规范
 
-- Follow existing C# style (K&R / Allman hybrid, see .editorconfig if available).
-- Ensure UI changes adapt to both Dark and Light themes.
+- 保持现有的 C# 代码风格（K&R / Allman 混合，视文件而定，建议遵循 .editorconfig）。
+- UI 修改请注意深色/浅色主题适配。
 
-### Performance Benchmarks
+### 性能基准
 
-- **CPU Usage**: < 15% @ 1080p (i5-8250U baseline).
-- **Memory**: < 500MB during stable playback.
-- **Startup**: < 2 seconds (cold start).
+- **CPU 占用**：1080p 播放时应 < 15% (i5-8250U 基准)。
+- **内存占用**：稳定播放时应 < 500MB。
+- **启动时间**：冷启动 < 2秒。

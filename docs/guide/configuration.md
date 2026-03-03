@@ -1,23 +1,23 @@
-# Configuration
+# 配置说明
 
 ## `user_settings.json`
 
-Located in the application run directory, stores user preferences.
+位于程序运行目录，存储用户偏好设置。
 
 ```json
 {
-  "Hwdec": true,              // Hardware decoding
-  "SourceTimeoutSec": 3,      // Source switch timeout (seconds)
-  "TimeshiftHours": 2,        // Timeshift duration (hours)
-  "Language": "en-US",        // Interface language
-  "ThemeMode": "Dark"         // Theme mode (Dark/Light/System)
+  "Hwdec": true,              // 硬件解码开关
+  "SourceTimeoutSec": 3,      // 换源超时时间（秒）
+  "TimeshiftHours": 2,        // 时移回看时长（小时）
+  "Language": "zh-CN",        // 界面语言
+  "ThemeMode": "Dark"         // 主题模式 (Dark/Light/System)
 }
 ```
 
-## Parameters
+## 参数说明
 
-- **Hwdec**: Enables hardware acceleration (d3d11va by default).
-- **SourceTimeoutSec**: Time to wait before switching sources if one fails.
-- **TimeshiftHours**: Maximum duration to look back in the live stream.
-- **Language**: UI language code (e.g., `en-US`, `zh-CN`).
-- **ThemeMode**: Application theme preference.
+- **Hwdec**: 开启硬件加速（默认使用 `d3d11va`）。
+- **SourceTimeoutSec**: 换源超时时间（秒），若源无效则尝试下一个。
+- **TimeshiftHours**: 时移回看的最大时长（小时）。
+- **Language**: 界面语言代码（如 `zh-CN`, `en-US`）。
+- **ThemeMode**: 应用程序主题模式（深色/浅色/跟随系统）。
