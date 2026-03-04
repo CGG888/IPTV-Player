@@ -13,6 +13,12 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
 
 ---
 
+> **Disclaimer**:
+>
+> 1. All videos, screenshots, and demonstrations shown on this page are for **functional demonstration purposes only** and are not actual playable or available media resources.
+> 2. This project **does not provide any m3u playlist files or the channel data contained therein**, nor is it responsible for third-party data sources.
+> 3. SrcBox is merely an open-source player tool; users must find legal playback sources themselves. Please comply with local laws and regulations.
+
 ## Table of Contents
 
 - [Overview](#overview)

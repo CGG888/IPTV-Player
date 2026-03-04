@@ -196,7 +196,7 @@
   <sys:String x:Key="About_Desc1">High-performance Windows IPTV player powered by libmpv.</sys:String>
   <sys:String x:Key="About_Desc2">Supports M3U playlists, EPG, catch-up and more.</sys:String>
   <sys:String x:Key="About_Update">Update</sys:String>
-  <sys:String x:Key="App_DescShort">IPTV player with multicast/unicast, EPG, catch-up and timeshift</sys:String>
+  <sys:String x:Key="App_DescShort">SrcBox with multicast/unicast, EPG, catch-up and timeshift</sys:String>
   
   <!-- M3U Edit -->
   <sys:String x:Key="M3U_EditTitle">Edit M3U URL</sys:String>
@@ -220,4 +220,10 @@
   <sys:String x:Key="Btn_No">No</sys:String>
   <sys:String x:Key="UI_Epg_HelpLink">View EPG Documentation (VitePress)</sys:String>
   <sys:String x:Key="UI_Catchup_HelpLink">View Catchup/Timeshift Documentation (VitePress)</sys:String>
+
+  <sys:String x:Key="Disclaimer_Title">Disclaimer</sys:String>
+  <sys:String x:Key="Disclaimer_Content1">1. This software is for functional demonstration purposes only and does not provide actual playable media resources.</sys:String>
+  <sys:String x:Key="Disclaimer_Content2">2. This project does not provide any m3u playlist files or the channel data contained therein, nor is it responsible for third-party data sources.</sys:String>
+  <sys:String x:Key="Disclaimer_Content3">3. SrcBox is merely an open-source player tool; users must find legal playback sources themselves. Please comply with local laws and regulations.</sys:String>
+  <sys:String x:Key="Disclaimer_Confirm">I Understand</sys:String>
 </ResourceDictionary>

@@ -207,4 +207,10 @@
   <sys:String x:Key="Stream_Unicast">單播</sys:String>
   <sys:String x:Key="UI_Epg_HelpLink">檢視 EPG 文件 (VitePress)</sys:String>
   <sys:String x:Key="UI_Catchup_HelpLink">檢視回看/時移文件 (VitePress)</sys:String>
+
+  <sys:String x:Key="Disclaimer_Title">鄭重聲明</sys:String>
+  <sys:String x:Key="Disclaimer_Content1">1. 本軟體僅作功能展示用途，並非實際可播放或可用的媒體資源。</sys:String>
+  <sys:String x:Key="Disclaimer_Content2">2. 本專案不提供任何 m3u 播放列表檔案及其中包含的頻道資料，亦不對第三方資料來源負責。</sys:String>
+  <sys:String x:Key="Disclaimer_Content3">3. SrcBox 僅作為一個開源的播放器工具，用戶需自行尋找合法的播放來源。請遵守當地法律法規。</sys:String>
+  <sys:String x:Key="Disclaimer_Confirm">我已知曉 (I Understand)</sys:String>
 </ResourceDictionary>

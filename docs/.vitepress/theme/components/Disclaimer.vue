@@ -11,14 +11,14 @@ const i18n = {
     title: '⚠️ 郑重声明 (Disclaimer)',
     point1: '1. 本页面展示的所有视频、截图及演示画面仅作<strong>功能展示用途</strong>，并非实际可播放或可用的媒体资源。',
     point2: '2. 本项目不提供任何 m3u 播放列表文件及其中包含的频道数据，亦不对第三方数据源负责。',
-    footer: 'IPTV Player 仅作为一个开源的播放器工具，用户需自行寻找合法的播放源。请遵守当地法律法规。',
+    footer: 'SrcBox 仅作为一个开源的播放器工具，用户需自行寻找合法的播放源。请遵守当地法律法规。',
     button: '我已知晓 (I Understand)'
   },
   en: {
     title: '⚠️ Disclaimer',
     point1: '1. All videos, screenshots, and demos shown on this page are for <strong>functional demonstration purposes only</strong> and are not actual playable media resources.',
     point2: '2. This project does not provide any m3u playlist files or channel data, nor is it responsible for any third-party data sources.',
-    footer: 'IPTV Player is an open-source player tool only. Users must find legal playback sources themselves. Please comply with local laws and regulations.',
+    footer: 'SrcBox is an open-source player tool only. Users must find legal playback sources themselves. Please comply with local laws and regulations.',
     button: 'I Understand'
   }
 }

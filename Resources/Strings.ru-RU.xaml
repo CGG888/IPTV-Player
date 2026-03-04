@@ -207,4 +207,10 @@
   <sys:String x:Key="Stream_Unicast">Уникаст</sys:String>
   <sys:String x:Key="UI_Epg_HelpLink">Смотреть документацию EPG (VitePress)</sys:String>
   <sys:String x:Key="UI_Catchup_HelpLink">Смотреть документацию Catchup/Timeshift (VitePress)</sys:String>
+
+  <sys:String x:Key="Disclaimer_Title">Отказ от ответственности</sys:String>
+  <sys:String x:Key="Disclaimer_Content1">1. Это программное обеспечение предназначено только для демонстрации функций и не предоставляет фактических воспроизводимых медиаресурсов.</sys:String>
+  <sys:String x:Key="Disclaimer_Content2">2. Этот проект не предоставляет файлы плейлистов m3u или данные каналов, содержащиеся в них, и не несет ответственности за сторонние источники данных.</sys:String>
+  <sys:String x:Key="Disclaimer_Content3">3. SrcBox - это просто инструмент с открытым исходным кодом; пользователи должны самостоятельно находить законные источники воспроизведения. Пожалуйста, соблюдайте местные законы и правила.</sys:String>
+  <sys:String x:Key="Disclaimer_Confirm">Я понимаю (I Understand)</sys:String>
 </ResourceDictionary>
