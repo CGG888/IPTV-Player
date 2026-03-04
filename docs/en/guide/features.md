@@ -12,9 +12,11 @@ Supports local/remote M3U playlists, compatible with UTF-8/GB18030 encoding. Sup
 
 ### EPG Support
 XMLTV (gz) format support with automatic day switching and `tvg-id` matching.
+[Usage and configuration guide](./epg)
 
 ### Catchup (Replay)
 Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`).
+[Usage and customization guide](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/catchup.mp4" type="video/mp4">
@@ -23,6 +25,7 @@ Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`).
 
 ### Timeshift
 Seek back in live stream history (depends on `catchup-source`).
+[Usage and customization guide](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/timeshift.mp4" type="video/mp4">

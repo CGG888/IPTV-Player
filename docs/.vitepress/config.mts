@@ -46,6 +46,8 @@ export default defineConfig({
             items: [
               { text: '项目介绍', link: '/guide/' },
               { text: '功能特性', link: '/guide/features' },
+              { text: 'EPG 节目单', link: '/guide/epg' },
+              { text: '回看与时移', link: '/guide/catchup-timeshift' },
               { text: '技术架构', link: '/guide/architecture' },
               { text: '开发指南', link: '/guide/development' },
               { text: '配置说明', link: '/guide/configuration' },
@@ -88,6 +90,8 @@ export default defineConfig({
             items: [
               { text: '專案介紹', link: '/zh-TW/guide/' },
               { text: '功能特性', link: '/zh-TW/guide/features' },
+              { text: 'EPG 節目單', link: '/zh-TW/guide/epg' },
+              { text: '回看與時移', link: '/zh-TW/guide/catchup-timeshift' },
               { text: '技術架構', link: '/zh-TW/guide/architecture' },
               { text: '開發指南', link: '/zh-TW/guide/development' },
               { text: '配置說明', link: '/zh-TW/guide/configuration' },
@@ -130,6 +134,8 @@ export default defineConfig({
             items: [
               { text: 'Introduction', link: '/en/guide/' },
               { text: 'Features', link: '/en/guide/features' },
+              { text: 'EPG', link: '/en/guide/epg' },
+              { text: 'Catchup & Timeshift', link: '/en/guide/catchup-timeshift' },
               { text: 'Architecture', link: '/en/guide/architecture' },
               { text: 'Development', link: '/en/guide/development' },
               { text: 'Configuration', link: '/en/guide/configuration' },
@@ -162,6 +168,8 @@ export default defineConfig({
             items: [
               { text: 'Обзор', link: '/ru/guide/' },
               { text: 'Возможности', link: '/ru/guide/features' },
+              { text: 'EPG', link: '/ru/guide/epg' },
+              { text: 'Архив и Timeshift', link: '/ru/guide/catchup-timeshift' },
               { text: 'Архитектура', link: '/ru/guide/architecture' },
               { text: 'Разработка', link: '/ru/guide/development' },
               { text: 'Настройка', link: '/ru/guide/configuration' },

@@ -293,6 +293,7 @@ namespace LibmpvIptvClient
                 Dispatcher.Invoke(() => 
                 {
                     var cm = CreateAppMenu();
+                    cm.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
                     cm.IsOpen = true;
                 });
             }
@@ -680,7 +681,10 @@ namespace LibmpvIptvClient
             // 防止重复调用导致的状态重置（特别是切换全屏/窗口时的事件回环）
             if (_timeshiftActive == on) return;
 
-            if (_currentChannel == null || string.IsNullOrEmpty(_currentChannel.CatchupSource))
+            bool hasSource = _currentChannel != null && !string.IsNullOrEmpty(_currentChannel.CatchupSource);
+            bool hasFallback = AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat);
+
+            if (!hasSource && !hasFallback)
             {
                 try { _overlayWpf?.SetTimeshift(false); } catch { }
                 try { if (CbTimeshift != null) CbTimeshift.IsChecked = false; } catch { }
@@ -690,7 +694,7 @@ namespace LibmpvIptvClient
             if (on)
             {
                 _timeshiftMax = DateTime.Now;
-                var hours = Math.Max(0, AppSettings.Current.TimeshiftHours);
+                var hours = Math.Max(0, AppSettings.Current.Timeshift.DurationHours);
                 var minBySettings = _timeshiftMax.AddHours(-hours);
                 DateTime minByEpg = minBySettings;
                 try
@@ -743,10 +747,29 @@ namespace LibmpvIptvClient
         }
         void PlayCatchupAt(Channel ch, DateTime start)
         {
-            if (string.IsNullOrEmpty(ch.CatchupSource)) return;
+            var url = ch.CatchupSource;
+            if (string.IsNullOrEmpty(url))
+            {
+                if (AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat))
+                {
+                    var fmt = AppSettings.Current.Timeshift.UrlFormat;
+                    if (!string.IsNullOrEmpty(fmt) && (fmt.StartsWith("?") || fmt.StartsWith("&")))
+                    {
+                        var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
+                                   : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
+                        if (string.IsNullOrEmpty(live)) return;
+                        var sep = live.Contains("?") ? "&" : "?";
+                        url = live + sep + fmt.TrimStart('?', '&');
+                    }
+                    else
+                    {
+                        url = fmt.Replace("{id}", ch.Id ?? ch.Name);
+                    }
+                }
+                else return;
+            }
             try
             {
-                var url = ch.CatchupSource;
                 DateTime end = start.AddHours(1);
                 try
                 {
@@ -758,16 +781,8 @@ namespace LibmpvIptvClient
                     }
                 }
                 catch { }
-                var su = start.ToUniversalTime();
-                var eu = end.ToUniversalTime();
-                url = ReplaceTimePlaceholder(url, "{utc:", "}", su, eu);
-                url = ReplaceTimePlaceholder(url, "{utcend:", "}", su, eu);
-                url = url.Replace("${(b)yyyyMMdd|UTC}", su.ToString("yyyyMMdd"));
-                url = url.Replace("${(b)HHmmss|UTC}", su.ToString("HHmmss"));
-                url = url.Replace("${(e)yyyyMMdd|UTC}", eu.ToString("yyyyMMdd"));
-                url = url.Replace("${(e)HHmmss|UTC}", eu.ToString("HHmmss"));
-                url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
-                url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
+                url = ProcessUrlPlaceholders(url, start, end);
+                
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
                 if (_timeshiftActive)
@@ -1124,6 +1139,23 @@ namespace LibmpvIptvClient
                 AppSettings.Current.CustomLogoUrl = settings.CustomLogoUrl;
                 AppSettings.Current.TimeshiftHours = settings.TimeshiftHours;
                 AppSettings.Current.UpdateCdnMirrors = settings.UpdateCdnMirrors;
+                // 回放/时移模板持久化
+                try
+                {
+                    if (settings.Replay != null)
+                    {
+                        AppSettings.Current.Replay.Enabled = settings.Replay.Enabled;
+                        AppSettings.Current.Replay.UrlFormat = settings.Replay.UrlFormat ?? "";
+                        AppSettings.Current.Replay.DurationHours = settings.Replay.DurationHours;
+                    }
+                    if (settings.Timeshift != null)
+                    {
+                        AppSettings.Current.Timeshift.Enabled = settings.Timeshift.Enabled;
+                        AppSettings.Current.Timeshift.UrlFormat = settings.Timeshift.UrlFormat ?? "";
+                        AppSettings.Current.Timeshift.DurationHours = settings.Timeshift.DurationHours;
+                    }
+                }
+                catch { }
                 // 界面设置
                 AppSettings.Current.Language = settings.Language;
                 AppSettings.Current.ThemeMode = settings.ThemeMode;
@@ -1798,12 +1830,38 @@ namespace LibmpvIptvClient
         void UpdateEpgDisplay()
         {
             if (_epgService == null) return;
+            
+            // var now = DateTime.Now; // Unused
             foreach (var ch in _channels)
             {
-                var prog = _epgService.GetCurrentProgram(ch.TvgId, ch.Name);
-                if (prog != null) ch.CurrentProgramTitle = prog.Title;
-                else ch.CurrentProgramTitle = "";
+                try
+                {
+                    // 获取当前节目
+                    var prog = _epgService.GetCurrentProgram(ch.TvgId, ch.Name);
+                    
+                    if (prog != null)
+                    {
+                        if (ch.CurrentProgramTitle != prog.Title)
+                        {
+                            ch.CurrentProgramTitle = prog.Title;
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(ch.CurrentProgramTitle))
+                        {
+                            ch.CurrentProgramTitle = "";
+                        }
+                    }
+                }
+                catch
+                {
+                    // Log error but continue loop
+                    // Logger.Error($"EPG Update Error for {ch.Name}: {ex.Message}");
+                    ch.CurrentProgramTitle = "";
+                }
             }
+
             if (EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
             {
                 RefreshEpgList(_currentChannel);
@@ -1852,6 +1910,10 @@ namespace LibmpvIptvClient
             // Re-fetch programs for the channel
             var programs = _epgService?.GetPrograms(ch.TvgId, ch.Name);
 
+            // 清空旧数据状态，防止残留
+            _currentEpgDate = DateTime.Today;
+            _availableDates.Clear();
+
             if (programs == null || programs.Count == 0)
             {
                 // No EPG data found -> Generate placeholders
@@ -1870,10 +1932,7 @@ namespace LibmpvIptvClient
             {
                 _currentEpgDate = _availableDates[0];
             }
-            else
-            {
-                _currentEpgDate = DateTime.Today; // Fallback
-            }
+            // else: _currentEpgDate is already Today from reset above
 
             UpdateEpgDateUI();
             
@@ -2009,26 +2068,34 @@ namespace LibmpvIptvClient
 
         void PlayCatchup(Channel ch, EpgProgram prog)
         {
-            if (string.IsNullOrEmpty(ch.CatchupSource)) return;
+            var url = ch.CatchupSource;
+            if (string.IsNullOrEmpty(url))
+            {
+                if (AppSettings.Current.Replay.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Replay.UrlFormat))
+                {
+                    var fmt = AppSettings.Current.Replay.UrlFormat;
+                    if (!string.IsNullOrEmpty(fmt) && (fmt.StartsWith("?") || fmt.StartsWith("&")))
+                    {
+                        var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
+                                   : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
+                        if (string.IsNullOrEmpty(live)) return;
+                        var sep = live.Contains("?") ? "&" : "?";
+                        url = live + sep + fmt.TrimStart('?', '&');
+                    }
+                    else
+                    {
+                        url = fmt.Replace("{id}", ch.Id ?? ch.Name);
+                    }
+                }
+                else return;
+            }
             try
             {
                 if (_timeshiftActive) ToggleTimeshift(false);
-                var url = ch.CatchupSource;
+                
                 // ... (url processing) ...
-                // 替换占位符
-                // {utc:yyyyMMddHHmmss} / {utcend:...}
-                url = ReplaceTimePlaceholder(url, "{utc:", "}", prog.Start.ToUniversalTime(), prog.End.ToUniversalTime());
-                url = ReplaceTimePlaceholder(url, "{utcend:", "}", prog.Start.ToUniversalTime(), prog.End.ToUniversalTime());
-                
-                // ${...} format
-                url = url.Replace("${(b)yyyyMMdd|UTC}", prog.Start.ToUniversalTime().ToString("yyyyMMdd"));
-                url = url.Replace("${(b)HHmmss|UTC}", prog.Start.ToUniversalTime().ToString("HHmmss"));
-                url = url.Replace("${(e)yyyyMMdd|UTC}", prog.End.ToUniversalTime().ToString("yyyyMMdd"));
-                url = url.Replace("${(e)HHmmss|UTC}", prog.End.ToUniversalTime().ToString("HHmmss"));
-                
-                // Local time fallbacks if needed
-                url = url.Replace("{start}", prog.Start.ToString("yyyyMMddHHmmss"));
-                url = url.Replace("{end}", prog.End.ToString("yyyyMMddHHmmss"));
+                // 替换占位符 (统一处理)
+                url = ProcessUrlPlaceholders(url, prog.Start, prog.End);
 
                 Logger.Log("播放回放: " + url);
                 _mpv?.LoadFile(url);
@@ -2083,6 +2150,48 @@ namespace LibmpvIptvClient
                 Logger.Error("回放失败: " + ex.Message);
             }
         }
+        string ProcessUrlPlaceholders(string url, DateTime start, DateTime end)
+        {
+            // 1. Unix Timestamp & Duration (rtp2httpd macros)
+            long ts = new DateTimeOffset(start).ToUnixTimeSeconds();
+            url = url.Replace("${timestamp}", ts.ToString());
+            url = url.Replace("{timestamp}", ts.ToString());
+            
+            long dur = (long)(end - start).TotalSeconds;
+            url = url.Replace("${duration}", dur.ToString());
+            url = url.Replace("{duration}", dur.ToString());
+
+            // 2. {utc:...} and {utcend:...} with Macro Expansion
+            url = ReplaceTimePlaceholder(url, "{utc:", "}", start.ToUniversalTime(), end.ToUniversalTime());
+            url = ReplaceTimePlaceholder(url, "{utcend:", "}", start.ToUniversalTime(), end.ToUniversalTime());
+
+            // 3. ${...} format with Macro Expansion
+            url = System.Text.RegularExpressions.Regex.Replace(url, @"\$\{\((b|e)\)(.*?)\}", m =>
+            {
+                var type = m.Groups[1].Value;
+                var fmt = m.Groups[2].Value;
+                
+                // Expand rtp2httpd Macros
+                if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
+                else if (fmt == "Ymd") fmt = "yyyyMMdd";
+                else if (fmt == "HMS") fmt = "HHmmss";
+                
+                var dt = (type == "b" ? start : end);
+                if (fmt.EndsWith("|UTC", StringComparison.OrdinalIgnoreCase))
+                {
+                    dt = dt.ToUniversalTime();
+                    fmt = fmt.Substring(0, fmt.Length - 4);
+                }
+                try { return dt.ToString(fmt); } catch { return m.Value; }
+            });
+
+            // 4. Fixed Local Time Placeholders
+            url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
+            url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
+            
+            return url;
+        }
+
         string ReplaceTimePlaceholder(string input, string prefix, string suffix, DateTime start, DateTime end)
         {
             // Simple regex replacement for {utc:format}
@@ -2091,6 +2200,12 @@ namespace LibmpvIptvClient
             return System.Text.RegularExpressions.Regex.Replace(input, pattern, m =>
             {
                 var fmt = m.Groups[1].Value;
+                
+                // Expand rtp2httpd Macros
+                if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
+                else if (fmt == "Ymd") fmt = "yyyyMMdd";
+                else if (fmt == "HMS") fmt = "HHmmss";
+
                 if (prefix.Contains("end")) return end.ToString(fmt);
                 return start.ToString(fmt);
             });

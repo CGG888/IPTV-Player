@@ -27,6 +27,7 @@
         </Grid.Style>
         <Grid.Resources>
             <BitmapImage x:Key="DefaultLogo" UriSource="srcbox.ico"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
             <local:RangeToWidthConverter x:Key="RangeToWidth"/>
             <local:BoolToStarConverter x:Key="BoolToStar"/>
             
@@ -762,23 +763,28 @@
                                                                Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                                     <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                                     <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Playing}" Value="True">
-                                                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-                                                                            <Setter Property="FontWeight" Value="Bold"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Playing}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                       VerticalAlignment="Top" Margin="4,2,0,0"
+                                                                       Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
+                                                        </StackPanel>
                                                         <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
                                                     </StackPanel>
-                                            <Button Grid.Column="5" Style="{StaticResource BarButton}" Click="ToggleFavorite_Click" ToolTip="{DynamicResource Favorite_Toggle}">
+                                                    <Button Grid.Column="5" Style="{StaticResource BarButton}" Click="ToggleFavorite_Click" ToolTip="{DynamicResource Favorite_Toggle}">
                                                         <TextBlock Text="{Binding Favorite, Converter={StaticResource BoolToStar}}" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                                     </Button>
                                                     <Border Grid.Column="6" Width="80" Height="40" Background="{DynamicResource ChipButtonBackgroundBrush}" CornerRadius="8" HorizontalAlignment="Right">
@@ -822,19 +828,24 @@
                                                                            Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                                                 <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
-                                                                        <TextBlock.Style>
-                                                                            <Style TargetType="TextBlock">
-                                                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                                                                <Style.Triggers>
-                                                                                    <DataTrigger Binding="{Binding Playing}" Value="True">
-                                                                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-                                                                                        <Setter Property="FontWeight" Value="Bold"/>
-                                                                                    </DataTrigger>
-                                                                                </Style.Triggers>
-                                                                            </Style>
-                                                                        </TextBlock.Style>
-                                                                    </TextBlock>
+                                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                                            <TextBlock.Style>
+                                                                                <Style TargetType="TextBlock">
+                                                                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding Playing}" Value="True">
+                                                                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </TextBlock.Style>
+                                                                        </TextBlock>
+                                                                        <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                                   VerticalAlignment="Top" Margin="4,2,0,0"
+                                                                                   Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
+                                                                    </StackPanel>
                                                                     <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                                     <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
                                                                 </StackPanel>
@@ -946,19 +957,24 @@
                                             <TextBlock Grid.Column="0" Text="{Binding GlobalIndex}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                             <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Playing}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-                                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Playing}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                               VerticalAlignment="Top" Margin="4,2,0,0"
+                                                               Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
+                                                </StackPanel>
                                                 <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
                                             </StackPanel>

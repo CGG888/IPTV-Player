@@ -39,4 +39,6 @@
   <data name="Err_StartInstallerFailed"><value>Failed to start installer:
 {0}</value></data>
   <data name="Confirm_DeleteSource"><value>Are you sure to delete this source?</value></data>
+  <data name="UI_Epg_HelpLink"><value>View EPG Documentation (VitePress)</value></data>
+  <data name="UI_Catchup_HelpLink"><value>View Catchup/Timeshift Documentation (VitePress)</value></data>
 </root>

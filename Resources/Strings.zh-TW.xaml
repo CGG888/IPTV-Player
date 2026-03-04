@@ -4,7 +4,7 @@
   <sys:String x:Key="UI_TabInterface">介面</sys:String>
   <sys:String x:Key="UI_TabPlayback">播放</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG 與台標</sys:String>
-  <sys:String x:Key="UI_TabUpdateMirrors">更新與鏡像</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">CDN 線路</sys:String>
   <sys:String x:Key="UI_TabAbout">關於</sys:String>
   <sys:String x:Key="App_Name">源匣 (SrcBox)</sys:String>
 
@@ -41,6 +41,7 @@
   <sys:String x:Key="UI_LangThemeNote">語言與主題即時套用，儲存後下次啟動保留。</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">支援 {name} 佔位符，例如 http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_Cdn_Help">CDN（內容傳遞網路）用於加速 GitHub 檔案下載。若檢查更新失敗，請嘗試切換或新增鏡像線路。</sys:String>
   <sys:String x:Key="UI_TextViewer">文字檢視器</sys:String>
   <sys:String x:Key="UI_Prev">上一個</sys:String>
   <sys:String x:Key="UI_Next">下一個</sys:String>
@@ -144,6 +145,44 @@
   <sys:String x:Key="UI_Epg_LogoUrl">台標庫位址</sys:String>
   <sys:String x:Key="UI_Epg_TimeshiftHours">時移範圍 (小時)</sys:String>
 
+  <sys:String x:Key="UI_Epg_Config">EPG 設定</sys:String>
+  <sys:String x:Key="UI_Epg_Desc">設定電子節目單來源</sys:String>
+  <sys:String x:Key="UI_Epg_Url_Note">支援 .xml, .gz 格式</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval">重新整理間隔 (小時)</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval_Note">建議設定為 24 小時</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch">啟用智慧模糊匹配</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch_Note">嘗試自動匹配名稱不完全一致的頻道 (例如 CCTV-1 匹配 CCTV1)。</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Title">匹配規則與佔位符說明</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">匹配順序：1）tvg-id 精準匹配；2）頻道名與 EPG display-name 完全匹配；3）名稱清洗後的匹配（移除「高清/HEVC」等標識、統一數字）；4）智慧模糊匹配（CCTV 數字必須一致、衛視/台等後綴視為同義）。啟用智慧匹配後，命中結果會快取以提升速度。</sys:String>
+  <sys:String x:Key="UI_Epg_Placeholder_Desc">當頻道暫無 EPG 資料時，節目單將以每小時一筆「精選」佔位項顯示，僅作為佔位，不影響直播、回放與時移。</sys:String>
+  
+  <sys:String x:Key="UI_Logo_Config">台標設定</sys:String>
+  <sys:String x:Key="UI_Logo_Desc">設定頻道台標圖片來源</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Note">支援佔位符 {name}</sys:String>
+  
+  <sys:String x:Key="UI_Playback_Settings">回放設定</sys:String>
+  <sys:String x:Key="UI_EnablePlayback">啟用回放</sys:String>
+  <sys:String x:Key="UI_Playback_Desc">設定回看功能參數</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat">回看位址格式</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} 代表頻道ID</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">可填完整URL或僅參數段（如 ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Playback_Duration">回看範圍 (小時)</sys:String>
+  <sys:String x:Key="UI_Playback_Duration_Note">設定支援回看的跨度</sys:String>
+
+  <sys:String x:Key="UI_Timeshift_Settings">時移設定</sys:String>
+  <sys:String x:Key="UI_EnableTimeshift">啟用時移</sys:String>
+  <sys:String x:Key="UI_Timeshift_Desc">設定直播時移參數</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat">時移位址格式</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} 代表頻道ID</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">可填完整URL或僅參數段（如 ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration">時移範圍 (小時)</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration_Note">設定支援時移的跨度</sys:String>
+  
+  <sys:String x:Key="UI_Enable">啟用</sys:String>
+  <sys:String x:Key="UI_Close">關閉</sys:String>
+
+  <sys:String x:Key="Msg_SettingsSaved">設定已儲存</sys:String>
+
   <!-- About -->
   <sys:String x:Key="About_TitleBar">關於 源匣 (SrcBox)</sys:String>
   <sys:String x:Key="About_Desc1">基於 libmpv 的高效能 Windows IPTV 播放器。</sys:String>
@@ -166,4 +205,6 @@
   <sys:String x:Key="Ratio_Crop">裁切</sys:String>
   <sys:String x:Key="Stream_Multicast">組播</sys:String>
   <sys:String x:Key="Stream_Unicast">單播</sys:String>
+  <sys:String x:Key="UI_Epg_HelpLink">檢視 EPG 文件 (VitePress)</sys:String>
+  <sys:String x:Key="UI_Catchup_HelpLink">檢視回看/時移文件 (VitePress)</sys:String>
 </ResourceDictionary>

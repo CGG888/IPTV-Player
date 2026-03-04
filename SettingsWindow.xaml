@@ -1,8 +1,9 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         x:Class="LibmpvIptvClient.SettingsWindow"
-        Title="{DynamicResource UI_SettingsTitle}" Width="760" SizeToContent="Height" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Title="{DynamicResource UI_SettingsTitle}" Width="800" Height="600" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
         Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
   <WindowChrome.WindowChrome>
@@ -238,30 +239,24 @@
             </ScrollViewer>
           </TabItem>
 
-          <!-- EPG 与台标 -->
-          <TabItem Header="{DynamicResource UI_TabEpgLogo}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+          <!-- EPG Config -->
+          <TabItem x:Name="TabEpg" Header="{DynamicResource UI_Epg_Config}">
+              <controls:EpgDrawer x:Name="EpgSettingsControl"/>
+          </TabItem>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_Epg_Url}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <TextBox x:Name="TbEpgUrl" Grid.Row="0" Grid.Column="1" Height="30"/>
+          <!-- Logo Config -->
+          <TabItem x:Name="TabLogo" Header="{DynamicResource UI_Logo_Config}">
+              <controls:LogoDrawer x:Name="LogoSettingsControl"/>
+          </TabItem>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Epg_LogoUrl}" VerticalAlignment="Center" Margin="0,12,16,0" ToolTip="{DynamicResource UI_Epg_LogoUrl_Tip}"/>
-                <TextBox x:Name="TbLogoUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
+          <!-- Playback (Replay) Settings -->
+          <TabItem x:Name="TabReplay" Header="{DynamicResource UI_Playback_Settings}">
+              <controls:PlaybackDrawer x:Name="ReplaySettingsControl"/>
+          </TabItem>
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Epg_TimeshiftHours}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <TextBox x:Name="TbTimeshiftHours" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
-              </Grid>
-            </ScrollViewer>
+          <!-- Timeshift Settings -->
+          <TabItem x:Name="TabTimeshift" Header="{DynamicResource UI_Timeshift_Settings}">
+              <controls:TimeshiftDrawer x:Name="TimeshiftSettingsControl"/>
           </TabItem>
 
           <!-- 更新与镜像 -->
@@ -284,8 +279,13 @@
                       <ColumnDefinition Width="*"/>
                       <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                        <TextBox x:Name="TbNewCdn" Height="30" Grid.Column="0" ToolTip="{DynamicResource UI_Cdn_Example}"/>
-                        <Button Grid.Column="1" Content="{DynamicResource UI_Add}" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click" Style="{StaticResource ChipButton}"/>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto"/>
+                      <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{DynamicResource UI_Cdn_Help}" Grid.Row="0" Grid.ColumnSpan="2" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                        <TextBox x:Name="TbNewCdn" Grid.Row="1" Height="30" Grid.Column="0" ToolTip="{DynamicResource UI_Cdn_Example}"/>
+                        <Button Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI_Add}" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click" Style="{StaticResource ChipButton}"/>
                   </Grid>
                   <Grid Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>

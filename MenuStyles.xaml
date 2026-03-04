@@ -52,9 +52,6 @@
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             </Trigger>
-            <Trigger Property="IsChecked" Value="True">
-              <Setter Property="FontWeight" Value="SemiBold"/>
-            </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -82,7 +79,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     <Setter Property="Padding" Value="12,8"/>
     <Setter Property="FontSize" Value="13"/>
-    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
     <Setter Property="Template">
       <Setter.Value>
@@ -90,13 +87,13 @@
           <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
             <Grid>
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="30"/>
+                <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut"/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
-              <Path x:Name="CheckMark" Data="M1,5 L4.5,8.5 L9,1" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="False"/>
+              <ContentPresenter x:Name="Icon" ContentSource="Icon" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible"/>
+              <Path x:Name="CheckMark" Grid.Column="0" Data="M1,5 L4.5,8.5 L9,1" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="False"/>
               <ContentPresenter Grid.Column="1" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
               <TextBlock Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="16,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
               <Path x:Name="Arrow" Grid.Column="3" Data="M0,0 L4,3.5 L0,7" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1" Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
@@ -119,11 +116,10 @@
             </Trigger>
             <Trigger Property="IsChecked" Value="True">
               <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+              <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
               <Setter Property="FontWeight" Value="SemiBold"/>
             </Trigger>
-            <Trigger Property="Icon" Value="{x:Null}">
-              <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
-            </Trigger>
+            <!-- 移除对 Icon 的隐藏，因为我们已经显式设置了 Visibility="Visible" -->
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>

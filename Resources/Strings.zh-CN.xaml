@@ -4,7 +4,7 @@
   <sys:String x:Key="UI_TabInterface">界面</sys:String>
   <sys:String x:Key="UI_TabPlayback">播放</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG与台标</sys:String>
-  <sys:String x:Key="UI_TabUpdateMirrors">更新与镜像</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">CDN 线路</sys:String>
   <sys:String x:Key="UI_TabAbout">关于</sys:String>
   <sys:String x:Key="App_Name">源匣 (SrcBox)</sys:String>
 
@@ -20,6 +20,7 @@
 
   <sys:String x:Key="UI_CdnLines">CDN线路</sys:String>
   <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_Cdn_Help">CDN（内容分发网络）用于加速 GitHub 文件的下载。如果检查更新或下载失败，请尝试切换或添加新的镜像线路。</sys:String>
   <sys:String x:Key="UI_Add">添加</sys:String>
   <sys:String x:Key="UI_MoveUp">上移</sys:String>
   <sys:String x:Key="UI_MoveDown">下移</sys:String>
@@ -148,6 +149,44 @@
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">支持占位符 {name}，例如 http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Epg_TimeshiftHours">时移范围 (小时)</sys:String>
 
+  <sys:String x:Key="UI_Epg_Config">EPG 配置</sys:String>
+  <sys:String x:Key="UI_Epg_Desc">配置电子节目单数据源</sys:String>
+  <sys:String x:Key="UI_Epg_Url_Note">支持 .xml, .gz 格式</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval">刷新间隔 (小时)</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval_Note">建议设置为 24 小时</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch">启用智能模糊匹配</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch_Note">尝试自动匹配名称不完全一致的频道 (例如 CCTV-1 匹配 CCTV1)。</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Title">匹配规则与占位符说明</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">匹配顺序：1）tvg-id 精准匹配；2）频道名与 EPG display-name 完全匹配；3）名称清洗后的匹配（移除“高清/HEVC”等标识、统一数字）；4）智能模糊匹配（CCTV 数字严格一致、卫视/台等后缀视作同义）。开启智能匹配后，命中结果会缓存以提升速度。</sys:String>
+  <sys:String x:Key="UI_Epg_Placeholder_Desc">当频道暂无 EPG 数据时，节目单将显示每小时一条“精彩节目”的占位项，仅用于显示占位，不影响直播、回放和时移功能。</sys:String>
+  
+  <sys:String x:Key="UI_Logo_Config">台标配置</sys:String>
+  <sys:String x:Key="UI_Logo_Desc">配置频道台标图片源</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Note">支持占位符 {name}</sys:String>
+  
+  <sys:String x:Key="UI_Playback_Settings">回放设置</sys:String>
+  <sys:String x:Key="UI_EnablePlayback">启用回放</sys:String>
+  <sys:String x:Key="UI_Playback_Desc">配置回看功能参数</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat">回看地址格式</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} 代表频道ID</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">可填写完整URL或仅参数段（如 ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss））；仅参数段将自动拼接到频道直播地址后。支持占位符 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Playback_Duration">回看范围 (小时)</sys:String>
+  <sys:String x:Key="UI_Playback_Duration_Note">设置支持回看的时间跨度</sys:String>
+
+  <sys:String x:Key="UI_Timeshift_Settings">时移设置</sys:String>
+  <sys:String x:Key="UI_EnableTimeshift">启用时移</sys:String>
+  <sys:String x:Key="UI_Timeshift_Desc">配置直播时移参数</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat">时移地址格式</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} 代表频道ID</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">可填写完整URL或仅参数段（如 ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}）；仅参数段将自动拼接到频道直播地址后。支持占位符 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration">时移范围 (小时)</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration_Note">设置支持时移的时间跨度</sys:String>
+  
+  <sys:String x:Key="UI_Enable">启用</sys:String>
+  <sys:String x:Key="UI_Close">关闭</sys:String>
+
+  <sys:String x:Key="Msg_SettingsSaved">设置已保存</sys:String>
+
   <!-- About -->
   <sys:String x:Key="About_TitleBar">关于 源匣 (SrcBox)</sys:String>
   <sys:String x:Key="About_Desc1">基于 libmpv 开发的高性能 Windows IPTV 播放器。</sys:String>
@@ -177,4 +216,6 @@
   <sys:String x:Key="Ratio_Crop">裁剪</sys:String>
   <sys:String x:Key="Stream_Multicast">组播</sys:String>
   <sys:String x:Key="Stream_Unicast">单播</sys:String>
+  <sys:String x:Key="UI_Epg_HelpLink">查看 EPG 文档 (VitePress)</sys:String>
+  <sys:String x:Key="UI_Catchup_HelpLink">查看回看/时移文档 (VitePress)</sys:String>
 </ResourceDictionary>

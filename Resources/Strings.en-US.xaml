@@ -4,7 +4,7 @@
   <sys:String x:Key="UI_TabInterface">Interface</sys:String>
   <sys:String x:Key="UI_TabPlayback">Playback</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>
-  <sys:String x:Key="UI_TabUpdateMirrors">Updates &amp; Mirrors</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">CDN</sys:String>
   <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="App_Name">SrcBox</sys:String>
 
@@ -41,6 +41,7 @@
   <sys:String x:Key="UI_LangThemeNote">Language and theme apply immediately; saving persists for next launch.</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Supports {name} placeholder, e.g. http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">e.g. https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_Cdn_Help">CDN (Content Delivery Network) accelerates GitHub file downloads. If updates fail, try switching or adding a new mirror.</sys:String>
   <sys:String x:Key="UI_TextViewer">Text Viewer</sys:String>
   <sys:String x:Key="UI_Prev">Previous</sys:String>
   <sys:String x:Key="UI_Next">Next</sys:String>
@@ -150,7 +151,45 @@
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl">Logo repo URL</sys:String>
-  <sys:String x:Key="UI_Epg_TimeshiftHours">Timeshift range (hours)</sys:String>
+  <sys:String x:Key="UI_Epg_TimeshiftHours">Timeshift Range (Hours)</sys:String>
+
+  <sys:String x:Key="UI_Epg_Config">EPG Config</sys:String>
+  <sys:String x:Key="UI_Epg_Desc">Configure EPG data source</sys:String>
+  <sys:String x:Key="UI_Epg_Url_Note">Supports .xml, .gz formats</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval">Refresh Interval (Hours)</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval_Note">Recommended: 24 hours</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch">Enable Smart Fuzzy Match</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch_Note">Automatically match channels with slightly different names (e.g. CCTV-1 vs CCTV1).</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Title">Matching Rules &amp; Placeholders</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">Order: 1) Exact tvg-id match; 2) Exact name match to EPG display-name; 3) Cleaned-name equality (remove tags like HD/HEVC, unify digits); 4) Smart fuzzy match (CCTV numbers must be identical; satellite TV suffixes treated as aliases). When enabled, smart matches are cached for speed.</sys:String>
+  <sys:String x:Key="UI_Epg_Placeholder_Desc">If a channel has no EPG data, the guide shows one “Featured Program” per hour as placeholders only; this does not affect live, replay or timeshift.</sys:String>
+  
+  <sys:String x:Key="UI_Logo_Config">Logo Config</sys:String>
+  <sys:String x:Key="UI_Logo_Desc">Configure channel logo source</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Note">Supports placeholder {name}</sys:String>
+  
+  <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
+  <sys:String x:Key="UI_EnablePlayback">Enable Replay</sys:String>
+  <sys:String x:Key="UI_Playback_Desc">Configure replay functionality</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat">Replay URL Format</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} represents Channel ID</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
+  <sys:String x:Key="UI_Playback_Duration">Replay Range (Hours)</sys:String>
+  <sys:String x:Key="UI_Playback_Duration_Note">Time span for replay availability</sys:String>
+
+  <sys:String x:Key="UI_Timeshift_Settings">Timeshift Settings</sys:String>
+  <sys:String x:Key="UI_EnableTimeshift">Enable Timeshift</sys:String>
+  <sys:String x:Key="UI_Timeshift_Desc">Configure live timeshift</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat">Timeshift URL Format</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} represents Channel ID</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration">Timeshift Range (Hours)</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration_Note">Time span for timeshift availability</sys:String>
+  
+  <sys:String x:Key="UI_Enable">Enable</sys:String>
+  <sys:String x:Key="UI_Close">Close</sys:String>
+
+  <sys:String x:Key="Msg_SettingsSaved">Settings saved successfully</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">About SrcBox</sys:String>
@@ -179,4 +218,6 @@
   <sys:String x:Key="Msg_ConfirmExit">Are you sure you want to exit?</sys:String>
   <sys:String x:Key="Btn_Yes">Yes</sys:String>
   <sys:String x:Key="Btn_No">No</sys:String>
+  <sys:String x:Key="UI_Epg_HelpLink">View EPG Documentation (VitePress)</sys:String>
+  <sys:String x:Key="UI_Catchup_HelpLink">View Catchup/Timeshift Documentation (VitePress)</sys:String>
 </ResourceDictionary>

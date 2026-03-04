@@ -4,7 +4,7 @@
   <sys:String x:Key="UI_TabInterface">Интерфейс</sys:String>
   <sys:String x:Key="UI_TabPlayback">Воспроизведение</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">Программа и логотипы</sys:String>
-  <sys:String x:Key="UI_TabUpdateMirrors">Обновления и зеркала</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">CDN</sys:String>
   <sys:String x:Key="UI_TabAbout">О программе</sys:String>
   <sys:String x:Key="App_Name">SrcBox</sys:String>
 
@@ -41,6 +41,7 @@
   <sys:String x:Key="UI_LangThemeNote">Язык и тема применяются сразу; сохранение действует при следующем запуске.</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Поддерживается {name}, напр. http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">напр. https://gh-proxy.org</sys:String>
+  <sys:String x:Key="UI_Cdn_Help">CDN ускоряет загрузку с GitHub. Если обновление не удается, попробуйте переключить зеркало.</sys:String>
   <sys:String x:Key="UI_TextViewer">Просмотр текста</sys:String>
   <sys:String x:Key="UI_Prev">Предыдущий</sys:String>
   <sys:String x:Key="UI_Next">Следующий</sys:String>
@@ -144,6 +145,44 @@
   <sys:String x:Key="UI_Epg_LogoUrl">URL логотипов</sys:String>
   <sys:String x:Key="UI_Epg_TimeshiftHours">Диапазон таймшифта (часы)</sys:String>
 
+  <sys:String x:Key="UI_Epg_Config">Настройки EPG</sys:String>
+  <sys:String x:Key="UI_Epg_Desc">Источник программы передач</sys:String>
+  <sys:String x:Key="UI_Epg_Url_Note">Поддержка .xml, .gz</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval">Интервал обновления (ч)</sys:String>
+  <sys:String x:Key="UI_Epg_RefreshInterval_Note">Рекомендуется: 24 часа</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch">Включить умный поиск</sys:String>
+  <sys:String x:Key="UI_Epg_SmartMatch_Note">Автоматически сопоставлять каналы с похожими именами (напр. CCTV-1 и CCTV1).</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Title">Правила сопоставления и заглушки</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">Порядок: 1) точное совпадение tvg-id; 2) точное совпадение имени с EPG display-name; 3) совпадение после очистки имени (удаление HD/HEVC и т.п., унификация цифр); 4) умный нестрогий поиск (для CCTV цифры должны совпадать; суффиксы «卫视/台/频道/TV» считаются синонимами). При включении результаты кешируются.</sys:String>
+  <sys:String x:Key="UI_Epg_Placeholder_Desc">Если у канала нет EPG, в программе показываются по одному «Рекомендуемому» на час — это лишь заглушки и не влияют на прямой эфир, запись и таймшифт.</sys:String>
+  
+  <sys:String x:Key="UI_Logo_Config">Настройки логотипов</sys:String>
+  <sys:String x:Key="UI_Logo_Desc">Источник логотипов каналов</sys:String>
+  <sys:String x:Key="UI_Epg_LogoUrl_Note">Поддержка {name}</sys:String>
+  
+  <sys:String x:Key="UI_Playback_Settings">Настройки записи</sys:String>
+  <sys:String x:Key="UI_EnablePlayback">Включить запись</sys:String>
+  <sys:String x:Key="UI_Playback_Desc">Параметры функции записи (catch-up)</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat">Формат URL записи</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} - ID канала</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
+  <sys:String x:Key="UI_Playback_Duration">Глубина архива (часы)</sys:String>
+  <sys:String x:Key="UI_Playback_Duration_Note">Доступный период архива</sys:String>
+
+  <sys:String x:Key="UI_Timeshift_Settings">Настройки таймшифта</sys:String>
+  <sys:String x:Key="UI_EnableTimeshift">Включить таймшифт</sys:String>
+  <sys:String x:Key="UI_Timeshift_Desc">Параметры сдвига времени</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat">Формат URL таймшифта</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} - ID канала</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration">Глубина таймшифта (часы)</sys:String>
+  <sys:String x:Key="UI_Timeshift_Duration_Note">Доступный период сдвига</sys:String>
+  
+  <sys:String x:Key="UI_Enable">Включить</sys:String>
+  <sys:String x:Key="UI_Close">Закрыть</sys:String>
+
+  <sys:String x:Key="Msg_SettingsSaved">Настройки сохранены</sys:String>
+
   <!-- About -->
   <sys:String x:Key="About_TitleBar">О SrcBox</sys:String>
   <sys:String x:Key="About_Desc1">Высокопроизводительный IPTV-плеер для Windows на базе libmpv.</sys:String>
@@ -166,4 +205,6 @@
   <sys:String x:Key="Ratio_Crop">Обрезать</sys:String>
   <sys:String x:Key="Stream_Multicast">Мультикаст</sys:String>
   <sys:String x:Key="Stream_Unicast">Уникаст</sys:String>
+  <sys:String x:Key="UI_Epg_HelpLink">Смотреть документацию EPG (VitePress)</sys:String>
+  <sys:String x:Key="UI_Catchup_HelpLink">Смотреть документацию Catchup/Timeshift (VitePress)</sys:String>
 </ResourceDictionary>

@@ -6,5 +6,7 @@
 
 - [Обзор проекта](./)
 - [Функциональные возможности](./features)
+- [EPG](./epg)
+- [Архив и Timeshift](./catchup-timeshift)
 - [Настройка](./configuration)
 - [Часто задаваемые вопросы (FAQ)](./faq)

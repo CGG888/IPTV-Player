@@ -35,4 +35,6 @@
   <data name="Btn_Yes"><value>Yes</value></data>
   <data name="Btn_No"><value>No</value></data>
   <data name="Link_GitHubRepo"><value>Visit GitHub project page</value></data>
+  <data name="UI_Epg_HelpLink"><value>View EPG Documentation (VitePress)</value></data>
+  <data name="UI_Catchup_HelpLink"><value>View Catchup/Timeshift Documentation (VitePress)</value></data>
 </root>

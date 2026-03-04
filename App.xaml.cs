@@ -11,9 +11,15 @@ namespace LibmpvIptvClient
 {
     public partial class App : System.Windows.Application
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FreeConsole();
+
         public static event Action? LanguageChanged;
         public App()
         {
+            // 尝试释放可能存在的控制台窗口（防止 Debug 模式下出现空黑窗）
+            try { FreeConsole(); } catch { }
+
             this.DispatcherUnhandledException += (s, e) =>
             {
                 try { Logger.Log("未处理异常 " + e.Exception?.ToString()); } catch { }

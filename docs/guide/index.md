@@ -6,5 +6,7 @@
 
 - [项目介绍](./)
 - [功能特性](./features)
+- [EPG 节目单](./epg)
+- [回看与时移](./catchup-timeshift)
 - [配置说明](./configuration)
 - [常见问题](./faq)

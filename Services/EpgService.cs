@@ -17,6 +17,7 @@ namespace LibmpvIptvClient.Services
         private HttpClient _http => HttpClientService.Instance.Client;
         private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
+        private Dictionary<string, string?> _smartMatchCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // ChannelName -> TvgId (Cache)
 
         public EpgService()
         {
@@ -25,6 +26,9 @@ namespace LibmpvIptvClient.Services
         public async Task LoadEpgAsync(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return;
+            
+            // Clear cache on reload
+            lock (_smartMatchCache) { _smartMatchCache.Clear(); }
 
             try 
             {
@@ -218,10 +222,48 @@ namespace LibmpvIptvClient.Services
         {
             if (_programs.TryGetValue(tvgId ?? "", out var list)) return list;
             
-            // Try fallback by name
+            // Try fallback by name (exact match from map)
             if (!string.IsNullOrEmpty(channelName) && _channelNameMap.TryGetValue(channelName, out var id))
             {
                 if (_programs.TryGetValue(id, out var list2)) return list2;
+            }
+
+            // Try Smart Match
+            if (LibmpvIptvClient.AppSettings.Current.Epg.EnableSmartMatch && !string.IsNullOrEmpty(channelName))
+            {
+                string? smartId = null;
+                bool foundInCache = false;
+                
+                lock (_smartMatchCache)
+                {
+                    if (_smartMatchCache.TryGetValue(channelName, out smartId))
+                    {
+                        foundInCache = true;
+                    }
+                }
+
+                if (foundInCache)
+                {
+                    if (smartId != null && _programs.TryGetValue(smartId, out var listCache)) return listCache;
+                }
+                else
+                {
+                    // 先获取所有已知的EPG频道名称
+                    var allEpgNames = _channelNameMap.Keys;
+                    var matchedName = EpgMatcher.Match(channelName, allEpgNames);
+                    
+                    if (matchedName != null && _channelNameMap.TryGetValue(matchedName, out var idFromMatch))
+                    {
+                        smartId = idFromMatch;
+                        lock (_smartMatchCache) { _smartMatchCache[channelName] = smartId; }
+                        if (_programs.TryGetValue(smartId, out var list3)) return list3;
+                    }
+                    else
+                    {
+                        // Cache failed result to avoid re-calculation
+                        lock (_smartMatchCache) { _smartMatchCache[channelName] = null; }
+                    }
+                }
             }
             
             return new List<EpgProgram>();
@@ -231,7 +273,19 @@ namespace LibmpvIptvClient.Services
         {
             var list = GetPrograms(tvgId, channelName);
             var now = DateTime.Now;
-            return list.FirstOrDefault(p => now >= p.Start && now < p.End);
+            // 优化：节目表可能跨越日期，或者节目时间存在时区偏差
+            // 1. 直接查找包含当前时间的节目
+            var current = list.FirstOrDefault(p => now >= p.Start && now < p.End);
+            if (current != null) return current;
+
+            // 2. 如果当前时间刚好在节目间隙（或者误差几分钟），尝试找最近的一个（例如最近 15 分钟内结束的，或者马上开始的）
+            // 这里我们采取一个宽松策略：如果没找到正在播放的，但有一个节目结束时间就在刚才（例如 5 分钟内），可能因为时钟误差，仍然显示它
+            var recentPast = list.LastOrDefault(p => p.End <= now && (now - p.End).TotalMinutes < 15);
+            if (recentPast != null) return recentPast;
+            
+            // 3. 或者找马上要开始的？（暂时不处理，避免显示未开始的节目造成误解）
+
+            return null;
         }
     }
 }

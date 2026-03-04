@@ -6,6 +6,8 @@ using System.Windows.Input;
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Diagnostics;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 using System.Text.Json;
 namespace LibmpvIptvClient
@@ -18,18 +20,72 @@ namespace LibmpvIptvClient
         private HttpClient _httpInline => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private AboutWindow.ReleaseInfo? _latestInline;
         private string _currentVersionInline = "0.0.0";
+        
+        private Controls.PlaybackDrawer? _playbackDrawer;
+        private Controls.TimeshiftDrawer? _timeshiftDrawer;
+        private Controls.EpgDrawer? _epgDrawer;
+        private Controls.LogoDrawer? _logoDrawer;
+        
+        private ReplayConfig _tempReplay;
+        private TimeshiftConfig _tempTimeshift;
+        private EpgConfig _tempEpg;
+        private LogoConfig _tempLogo;
+        
+        // private FrameworkElement? _currentDrawer;
+
         public SettingsWindow(PlaybackSettings current)
         {
             InitializeComponent();
+            
+            // Deep copy for temp configs
+            _tempReplay = new ReplayConfig 
+            { 
+                Enabled = current.Replay.Enabled, 
+                UrlFormat = current.Replay.UrlFormat, 
+                DurationHours = current.Replay.DurationHours 
+            };
+            _tempTimeshift = new TimeshiftConfig 
+            { 
+                Enabled = current.Timeshift.Enabled, 
+                UrlFormat = current.Timeshift.UrlFormat, 
+                DurationHours = current.Timeshift.DurationHours 
+            };
+            _tempEpg = new EpgConfig
+            {
+                Enabled = current.Epg.Enabled,
+                Url = current.Epg.Url,
+                RefreshIntervalHours = current.Epg.RefreshIntervalHours
+            };
+            _tempLogo = new LogoConfig
+            {
+                Enabled = current.Logo.Enabled,
+                Url = current.Logo.Url
+            };
+
             CbHwdec.IsChecked = current.Hwdec;
             TbCacheSecs.Text = current.CacheSecs.ToString(CultureInfo.InvariantCulture);
             TbMaxBytes.Text = current.DemuxerMaxBytesMiB.ToString(CultureInfo.InvariantCulture);
             TbMaxBackBytes.Text = current.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture);
             TbFccPrefetch.Text = current.FccPrefetchCount.ToString(CultureInfo.InvariantCulture);
             TbSourceTimeout.Text = current.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture);
-            TbEpgUrl.Text = current.CustomEpgUrl;
-            TbLogoUrl.Text = current.CustomLogoUrl;
-            TbTimeshiftHours.Text = Math.Max(0, current.TimeshiftHours).ToString(CultureInfo.InvariantCulture);
+            
+            try
+            {
+                // Init Controls (Lazy load not strictly needed for local controls, but we populate them now)
+                // We reference the controls by x:Name defined in XAML
+                EpgSettingsControl?.Load(_tempEpg);
+                LogoSettingsControl?.Load(_tempLogo);
+                ReplaySettingsControl?.Load(_tempReplay);
+                TimeshiftSettingsControl?.Load(_tempTimeshift);
+
+                // Wire up pointers for HasChanges check if needed, or just check controls directly
+                _epgDrawer = EpgSettingsControl;
+                _logoDrawer = LogoSettingsControl;
+                _playbackDrawer = ReplaySettingsControl;
+                _timeshiftDrawer = TimeshiftSettingsControl;
+            }
+            catch { }
+
             try
             {
                 // 初始化界面：语言 & 主题
@@ -80,11 +136,21 @@ namespace LibmpvIptvClient
             if (int.TryParse(TbMaxBackBytes.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var backb)) s.DemuxerMaxBackBytesMiB = Math.Max(0, backb);
             if (int.TryParse(TbFccPrefetch.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var pf)) s.FccPrefetchCount = Math.Max(0, Math.Min(3, pf));
             if (int.TryParse(TbSourceTimeout.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var st)) s.SourceTimeoutSec = Math.Max(1, st);
-            s.CustomEpgUrl = TbEpgUrl.Text?.Trim() ?? "";
-            s.CustomLogoUrl = TbLogoUrl.Text?.Trim() ?? "";
-            if (int.TryParse(TbTimeshiftHours.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var tsh)) s.TimeshiftHours = Math.Max(0, Math.Min(168, tsh));
+            
+            // Save from Controls to Temp Configs
+            _playbackDrawer?.Save(_tempReplay);
+            _timeshiftDrawer?.Save(_tempTimeshift);
+            _epgDrawer?.Save(_tempEpg);
+            _logoDrawer?.Save(_tempLogo);
+
+            // Assign Temp Configs to Result
+            s.Replay = _tempReplay;
+            s.Timeshift = _tempTimeshift;
+            s.Epg = _tempEpg;
+            s.Logo = _tempLogo;
+
             // CDN
-            s.UpdateCdnMirrors = new System.Collections.Generic.List<string>(_cdn);
+            CleanCdnListForSave(s);
             // 界面
             try
             {
@@ -95,6 +161,8 @@ namespace LibmpvIptvClient
             catch { }
             Result = s;
             ApplySettingsRequested?.Invoke(s);
+
+            ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_SettingsSaved", "设置已保存"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
             // DialogResult = true;
             // Close();
         }
@@ -110,10 +178,12 @@ namespace LibmpvIptvClient
             catch { }
             return "";
         }
+
         void CbLanguage_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             // Do nothing immediately. Apply on Save.
         }
+
         void CbTheme_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             // Do nothing immediately. Apply on Save.
@@ -155,6 +225,21 @@ namespace LibmpvIptvClient
                 }
             }
             catch { }
+        }
+
+        private void OpenDrawer()
+        {
+            // Drawer logic removed
+        }
+
+        private void CloseDrawer()
+        {
+            // Drawer logic removed
+        }
+
+        private void DrawerOverlay_Click(object sender, MouseButtonEventArgs e)
+        {
+            // Drawer logic removed
         }
 /*
         void BtnViewUpdateInline_Click(object sender, RoutedEventArgs e)
@@ -261,27 +346,73 @@ namespace LibmpvIptvClient
             try
             {
                 if (_cdn.Count == 0) return;
-                var client = new HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(3);
-                var targets = new System.Collections.Generic.List<(string url, double ms)>();
+                var targets = new System.Collections.Generic.List<(string url, long ms)>();
+                using var ping = new System.Net.NetworkInformation.Ping();
+                
+                // 为了显示结果，我们需要更新 ObservableCollection 中的字符串
+                // 但简单的 string 列表无法直接显示 ping 值
+                // 方案：将 ObservableCollection 改为 ItemViewModel 或者直接修改字符串内容 (e.g. "url [100ms]")
+                // 但考虑到后续保存需要纯 URL，我们这里仅做排序和临时显示，或者采用 "url|ms" 格式？
+                // 鉴于用户要求“显示不通”，我们修改列表内容格式
+                
+                // 1. 先进行测速
                 foreach (var c in _cdn)
                 {
-                    var testUrl = c.TrimEnd('/') + "/https://github.com/favicon.ico";
-                    var sw = Stopwatch.StartNew();
+                    // 清理旧的 Ping 结果标记 (假设格式为 "url [xxxms]" 或 "url [Failed]")
+                    var cleanUrl = c.Split(' ')[0];
+                    long rtt = long.MaxValue;
                     try
                     {
-                        using var resp = await client.GetAsync(testUrl);
-                        sw.Stop();
-                        targets.Add((c, resp.IsSuccessStatusCode ? sw.Elapsed.TotalMilliseconds : double.MaxValue));
+                        // Extract host from URL
+                        string host = cleanUrl;
+                        if (Uri.TryCreate(cleanUrl, UriKind.Absolute, out var uri))
+                        {
+                            host = uri.Host;
+                        }
+                        
+                        // Send Ping
+                        var reply = await ping.SendPingAsync(host, 3000);
+                        if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                        {
+                            rtt = reply.RoundtripTime;
+                        }
                     }
-                    catch { targets.Add((c, double.MaxValue)); }
+                    catch { }
+                    targets.Add((cleanUrl, rtt));
                 }
-                // 排序（成功优先、延迟小在前）
+
+                // 2. 排序（延迟小在前）
                 targets.Sort((a, b) => a.ms.CompareTo(b.ms));
+
+                // 3. 更新 UI 列表，附带 Ping 值
                 _cdn.Clear();
-                foreach (var t in targets) _cdn.Add(t.url);
+                foreach (var t in targets)
+                {
+                    string display;
+                    if (t.ms == long.MaxValue)
+                        display = $"{t.url} [Failed]";
+                    else
+                        display = $"{t.url} [{t.ms}ms]";
+                    _cdn.Add(display);
+                }
             }
             catch { }
+        }
+
+        // 保存前需要清理 Ping 结果标记
+        void CleanCdnListForSave(PlaybackSettings s)
+        {
+            var cleanList = new System.Collections.Generic.List<string>();
+            foreach (var item in _cdn)
+            {
+                if (string.IsNullOrWhiteSpace(item)) continue;
+                var parts = item.Split(' '); // Split by space to remove [xxxms]
+                if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]))
+                {
+                    cleanList.Add(parts[0].Trim());
+                }
+            }
+            s.UpdateCdnMirrors = cleanList;
         }
         void Inline_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {

@@ -6,5 +6,7 @@ Welcome to the SrcBox documentation. Please select a topic from the sidebar or u
 
 - [Introduction](./)
 - [Features](./features)
+- [EPG](./epg)
+- [Catchup & Timeshift](./catchup-timeshift)
 - [Configuration](./configuration)
 - [FAQ](./faq)

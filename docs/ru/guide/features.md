@@ -12,9 +12,11 @@
 
 ### Телегид (EPG)
 Поддержка формата XMLTV (gz), переключение по дням, автоматическое сопоставление `tvg-id`.
+[Руководство по использованию и настройке](./epg)
 
 ### Архив (Catchup)
 Автоматическая генерация URL для просмотра архива на основе шаблонов (например, `{utc:yyyyMMddHHmmss}`).
+[Руководство по использованию и настройке](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/catchup.mp4" type="video/mp4">
@@ -23,6 +25,7 @@
 
 ### Timeshift (Сдвиг во времени)
 Перемотка назад во время прямого эфира (зависит от `catchup-source`).
+[Руководство по использованию и настройке](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/timeshift.mp4" type="video/mp4">

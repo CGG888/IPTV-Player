@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 开始使用
-      link: /zh/guide/
+      link: /guide/
     - theme: alt
       text: 访问 GitHub
       link: https://github.com/CGG888/SrcBox

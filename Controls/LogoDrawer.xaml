@@ -1,0 +1,27 @@
+<UserControl x:Class="LibmpvIptvClient.Controls.LogoDrawer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="400"
+             Background="Transparent">
+    <Grid Margin="16,8,16,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Switch -->
+                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Enable}" IsChecked="True" Margin="0,0,0,24"/>
+                
+                <!-- URL -->
+                <TextBlock Text="{DynamicResource UI_Epg_LogoUrl}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBox x:Name="TbUrl" Height="32" Padding="4" ToolTip="{DynamicResource UI_Epg_LogoUrl_Tip}"/>
+                <TextBlock Text="{DynamicResource UI_Epg_LogoUrl_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

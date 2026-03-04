@@ -12,9 +12,11 @@
 
 ### EPG 节目单
 支持 XMLTV (gz) 格式，按日切换，自动匹配 `tvg-id`。
+[查看使用与配置说明](./epg)
 
 ### 回放 (Catchup)
 基于模板自动生成回放 URL（如 `{utc:yyyyMMddHHmmss}`）。
+[查看使用与自定义说明](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/catchup.mp4" type="video/mp4">
@@ -23,6 +25,7 @@
 
 ### 时移 (Time-Shift)
 拖动进度条回看直播历史（依赖 `catchup-source`）。
+[查看使用与自定义说明](./catchup-timeshift)
 
 <video controls width="100%" poster="/logo.svg">
   <source src="/screenshots/timeshift.mp4" type="video/mp4">

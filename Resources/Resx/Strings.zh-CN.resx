@@ -35,4 +35,6 @@
   <data name="Btn_Yes"><value>是</value></data>
   <data name="Btn_No"><value>否</value></data>
   <data name="Link_GitHubRepo"><value>访问 GitHub 项目主页</value></data>
+  <data name="UI_Epg_HelpLink"><value>查看 EPG 文档 (VitePress)</value></data>
+  <data name="UI_Catchup_HelpLink"><value>查看回看/时移文档 (VitePress)</value></data>
 </root>
