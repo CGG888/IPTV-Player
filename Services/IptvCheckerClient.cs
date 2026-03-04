@@ -5,20 +5,20 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Services
 {
     public class IptvCheckerClient
     {
-        readonly HttpClient _http;
+        HttpClient _http => HttpClientService.Instance.Client;
         readonly string _baseUrl;
         readonly string _jsonEndpoint;
         readonly string _m3uEndpoint;
         readonly string _token;
         readonly M3UParser _m3u;
-        public IptvCheckerClient(HttpClient http, M3UParser m3u, string baseUrl, string jsonEndpoint, string m3uEndpoint, string token)
+        public IptvCheckerClient(M3UParser m3u, string baseUrl, string jsonEndpoint, string m3uEndpoint, string token)
         {
-            _http = http;
             _m3u = m3u;
             _baseUrl = baseUrl?.TrimEnd('/') ?? "";
             _jsonEndpoint = jsonEndpoint;
@@ -46,7 +46,7 @@ namespace LibmpvIptvClient.Services
             try
             {
                 var url = BuildUrl(_jsonEndpoint);
-                var txt = await _http.GetStringAsync(url);
+                var txt = await _http.GetStringAsyncWithRetry(url);
                 var node = JsonNode.Parse(txt);
                 if (node == null) return null;
                 if (node is JsonArray arr) return ParseArray(arr);

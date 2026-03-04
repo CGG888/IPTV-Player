@@ -9,12 +9,11 @@ namespace LibmpvIptvClient.Services
 {
     public class ChannelService
     {
-        readonly HttpClient _http;
+        HttpClient _http => HttpClientService.Instance.Client;
         readonly M3UParser _m3u;
         readonly IptvCheckerClient _checker;
-        public ChannelService(HttpClient http, M3UParser m3u, IptvCheckerClient checker)
+        public ChannelService(M3UParser m3u, IptvCheckerClient checker)
         {
-            _http = http;
             _m3u = m3u;
             _checker = checker;
         }

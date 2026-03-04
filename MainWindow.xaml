@@ -4,6 +4,7 @@
         xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         xmlns:local="clr-namespace:LibmpvIptvClient"
+        xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         xmlns:helpers="clr-namespace:LibmpvIptvClient.Helpers"
         x:Class="LibmpvIptvClient.MainWindow"
         Title="{DynamicResource App_Name}" Width="1280" Height="720" WindowStartupLocation="CenterScreen"
@@ -1006,8 +1007,9 @@
                         <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
                             <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                         </Button>
-                        <Slider Grid.Column="1" x:Name="SliderVolume" Minimum="0" Maximum="100" 
-                                ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource UnifiedThickSlider}" VerticalAlignment="Center"/>
+                        <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume" 
+                                               VolumeChanged="SliderVolume_VolumeChanged" 
+                                               VerticalAlignment="Center"/>
                     </Grid>
                 </Grid>
 

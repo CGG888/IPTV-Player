@@ -21,7 +21,7 @@ namespace LibmpvIptvClient
         private M3UParser? _m3uParser;
         private EpgService? _epgService;
             private UserDataStore _userDataStore = new UserDataStore();
-        private HttpClient _http = new HttpClient();
+        private HttpClient _http => HttpClientService.Instance.Client;
         private List<Channel> _channels = new List<Channel>();
         private DebugWindow? _debug;
         private System.Windows.Threading.DispatcherTimer _timer = new System.Windows.Threading.DispatcherTimer();
@@ -183,7 +183,7 @@ namespace LibmpvIptvClient
             _updatingVolume = true;
             _volume = Math.Max(0, Math.Min(100, v));
             try { if (_mpv != null) _mpv.SetVolume(_volume); } catch { }
-            try { SliderVolume.Value = _volume; } catch { }
+            try { SliderVolume.Volume = _volume; } catch { }
             try { _overlayWpf?.SetVolume(_volume); } catch { }
             _updatingVolume = false;
         }
@@ -479,7 +479,7 @@ namespace LibmpvIptvClient
                 var panelHwnd = VideoPanel.Handle;
                 _mpv.SetWid(panelHwnd);
                 _mpv.Initialize();
-                try { SliderVolume.Value = 60; } catch { }
+                try { SliderVolume.Volume = 60; } catch { }
                 _volume = 60;
                 _mpv.SetVolume(_volume);
                 _timer.Interval = TimeSpan.FromMilliseconds(500);
@@ -498,10 +498,10 @@ namespace LibmpvIptvClient
                 Close();
                 return;
             }
-            _m3uParser = new M3UParser(_http);
-            _epgService = new EpgService(_http);
-            var checker = new IptvCheckerClient(_http, _m3uParser, "", "/api/export/json", "/api/export/m3u", "");
-            _channelService = new ChannelService(_http, _m3uParser, checker);
+            _m3uParser = new M3UParser();
+            _epgService = new EpgService();
+            var checker = new IptvCheckerClient(_m3uParser, "", "/api/export/json", "/api/export/m3u", "");
+            _channelService = new ChannelService(_m3uParser, checker);
             _epgTimer.Interval = TimeSpan.FromMinutes(1);
             _epgTimer.Tick += (s, e) => UpdateEpgDisplay();
             _epgTimer.Start();
@@ -1227,6 +1227,24 @@ namespace LibmpvIptvClient
                 return;
             }
             
+            // 监控并强制全屏窗口置顶（防止被新打开的最大化窗口覆盖）
+            try
+            {
+                if (_fs != null && !_fs.Topmost)
+                {
+                    _fs.Topmost = true;
+                }
+            }
+            catch { }
+
+            // 确保 EPG 和 Drawer 在全屏窗口之上
+            try
+            {
+                if (_fsEpg != null && _fsEpg.IsVisible && !_fsEpg.Topmost) _fsEpg.Topmost = true;
+                if (_fsDrawer != null && _fsDrawer.IsVisible && !_fsDrawer.Topmost) _fsDrawer.Topmost = true;
+            }
+            catch { }
+            
             // Fullscreen Logic
             PositionOverlay();
             PositionTopOverlay();
@@ -1281,6 +1299,19 @@ namespace LibmpvIptvClient
                         if ((now - _lastOverlayEval).TotalMilliseconds > 60 || _lastBottomVisible)
                         {
                             _overlayWpf.Hide();
+                            
+                            // 修复：当底部控制栏隐藏时，强制刷新主窗口的置顶状态，防止层级丢失
+                            try
+                            {
+                                if (_fs != null)
+                                {
+                                    _fs.Topmost = true;
+                                    var h = new System.Windows.Interop.WindowInteropHelper(_fs).Handle;
+                                    SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
+                                }
+                            }
+                            catch { }
+
                             _lastBottomVisible = false;
                             _lastOverlayEval = now;
                         }
@@ -2268,7 +2299,7 @@ namespace LibmpvIptvClient
 
                 BottomBar.Visibility = Visibility.Collapsed;
                 _fs = new FullscreenWindow();
-                _fs.Topmost = false; // 明确禁用置顶，防止遮挡 EPG
+                _fs.Topmost = true; // 启用置顶，确保不被最大化窗口覆盖
                 _fs.Owner = this;
                 _fs.Loaded += OnFullscreenLoaded;
                 _fsPanel = _fs.VideoPanel;
@@ -2304,6 +2335,23 @@ namespace LibmpvIptvClient
                             _topOverlay.Topmost = true;
                         }
                     }
+                    catch { }
+                };
+                _fs.StateChanged += (s, e) =>
+                {
+                    // 监控最大化/还原，确保始终最大化
+                    if (_fs.WindowState != WindowState.Maximized)
+                    {
+                         try { _fs.WindowState = WindowState.Maximized; } catch { }
+                    }
+                };
+                _fs.Deactivated += (s, e) =>
+                {
+                    // 窗口失去焦点（如点击其他软件），尝试保持置顶
+                    try 
+                    { 
+                        if (_fs != null && !_fs.Topmost) _fs.Topmost = true; 
+                    } 
                     catch { }
                 };
                 _fs.SizeChanged += (s, e) => { PositionOverlay(); PositionTopOverlay(); };
@@ -3039,9 +3087,9 @@ namespace LibmpvIptvClient
             if (_mpv == null) return;
             _mpv.SeekRelative(10);
         }
-        void SliderVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        void SliderVolume_VolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            SetVolumeInternal(SliderVolume.Value);
+            SetVolumeInternal(e.NewValue);
         }
         void CbFullscreen_Checked(object sender, RoutedEventArgs e)
         {

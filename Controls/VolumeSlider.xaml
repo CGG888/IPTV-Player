@@ -1,0 +1,40 @@
+<UserControl x:Class="LibmpvIptvClient.Controls.VolumeSlider"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LibmpvIptvClient.Controls"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             mc:Ignorable="d" 
+             d:DesignHeight="30" d:DesignWidth="200"
+             x:Name="Root">
+    <Grid Background="Transparent" MouseWheel="Grid_MouseWheel">
+        <Slider x:Name="PART_Slider"
+                Minimum="0" Maximum="100"
+                Value="{Binding Volume, ElementName=Root, Mode=TwoWay}"
+                IsMoveToPointEnabled="True"
+                VerticalAlignment="Center"
+                Style="{DynamicResource ThickSlider}"
+                Foreground="{DynamicResource AccentBrush}"
+                MouseMove="PART_Slider_MouseMove"
+                MouseLeave="PART_Slider_MouseLeave"/>
+        
+        <Popup x:Name="VolumeTooltip" 
+               Placement="Top" 
+               PlacementTarget="{Binding ElementName=PART_Slider}" 
+               AllowsTransparency="True" 
+               IsHitTestVisible="False"
+               StaysOpen="True">
+            <Border Background="{DynamicResource TooltipBackgroundBrush}" 
+                    BorderBrush="{DynamicResource TooltipBorderBrush}" 
+                    BorderThickness="1" 
+                    CornerRadius="4" 
+                    Padding="6,3"
+                    Effect="{DynamicResource ShadowDepth2}">
+                <TextBlock x:Name="TooltipText" 
+                           Foreground="{DynamicResource TooltipForegroundBrush}" 
+                           FontSize="12"/>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

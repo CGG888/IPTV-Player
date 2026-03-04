@@ -15,7 +15,7 @@ namespace LibmpvIptvClient
         public event Action<PlaybackSettings>? ApplySettingsRequested;
         public PlaybackSettings Result { get; private set; } = new PlaybackSettings();
         private ObservableCollection<string> _cdn = new ObservableCollection<string>();
-        private readonly HttpClient _httpInline = new HttpClient();
+        private HttpClient _httpInline => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private AboutWindow.ReleaseInfo? _latestInline;
         private string _currentVersionInline = "0.0.0";
         public SettingsWindow(PlaybackSettings current)

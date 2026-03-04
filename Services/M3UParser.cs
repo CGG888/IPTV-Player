@@ -8,34 +8,42 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.IO.Compression;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Services
 {
     public class M3UParser
     {
-        readonly HttpClient _http;
+        private HttpClient _http => HttpClientService.Instance.Client;
         public string TvgUrl { get; private set; } = "";
         
-        public M3UParser(HttpClient http)
+        public M3UParser()
         {
-            _http = http;
         }
         public async Task<List<Channel>> ParseFromUrlAsync(string url)
         {
-            var data = await _http.GetByteArrayAsync(url);
-            string text;
-            if (IsGzip(data))
+            try
             {
-                using var ms = new MemoryStream(data);
-                using var gz = new GZipStream(ms, CompressionMode.Decompress);
-                using var sr = new StreamReader(gz, Encoding.UTF8, true);
-                text = await sr.ReadToEndAsync();
+                var data = await _http.GetByteArrayAsync(url);
+                string text;
+                if (IsGzip(data))
+                {
+                    using var ms = new MemoryStream(data);
+                    using var gz = new GZipStream(ms, CompressionMode.Decompress);
+                    using var sr = new StreamReader(gz, Encoding.UTF8, true);
+                    text = await sr.ReadToEndAsync();
+                }
+                else
+                {
+                    text = DetectAndDecodeText(data);
+                }
+                return Parse(text, new Uri(url));
             }
-            else
+            catch (Exception ex)
             {
-                text = DetectAndDecodeText(data);
+                LibmpvIptvClient.Diagnostics.Logger.Error($"M3U ParseFromUrlAsync failed: {ex.Message}");
+                throw; // Rethrow to let caller handle
             }
-            return Parse(text, new Uri(url));
         }
         public async Task<List<Channel>> ParseFromPathAsync(string path)
         {

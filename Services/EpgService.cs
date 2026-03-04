@@ -8,18 +8,18 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Services
 {
     public class EpgService
     {
-        private readonly HttpClient _http;
+        private HttpClient _http => HttpClientService.Instance.Client;
         private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
 
-        public EpgService(HttpClient http)
+        public EpgService()
         {
-            _http = http;
         }
 
         public async Task LoadEpgAsync(string url)
@@ -36,18 +36,26 @@ namespace LibmpvIptvClient.Services
                 // 简单的缓存策略：文件存在且小于 12 小时则直接使用
                 if (File.Exists(cachePath) && (DateTime.Now - File.GetLastWriteTime(cachePath)).TotalHours < 12)
                 {
-                    System.Diagnostics.Debug.WriteLine("Loading EPG from cache...");
+                    LibmpvIptvClient.Diagnostics.Logger.Log("Loading EPG from cache...");
                     data = await File.ReadAllBytesAsync(cachePath);
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Downloading EPG from {url}...");
-                    data = await _http.GetByteArrayAsync(url);
+                    LibmpvIptvClient.Diagnostics.Logger.Log($"Downloading EPG from {url}...");
+                    try
+                    {
+                        data = await _http.GetByteArrayAsyncWithRetry(url);
+                    }
+                    catch (Exception ex)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Download Failed: {ex.Message}");
+                        return;
+                    }
                     // 异步写入缓存
                     _ = File.WriteAllBytesAsync(cachePath, data);
                 }
 
-                System.Diagnostics.Debug.WriteLine($"EPG Data Length: {data.Length} bytes");
+                LibmpvIptvClient.Diagnostics.Logger.Log($"EPG Data Length: {data.Length} bytes");
 
                 using var ms = new MemoryStream(data);
                 Stream stream = ms;
@@ -55,19 +63,20 @@ namespace LibmpvIptvClient.Services
                 // Check for GZIP
                 if (data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B)
                 {
-                    System.Diagnostics.Debug.WriteLine("EPG is GZIP compressed.");
+                    LibmpvIptvClient.Diagnostics.Logger.Log("EPG is GZIP compressed.");
                     stream = new GZipStream(ms, CompressionMode.Decompress);
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("EPG is plain XML.");
+                    LibmpvIptvClient.Diagnostics.Logger.Log("EPG is plain XML.");
                 }
 
                 await Task.Run(() => ParseXml(stream));
+                LibmpvIptvClient.Diagnostics.Logger.Log($"EPG 加载完成，包含 {_programs.Count} 个频道");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"EPG Load Error: {ex.Message}");
+                LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Load Error: {ex.Message}");
             }
         }
 

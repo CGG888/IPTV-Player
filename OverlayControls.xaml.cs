@@ -76,7 +76,7 @@ namespace LibmpvIptvClient
         }
         public void SetVolume(double val)
         {
-            SliderVolume.Value = val;
+            SliderVolume.Volume = val;
         }
         string FormatTime(double sec)
         {
@@ -148,16 +148,16 @@ namespace LibmpvIptvClient
                 }
             }
         }
-        void SliderVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        void SliderVolume_VolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            VolumeChanged?.Invoke(SliderVolume.Value);
+            VolumeChanged?.Invoke(SliderVolume.Volume);
         }
         bool _muted = false;
         void BtnMute_Click(object sender, RoutedEventArgs e)
         {
             _muted = !_muted;
             IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
-            VolumeChanged?.Invoke(SliderVolume.Value);
+            VolumeChanged?.Invoke(SliderVolume.Volume);
             MuteChanged?.Invoke(_muted);
         }
         public void SetFcc(bool v) { /* Removed */ }
@@ -277,8 +277,8 @@ namespace LibmpvIptvClient
         {
             int step = 5;
             int dir = e.Delta > 0 ? 1 : -1;
-            var v = Math.Max(0, Math.Min(100, SliderVolume.Value + dir * step));
-            SliderVolume.Value = v;
+            var v = Math.Max(0, Math.Min(100, SliderVolume.Volume + dir * step));
+            SliderVolume.Volume = v;
             e.Handled = true;
         }
     }

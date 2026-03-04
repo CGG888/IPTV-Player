@@ -6,13 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient
 {
     public partial class UpdateDialog : Window
     {
         private readonly AboutWindow.ReleaseInfo? _info;
-        private readonly HttpClient _http = new HttpClient();
+        private HttpClient _http => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private string _downloadPath = "";
         private int _cdnCount = 0;
         private class Mirror
@@ -123,6 +124,7 @@ namespace LibmpvIptvClient
             }
             catch (Exception ex)
             {
+                LibmpvIptvClient.Services.HttpClientService.Instance.InvalidateClient();
                 System.Windows.MessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_DownloadFailed", "下载失败：\n{0}"), ex.Message), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 BtnDownload.IsEnabled = true;
             }

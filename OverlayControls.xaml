@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:local="clr-namespace:LibmpvIptvClient"
+        xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         x:Class="LibmpvIptvClient.OverlayControls"
         Title="OverlayControls"
         AllowsTransparency="True"
@@ -179,8 +180,9 @@
                 <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
                     <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                 </Button>
-                <Slider Grid.Column="1" x:Name="SliderVolume" Minimum="0" Maximum="100" 
-                        ValueChanged="SliderVolume_ValueChanged" Style="{StaticResource UnifiedThickSlider}" VerticalAlignment="Center"/>
+                <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume" 
+                                       VolumeChanged="SliderVolume_VolumeChanged" 
+                                       VerticalAlignment="Center"/>
             </Grid>
         </Grid>
 

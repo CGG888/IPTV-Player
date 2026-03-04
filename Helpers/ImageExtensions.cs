@@ -7,12 +7,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using LibmpvIptvClient.Diagnostics;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Helpers
 {
     public static class ImageExtensions
     {
-        private static readonly HttpClient _http;
+        private static HttpClient _http => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private static readonly ConcurrentDictionary<string, BitmapImage> _cache = new ConcurrentDictionary<string, BitmapImage>();
         private static readonly BitmapImage _defaultImage;
 
@@ -27,20 +28,6 @@ namespace LibmpvIptvClient.Helpers
             {
                 _defaultImage = new BitmapImage();
             }
-
-            var handler = new HttpClientHandler
-            {
-                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-                AllowAutoRedirect = true,
-                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-            };
-            _http = new HttpClient(handler);
-            // Increased timeout to 15s to allow slower servers
-            _http.Timeout = TimeSpan.FromSeconds(15);
-            // Simulate a common browser User-Agent
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
-            _http.DefaultRequestHeaders.Add("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
-            _http.DefaultRequestHeaders.Add("Referer", "http://12.12.12.177:9443/"); // 尝试添加 Referer 绕过防盗链
         }
 
         public static string GetRemoteUrl(DependencyObject obj)
@@ -126,7 +113,7 @@ namespace LibmpvIptvClient.Helpers
                     // True async call
                     try 
                     {
-                        data = await _http.GetByteArrayAsync(processedUrl);
+                        data = await _http.GetByteArrayAsyncWithRetry(processedUrl);
                     }
                     catch (HttpRequestException he)
                     {
