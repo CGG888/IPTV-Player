@@ -32,6 +32,11 @@ namespace LibmpvIptvClient
             SetString("ad-lavc-threads", "2");
             SetString("audio-channels", "stereo");
             SetString("ad-lavc-downmix", "yes");
+            
+            // 设置全局通用 User-Agent，解决部分源因空 UA 拒绝访问的问题
+            SetString("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            // 忽略 HTTPS 证书错误，解决部分自签名源无法播放的问题
+            SetString("tls-verify", "no");
         }
         public void SetWid(IntPtr hwnd)
         {

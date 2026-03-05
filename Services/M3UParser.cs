@@ -47,7 +47,8 @@ namespace LibmpvIptvClient.Services
         }
         public async Task<List<Channel>> ParseFromPathAsync(string path)
         {
-            var text = await File.ReadAllTextAsync(path, Encoding.UTF8);
+            var bytes = await File.ReadAllBytesAsync(path);
+            var text = DetectAndDecodeText(bytes);
             return Parse(text, null);
         }
         public List<Channel> Parse(string content, Uri? baseUri = null)
@@ -62,13 +63,31 @@ namespace LibmpvIptvClient.Services
             int startIdx = 0;
             while (startIdx < lines.Length && !lines[startIdx].TrimStart().StartsWith("#EXTM3U", StringComparison.OrdinalIgnoreCase))
                 startIdx++;
-            if (startIdx >= lines.Length) return channels;
+            
+            // 如果没找到 #EXTM3U，尝试查找第一个 #EXTINF
+            if (startIdx >= lines.Length)
+            {
+                startIdx = -1;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (lines[i].TrimStart().StartsWith("#EXTINF", StringComparison.OrdinalIgnoreCase))
+                    {
+                        startIdx = i - 1;
+                        break;
+                    }
+                }
+                // 如果也没找到 #EXTINF，则无法解析（因为我们需要 EXTINF 元数据）
+                if (startIdx == -1) return channels;
+            }
             
             // 解析头部属性
-            var header = lines[startIdx];
-            var headerAttrs = ParseAttributes(header.Substring("#EXTM3U".Length));
-            if (headerAttrs.TryGetValue("x-tvg-url", out var tvg)) TvgUrl = tvg;
-            else if (headerAttrs.TryGetValue("url-tvg", out var utvg)) TvgUrl = utvg;
+            if (startIdx >= 0 && lines[startIdx].StartsWith("#EXTM3U", StringComparison.OrdinalIgnoreCase))
+            {
+                var header = lines[startIdx];
+                var headerAttrs = ParseAttributes(header.Substring("#EXTM3U".Length));
+                if (headerAttrs.TryGetValue("x-tvg-url", out var tvg)) TvgUrl = tvg;
+                else if (headerAttrs.TryGetValue("url-tvg", out var utvg)) TvgUrl = utvg;
+            }
 
             string? currentInf = null;
             for (int i = startIdx + 1; i < lines.Length; i++)
@@ -120,10 +139,10 @@ namespace LibmpvIptvClient.Services
                 ch.Id = Convert.ToHexString(Encoding.UTF8.GetBytes(key));
             }
             var srcQual = new SourceQuality();
+            string suffix = "";
             try
             {
                 // 1. Check URL Suffix
-                string suffix = "";
                 var idxDollarRaw = url.LastIndexOf('$');
                 if (idxDollarRaw >= 0 && idxDollarRaw < url.Length - 1)
                 {
@@ -162,6 +181,7 @@ namespace LibmpvIptvClient.Services
             var src = new Source
             {
                 Id = Convert.ToHexString(Encoding.UTF8.GetBytes(ch.Id + "|" + u)),
+                Name = suffix, // 将 $ 后面的内容作为源名称（如“组播高清”）
                 ChannelId = ch.Id,
                 Url = u,
                 Protocol = GuessProtocol(u),
@@ -216,20 +236,34 @@ namespace LibmpvIptvClient.Services
         static string NormalizeUrl(string input, Uri? baseUri)
         {
             var s = input.Trim();
-            if (IsValidAbsoluteUrl(s)) return s;
-            var cands = new List<string>();
-            // 不再重写为 udp://，按你的需求保留完整的 HTTP 实际地址，直接喂给播放器
+            // 先尝试移除后缀（$及其后面的内容）
             var idxDollar = s.IndexOf('$');
-            if (idxDollar > 0) cands.Add(s.Substring(0, idxDollar));
-            var idxSpace = s.IndexOf(' ');
-            if (idxSpace > 0) cands.Add(s.Substring(0, idxSpace));
-            if (s.EndsWith(",")) cands.Add(s.TrimEnd(','));
-            foreach (var c in cands)
+            if (idxDollar > 0) s = s.Substring(0, idxDollar).Trim();
+
+            // 移除尾部逗号
+            if (s.EndsWith(",")) s = s.TrimEnd(',');
+
+            // 检查是否已经是有效 URL
+            // 对于 rtp2httpd 等本地代理地址，可能包含中文或特殊字符，IsValidAbsoluteUrl 可能会失败
+            // 只要看起来像 HTTP/RTP 协议，就应该保留
+            if (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) || 
+                s.StartsWith("rtp", StringComparison.OrdinalIgnoreCase) || 
+                s.StartsWith("udp", StringComparison.OrdinalIgnoreCase) ||
+                s.StartsWith("rtsp", StringComparison.OrdinalIgnoreCase))
             {
-                var t = c.Trim();
-                if (IsValidAbsoluteUrl(t)) return t;
-                if (baseUri != null && Uri.TryCreate(baseUri, t, out var _)) return t;
+                return s;
             }
+
+            if (IsValidAbsoluteUrl(s)) return s;
+
+            // Fallback: 尝试移除空格 (针对某些带参数的 URL)
+            var idxSpace = s.IndexOf(' ');
+            if (idxSpace > 0)
+            {
+                 var t = s.Substring(0, idxSpace).Trim();
+                 if (IsValidAbsoluteUrl(t)) return t;
+            }
+
             return s;
         }
         static bool IsValidAbsoluteUrl(string s)
@@ -238,8 +272,13 @@ namespace LibmpvIptvClient.Services
         }
         static string ResolveUrl(string url, Uri? baseUri)
         {
+            // 对于 rtp2httpd 等本地代理地址，IsValidAbsoluteUrl 可能会因为中文字符等原因失败，但 Uri.TryCreate 仍然可能成功解析为 Absolute
             if (Uri.TryCreate(url, UriKind.Absolute, out var abs)) return abs.ToString();
+            
+            // 如果 baseUri 存在，尝试作为相对路径解析
             if (baseUri != null && Uri.TryCreate(baseUri, url, out var rel)) return rel.ToString();
+            
+            // 如果都失败了，直接返回原始 url (可能是包含非标准字符的绝对路径)
             return url;
         }
         static StreamProtocol GuessProtocol(string url)

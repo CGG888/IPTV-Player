@@ -43,3 +43,8 @@ docs/.vitepress/cache/
 docs/.vitepress/dist/
 
 青海卫视.m3u
+优化起播速度.md
+数据加载提速.md
+M3U 列表加载优化.md
+playlist.m3u
+player.m3u

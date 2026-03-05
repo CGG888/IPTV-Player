@@ -33,6 +33,7 @@ namespace LibmpvIptvClient.Models
     public class Source
     {
         public string Id { get; set; } = "";
+        public string Name { get; set; } = ""; // 存储源的描述名称（如“组播高清”）
         public string ChannelId { get; set; } = "";
         public string Url { get; set; } = "";
         public StreamProtocol Protocol { get; set; }

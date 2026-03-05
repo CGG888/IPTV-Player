@@ -324,31 +324,12 @@ namespace LibmpvIptvClient
                     AppSettings.Current.Save();
                 }
 
-                // Check for obvious stream protocols
-                if (IsDirectStreamProtocol(url))
-                {
-                    LoadSingleStream(url);
-                    return;
-                }
-
-                // Try load as playlist first (silent mode)
-                await LoadChannels(url, silent: true);
-                
-                if (_channels.Count == 0)
-                {
-                    // Fallback: treat as single stream
-                    LoadSingleStream(url);
-                }
+                // Directly load as stream
+                LoadSingleStream(url);
             }
         }
 
-        bool IsDirectStreamProtocol(string url)
-        {
-            return url.StartsWith("udp://", StringComparison.OrdinalIgnoreCase) ||
-                   url.StartsWith("rtp://", StringComparison.OrdinalIgnoreCase) ||
-                   url.StartsWith("rtsp://", StringComparison.OrdinalIgnoreCase) ||
-                   url.StartsWith("rtmp://", StringComparison.OrdinalIgnoreCase);
-        }
+
 
         void LoadSingleStream(string url)
         {
@@ -783,6 +764,7 @@ namespace LibmpvIptvClient
                 catch { }
                 url = ProcessUrlPlaceholders(url, start, end);
                 
+                Logger.Log($"[Timeshift] 开始时移/回看 - 频道: {ch.Name}, 时间点: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
                 if (_timeshiftActive)
@@ -1738,6 +1720,11 @@ namespace LibmpvIptvClient
                 var url = SanitizeUrl(src.Url);
                 if (AppSettings.Current.EnableUdpOptimization) // Check AppSettings instead of CbUdpMode
                 {
+                    // rtp2httpd 场景下，不要把 HTTP URL 还原为 UDP URL，否则无法通过代理播放
+                    // 只有在原始 URL 本身就是 udp:// 或 rtp:// 时才可能涉及优化，
+                    // 或者用户明确希望还原（但 rtp2httpd 用户通常不希望还原，因为内网可能不支持组播）
+                    // 暂时注释掉这段逻辑，因为 rtp2httpd 用户反馈无法播放，可能是因为被错误还原成了 udp://
+                    /*
                     try
                     {
                         var u = new Uri(url);
@@ -1750,9 +1737,17 @@ namespace LibmpvIptvClient
                         }
                     }
                     catch { }
+                    */
                 }
-                // LblStatus.Text = url; // Removed
-                Logger.Log("开始播放 " + url);
+                // 识别源类型（组播/单播/本地/其他）
+                string streamType = "Unicast";
+                if (IsMulticast(url)) streamType = "Multicast";
+                else if (url.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) streamType = "LocalFile";
+                else if (src.Name.Contains("组播")) streamType = "Multicast(Proxy)";
+                else if (src.Name.Contains("单播")) streamType = "Unicast(Proxy)";
+
+                Logger.Log($"[Live] 开始直播播放 - 频道: {ch.Name}, 类型: {streamType}, URL: {url}");
+                
                 _currentChannel = ch;
                 _currentSources = BuildSourcesForChannel(ch);
                 _currentUrl = url;
@@ -2097,7 +2092,7 @@ namespace LibmpvIptvClient
                 // 替换占位符 (统一处理)
                 url = ProcessUrlPlaceholders(url, prog.Start, prog.End);
 
-                Logger.Log("播放回放: " + url);
+                Logger.Log($"[Replay] 开始回放 - 节目: {prog.Title}, 频道: {ch.Name}, 时间: {prog.Start:HH:mm}-{prog.End:HH:mm}, URL: {url}");
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
                 
@@ -2241,7 +2236,25 @@ namespace LibmpvIptvClient
         string SourceLabel(Source s)
         {
             var parts = new List<string>();
-            parts.Add(IsMulticast(s.Url) ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Multicast", "组播") : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Unicast", "单播"));
+            // 优先使用源名称（通常来自 M3U $后缀）来判断组播/单播
+            bool isMulticast = false;
+            bool isUnicast = false;
+
+            if (!string.IsNullOrWhiteSpace(s.Name))
+            {
+                if (s.Name.Contains("组播")) isMulticast = true;
+                else if (s.Name.Contains("单播")) isUnicast = true;
+                
+                // 如果源名称本身很有意义（不只是简单的组播/单播），可以考虑直接使用它
+                // 但为了保持 UI 统一，我们先提取关键信息
+            }
+            
+            if (!isMulticast && !isUnicast)
+            {
+                isMulticast = IsMulticast(s.Url);
+            }
+
+            parts.Add(isMulticast ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Multicast", "组播") : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Unicast", "单播"));
             
             if (s.Quality != null)
             {
@@ -2910,9 +2923,41 @@ namespace LibmpvIptvClient
         {
             if (string.IsNullOrWhiteSpace(input)) return input;
             var s = input.Trim();
+            // 注意：M3UParser.NormalizeUrl 已经处理过 $ 后缀，理论上 Source.Url 应该是干净的。
+            // 但为了双重保险（比如来自其他途径的 URL），我们这里再次清理。
+            // 必须先移除 $ 后缀，再 Trim
             var idx = s.IndexOf('$');
             if (idx > 0) s = s.Substring(0, idx);
             s = s.Trim().TrimEnd(',');
+            
+            // 重要：rtp2httpd 的 URL 中包含中文路径（如 /央视频道/），需要确保这些中文被正确编码
+            // 但不能对整个 URL 进行编码，否则协议头（如 http://）和参数分隔符（如 ? &）也会被编码导致无法识别
+            // 最好的方式是保持原样传递给 MPV，因为 MPV 能够处理未编码的 Unicode URL。
+            // 如果之前有其他逻辑对 URL 进行了错误的编码或解码，这里需要修正。
+            
+            // 目前看起来 SanitizeUrl 只是去掉了后缀，这很好。
+            // 但是，我们在 PlayChannel 中调用了 SanitizeUrl，而之前的日志显示 URL 是明文中文：
+            // https://hntv.mtoo.vip:8444/央视频道/CCTV8-电视剧/组播标清-25.00fps
+            // 而回放的 URL 是被编码过的：
+            // https://hntv.mtoo.vip:8444/%E5%A4%AE%E8%A7%86%E9%A2%91%E9%81%93/...
+            // 这可能是问题的关键：MPV 可能需要（或者在某些网络环境下更喜欢）编码后的 URL。
+            
+            // 尝试对路径部分进行编码
+            try
+            {
+                if (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !s.Contains("%"))
+                {
+                    // 只有当 URL 包含非 ASCII 字符且尚未编码时才尝试处理
+                    bool hasNonAscii = s.Any(c => c > 127);
+                    if (hasNonAscii)
+                    {
+                        var uri = new Uri(s);
+                        return uri.AbsoluteUri; // AbsoluteUri 会自动对路径中的中文进行编码
+                    }
+                }
+            }
+            catch { }
+
             return s;
         }
         void BtnDebug_Click(object sender, RoutedEventArgs e)
