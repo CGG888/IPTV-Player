@@ -63,9 +63,6 @@ namespace LibmpvIptvClient.Services
                 Proxy = proxy,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 AllowAutoRedirect = true,
-                // Keep connection lifetime short to force re-evaluation of Proxy.GetProxy()
-                PooledConnectionLifetime = TimeSpan.FromSeconds(5), 
-                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(5),
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
             

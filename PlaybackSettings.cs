@@ -49,6 +49,17 @@ namespace LibmpvIptvClient
         public int FccPrefetchCount { get; set; } = 2;
         public bool EnableUdpOptimization { get; set; } = false; // Added
         public int SourceTimeoutSec { get; set; } = 3;
+            
+            // Adaptive per-protocol tuning
+            public bool EnableProtocolAdaptive { get; set; } = true;
+            // HLS specific
+            public bool HlsStartAtLiveEdge { get; set; } = false;
+            public double HlsReadaheadSecs { get; set; } = 0; // 0 = follow mpv default
+            // Language preferences
+            public string Alang { get; set; } = "";
+            public string Slang { get; set; } = "";
+            // mpv network timeout (seconds). 0 = keep default
+            public int MpvNetworkTimeoutSec { get; set; } = 0;
         
         public EpgConfig Epg { get; set; } = new EpgConfig();
         public LogoConfig Logo { get; set; } = new LogoConfig();
@@ -94,6 +105,7 @@ namespace LibmpvIptvClient
                 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "user_settings.json");
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(path, json);
+                try { LibmpvIptvClient.Diagnostics.Logger.Info("[Settings] 保存成功 user_settings.json"); } catch { }
             }
             catch { }
         }

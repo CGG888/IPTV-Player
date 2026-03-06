@@ -297,7 +297,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 <Setter Property="Padding" Value="12,8"/>
                 <Setter Property="FontSize" Value="13"/>
-                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -305,14 +305,14 @@
                             <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="30"/> <!-- Fixed width to prevent jumping -->
+                                        <ColumnDefinition Width="20"/> <!-- Align with global menu first column -->
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
                                     <!-- Icon / Checkmark Area -->
-                                    <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    <ContentPresenter x:Name="Icon" Grid.Column="0" ContentSource="Icon" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
                                     <Path x:Name="CheckMark" Data="M1,5 L4.5,8.5 L9,1" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="False"/>
 
                                     <!-- Content -->

@@ -57,6 +57,8 @@
   <sys:String x:Key="Common_OK">确定</sys:String>
   <sys:String x:Key="Common_Cancel">取消</sys:String>
   <sys:String x:Key="Common_Tips">提示</sys:String>
+  <sys:String x:Key="UI_Pause">暂停</sys:String>
+  <sys:String x:Key="UI_Resume">继续</sys:String>
   <sys:String x:Key="Err_UnhandledTitle">错误</sys:String>
   <sys:String x:Key="Err_Unknown">未知错误</sys:String>
   <sys:String x:Key="Msg_Checking">检查中…</sys:String>
@@ -142,6 +144,16 @@
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_FCCPrefetch">FCC 预取数量</sys:String>
   <sys:String x:Key="UI_Playback_TimeoutSec">超时换源 (秒)</sys:String>
+  <sys:String x:Key="UI_Playback_EnableAdaptive">协议自适应优化</sys:String>
+  <sys:String x:Key="UI_Playback_HlsStartLive">HLS 从直播边缘开始</sys:String>
+  <sys:String x:Key="UI_Playback_HlsReadahead">HLS 预读秒数</sys:String>
+  <sys:String x:Key="UI_Playback_Alang">首选音轨语言 (alang)</sys:String>
+  <sys:String x:Key="UI_Playback_Slang">首选字幕语言 (slang)</sys:String>
+  <sys:String x:Key="UI_Playback_MpvNetworkTimeout">mpv 网络超时 (秒)</sys:String>
+  <sys:String x:Key="UI_Playback_AdaptiveHint">按协议自动选择更快的探测与缓存参数；关闭则使用通用参数。</sys:String>
+  <sys:String x:Key="UI_Playback_HlsHint">将 HLS 直接跳到直播点；预读秒过小可降低起播延迟，但弱网可能更易卡顿。</sys:String>
+  <sys:String x:Key="UI_Playback_LangHint">例如：zh,en。仅在多音轨/字幕流生效；未命中会回退自动选择。</sys:String>
+  <sys:String x:Key="UI_Playback_MpvTimeoutHint">仅影响 mpv 层网络超时；业务层“超时换源(秒)”保持不变。</sys:String>
 
   <!-- EPG 页 -->
   <sys:String x:Key="UI_Epg_Url">EPG 地址</sys:String>

@@ -48,6 +48,7 @@ namespace LibmpvIptvClient
         private bool _updatingVolume = false;
         private string _playbackStatusText = "";
         private System.Windows.Media.Brush _playbackStatusBrush = System.Windows.Media.Brushes.White;
+        private bool _firstFrameLogged = false;
         private DateTime _lastOverlayEval = DateTime.MinValue;
         private bool _lastBottomVisible = false;
         private bool _lastTopVisible = false;
@@ -621,6 +622,27 @@ namespace LibmpvIptvClient
             if (_mpv == null) return;
             try
             {
+                try
+                {
+                    var w1 = _mpv.GetInt("width") ?? 0;
+                    var h1 = _mpv.GetInt("height") ?? 0;
+                    var fps1 = _mpv.GetDouble("estimated-vf-fps") ?? _mpv.GetDouble("fps") ?? 0;
+                    if (!_firstFrameLogged && w1 > 0 && h1 > 0)
+                    {
+                        Logger.Info($"[Playback] 首帧出现 {w1}x{h1} @{fps1:0.##} URL={_currentUrl}");
+                        _firstFrameLogged = true;
+                    }
+                    if (!_firstFrameLogged)
+                    {
+                        var waited = (DateTime.Now - _playStartTime).TotalSeconds;
+                        if (waited > Math.Max(3, AppSettings.Current.SourceTimeoutSec))
+                        {
+                            Logger.Warn($"[Playback] 起播{waited:0.#}s未见画面 time-pos={_mpv.GetTimePos() ?? 0:0.##} URL={_currentUrl}");
+                            _firstFrameLogged = true;
+                        }
+                    }
+                }
+                catch { }
                 if (_timeshiftActive)
                 {
                     _timeshiftMax = DateTime.Now;
@@ -662,6 +684,7 @@ namespace LibmpvIptvClient
             // 防止重复调用导致的状态重置（特别是切换全屏/窗口时的事件回环）
             if (_timeshiftActive == on) return;
 
+            try { Logger.Log(on ? "[Timeshift] 开启时移" : "[Timeshift] 关闭时移"); } catch { }
             bool hasSource = _currentChannel != null && !string.IsNullOrEmpty(_currentChannel.CatchupSource);
             bool hasFallback = AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat);
 
@@ -767,6 +790,7 @@ namespace LibmpvIptvClient
                 Logger.Log($"[Timeshift] 开始时移/回看 - 频道: {ch.Name}, 时间点: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
+                try { _firstFrameLogged = false; } catch { }
                 if (_timeshiftActive)
                 {
                     _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
@@ -962,6 +986,7 @@ namespace LibmpvIptvClient
                     var secs = Math.Max(0, val);
                     _timeshiftCursorSec = secs; // 保存游标，供窗口/全屏切换同步
                     var t = _timeshiftMin.AddSeconds(secs);
+                    try { Logger.Log($"[Timeshift] 拖动定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
                     PlayCatchupAt(_currentChannel, t);
                     _timeshiftStart = t;
                 }
@@ -1121,6 +1146,13 @@ namespace LibmpvIptvClient
                 AppSettings.Current.CustomLogoUrl = settings.CustomLogoUrl;
                 AppSettings.Current.TimeshiftHours = settings.TimeshiftHours;
                 AppSettings.Current.UpdateCdnMirrors = settings.UpdateCdnMirrors;
+                // 新增：协议自适应 / HLS 专项 / 语言偏好 / mpv 网络超时
+                AppSettings.Current.EnableProtocolAdaptive = settings.EnableProtocolAdaptive;
+                AppSettings.Current.HlsStartAtLiveEdge = settings.HlsStartAtLiveEdge;
+                AppSettings.Current.HlsReadaheadSecs = settings.HlsReadaheadSecs;
+                AppSettings.Current.Alang = settings.Alang ?? "";
+                AppSettings.Current.Slang = settings.Slang ?? "";
+                AppSettings.Current.MpvNetworkTimeoutSec = settings.MpvNetworkTimeoutSec;
                 // 回放/时移模板持久化
                 try
                 {
@@ -1141,6 +1173,11 @@ namespace LibmpvIptvClient
                 // 界面设置
                 AppSettings.Current.Language = settings.Language;
                 AppSettings.Current.ThemeMode = settings.ThemeMode;
+                try
+                {
+                    Logger.Debug($"[Settings] apply hwdec={settings.Hwdec} cache={settings.CacheSecs} max={settings.DemuxerMaxBytesMiB} back={settings.DemuxerMaxBackBytesMiB} fcc={settings.FccPrefetchCount} src_to={settings.SourceTimeoutSec} adaptive={settings.EnableProtocolAdaptive} hls_live={settings.HlsStartAtLiveEdge} hls_ra={settings.HlsReadaheadSecs} alang={settings.Alang} slang={settings.Slang} mpv_to={settings.MpvNetworkTimeoutSec}");
+                }
+                catch { }
                 AppSettings.Current.Save(); // Save to disk
                 if (_mpv != null)
                 {
@@ -1506,6 +1543,15 @@ namespace LibmpvIptvClient
                     epgUrl = _m3uParser.TvgUrl;
                 }
 
+                // DNS 预解析（后台，不阻塞 UI）：预热前若干频道的域名解析
+                try
+                {
+                    LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(_channels, maxHosts: 60);
+                }
+                catch { }
+                try { LibmpvIptvClient.Services.ConnectionPreheater.PreheatForChannels(_channels, maxHosts: 30); }
+                catch { }
+
                 if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
                 {
                     Logger.Log("正在加载 EPG: " + epgUrl);
@@ -1718,6 +1764,18 @@ namespace LibmpvIptvClient
             {
                 _paused = false;
                 var url = SanitizeUrl(src.Url);
+                    // 针对当前播放 URL 及后续候选源做精确预解析（不阻塞）
+                    try
+                    {
+                        var neighbors = new List<string> { url };
+                        if (_currentSources != null && _currentSources.Count > 0)
+                        {
+                            foreach (var s in _currentSources) if (!string.IsNullOrWhiteSpace(s?.Url)) neighbors.Add(s.Url);
+                        }
+                        LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForUrls(neighbors);
+                        LibmpvIptvClient.Services.ConnectionPreheater.PreheatForUrls(neighbors);
+                    }
+                    catch { }
                 if (AppSettings.Current.EnableUdpOptimization) // Check AppSettings instead of CbUdpMode
                 {
                     // rtp2httpd 场景下，不要把 HTTP URL 还原为 UDP URL，否则无法通过代理播放
@@ -1782,6 +1840,7 @@ namespace LibmpvIptvClient
                 {
                     _mpv.LoadFile(url);
                 }
+                try { _firstFrameLogged = false; } catch { }
                 UpdatePlayPauseIcon();
                 
                 // 写入播放记录（直播）
@@ -1904,6 +1963,7 @@ namespace LibmpvIptvClient
             
             // Re-fetch programs for the channel
             var programs = _epgService?.GetPrograms(ch.TvgId, ch.Name);
+            try { Logger.Log($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
 
             // 清空旧数据状态，防止残留
             _currentEpgDate = DateTime.Today;
@@ -1934,6 +1994,7 @@ namespace LibmpvIptvClient
             // Filter and display
             var filtered = programs.Where(p => p.Start.Date == _currentEpgDate).OrderBy(p => p.Start).ToList();
             ListEpg.ItemsSource = filtered;
+            try { Logger.Log($"[EPG] 日期 {_currentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
             
             // Scroll logic
             if (_currentEpgDate == DateTime.Today)
@@ -2437,6 +2498,7 @@ namespace LibmpvIptvClient
                 }
                 try { if (_fsPanel != null) _fsPanel.DoubleClick += FsPanel_DoubleClick; } catch { }
                 try { if (_fsPanel != null) _fsPanel.MouseWheel += FsPanel_MouseWheel; } catch { }
+                try { if (_fsPanel != null) _fsPanel.MouseUp += FsPanel_MouseUp; } catch { }
                 _fs.ExitRequested += () => ToggleFullscreen(false);
                 _fs.PlayPauseRequested += () => BtnPlayPause_Click(this, new RoutedEventArgs());
                 _fs.SeekRequested += (dir) => TryArrowSeek(dir);
@@ -2573,6 +2635,7 @@ namespace LibmpvIptvClient
                     _fs.ExitRequested -= () => ToggleFullscreen(false);
                     try { if (_fsPanel != null) _fsPanel.DoubleClick -= FsPanel_DoubleClick; } catch { }
                     try { if (_fsPanel != null) _fsPanel.MouseWheel -= FsPanel_MouseWheel; } catch { }
+                    try { if (_fsPanel != null) _fsPanel.MouseUp -= FsPanel_MouseUp; } catch { }
                     try { _fs.Host.PreviewMouseWheel -= FsHost_PreviewMouseWheel; } catch { }
                     try { _fs.Host.MouseMove -= (s, e) => ShowOverlayWithDelay(); } catch { }
                     try { _fs.Host.PreviewMouseMove -= (s, e) => ShowOverlayWithDelay(); } catch { }
@@ -2654,6 +2717,22 @@ namespace LibmpvIptvClient
         {
             AdjustVolumeByWheel(e.Delta);
             ShowOverlayWithDelay();
+        }
+        void FsPanel_MouseUp(object? sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                try
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        var cm = CreateAppMenu();
+                        cm.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+                        cm.IsOpen = true;
+                    });
+                }
+                catch { }
+            }
         }
         void OnFullscreenLoaded(object? sender, RoutedEventArgs e)
         {

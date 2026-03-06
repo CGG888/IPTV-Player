@@ -68,6 +68,17 @@ namespace LibmpvIptvClient
             TbMaxBackBytes.Text = current.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture);
             TbFccPrefetch.Text = current.FccPrefetchCount.ToString(CultureInfo.InvariantCulture);
             TbSourceTimeout.Text = current.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture);
+            // New playback options
+            try
+            {
+                CbAdaptive.IsChecked = current.EnableProtocolAdaptive;
+                CbHlsStart.IsChecked = current.HlsStartAtLiveEdge;
+                TbHlsReadahead.Text = current.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture);
+                TbAlang.Text = current.Alang ?? "";
+                TbSlang.Text = current.Slang ?? "";
+                TbMpvTimeout.Text = current.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture);
+            }
+            catch { }
             
             try
             {
@@ -136,6 +147,13 @@ namespace LibmpvIptvClient
             if (int.TryParse(TbMaxBackBytes.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var backb)) s.DemuxerMaxBackBytesMiB = Math.Max(0, backb);
             if (int.TryParse(TbFccPrefetch.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var pf)) s.FccPrefetchCount = Math.Max(0, Math.Min(3, pf));
             if (int.TryParse(TbSourceTimeout.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var st)) s.SourceTimeoutSec = Math.Max(1, st);
+            // New
+            s.EnableProtocolAdaptive = CbAdaptive.IsChecked == true;
+            s.HlsStartAtLiveEdge = CbHlsStart.IsChecked == true;
+            if (double.TryParse(TbHlsReadahead.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var ra)) s.HlsReadaheadSecs = Math.Max(0, ra);
+            s.Alang = (TbAlang.Text ?? "").Trim();
+            s.Slang = (TbSlang.Text ?? "").Trim();
+            if (int.TryParse(TbMpvTimeout.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var nt)) s.MpvNetworkTimeoutSec = Math.Max(0, nt);
             
             // Save from Controls to Temp Configs
             _playbackDrawer?.Save(_tempReplay);

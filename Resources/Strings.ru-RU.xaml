@@ -48,6 +48,8 @@
   <sys:String x:Key="UI_CopyAll">Копировать всё</sys:String>
   <sys:String x:Key="Common_Close">Закрыть</sys:String>
   <sys:String x:Key="Common_Tips">Сведения</sys:String>
+  <sys:String x:Key="UI_Pause">Пауза</sys:String>
+  <sys:String x:Key="UI_Resume">Продолжить</sys:String>
   <sys:String x:Key="Err_UnhandledTitle">Ошибка</sys:String>
   <sys:String x:Key="Err_Unknown">Неизвестная ошибка</sys:String>
   <sys:String x:Key="Msg_Checking">Проверка…</sys:String>
@@ -139,6 +141,16 @@
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_FCCPrefetch">Предзагрузка FCC</sys:String>
   <sys:String x:Key="UI_Playback_TimeoutSec">Таймаут источника (сек)</sys:String>
+  <sys:String x:Key="UI_Playback_EnableAdaptive">Адаптация по протоколам</sys:String>
+  <sys:String x:Key="UI_Playback_HlsStartLive">HLS начинать с live-edge</sys:String>
+  <sys:String x:Key="UI_Playback_HlsReadahead">HLS readahead (сек)</sys:String>
+  <sys:String x:Key="UI_Playback_Alang">Предпочтительные аудио-языки (alang)</sys:String>
+  <sys:String x:Key="UI_Playback_Slang">Предпочтительные языки субтитров (slang)</sys:String>
+  <sys:String x:Key="UI_Playback_MpvNetworkTimeout">mpv network-timeout (сек)</sys:String>
+  <sys:String x:Key="UI_Playback_AdaptiveHint">Автоматическая настройка параметров по протоколам; при выключении используются общие значения.</sys:String>
+  <sys:String x:Key="UI_Playback_HlsHint">Запуск с live-edge. Малый readahead снижает задержку старта, но на слабой сети возможны подергивания.</sys:String>
+  <sys:String x:Key="UI_Playback_LangHint">Напр.: zh,en. Работает только для мультитрековых потоков; при несовпадении используется авто-выбор.</sys:String>
+  <sys:String x:Key="UI_Playback_MpvTimeoutHint">Задает только таймаут mpv; логика «Таймаут источника (сек)» не меняется.</sys:String>
 
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>

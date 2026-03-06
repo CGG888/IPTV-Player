@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using LibmpvIptvClient.Services;
+using Downloader;
+using System.Net;
 
 namespace LibmpvIptvClient
 {
@@ -16,6 +18,9 @@ namespace LibmpvIptvClient
         private HttpClient _http => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private string _downloadPath = "";
         private int _cdnCount = 0;
+        private Downloader.DownloadService? _downSvc;
+        private bool _downloaderUsed = false;
+        private bool _paused = false;
         private class Mirror
         {
             public string Name { get; set; } = "";
@@ -87,39 +92,88 @@ namespace LibmpvIptvClient
                 if (File.Exists(_downloadPath)) try { File.Delete(_downloadPath); } catch { }
 
                 var sw = Stopwatch.StartNew();
-                var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                resp.EnsureSuccessStatusCode();
-                var total = resp.Content.Headers.ContentLength ?? -1;
-                using (var input = await resp.Content.ReadAsStreamAsync())
-                using (var output = File.OpenWrite(_downloadPath))
+                var usedDownloader = false;
+                try
                 {
-                    var buffer = new byte[81920];
-                    int read;
-                    long readTotal = 0;
-                    while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    // 优先尝试使用 Downloader（支持多线程分块）
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[Update] 使用 Downloader 多线程下载");
+                    var cfg = new DownloadConfiguration
                     {
-                        await output.WriteAsync(buffer, 0, read);
-                        readTotal += read;
-                        if (total > 0)
+                        ChunkCount = 8,
+                        ParallelDownload = true,
+                        MinimumSizeOfChunking = 2 * 1024 * 1024, // 小文件不分块
+                        RequestConfiguration = new RequestConfiguration
+                        {
+                            UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) SrcBox/1.0 Chrome/120.0.0.0 Safari/537.36",
+                            Accept = "*/*",
+                            KeepAlive = true,
+                            Proxy = new RegistryProxyProvider() // 与应用一致的系统代理
+                        }
+                    };
+                    _downSvc = new DownloadService(cfg);
+                    _downSvc.DownloadProgressChanged += (s2, e2) =>
+                    {
+                        try
                         {
                             Dispatcher.Invoke(() =>
                             {
-                                Pb.Maximum = total;
-                                Pb.Value = readTotal;
-                                var elapsed = sw.Elapsed.TotalSeconds;
-                                var speed = elapsed > 0 ? readTotal / elapsed : 0;
-                                var doneMb = readTotal / 1024.0 / 1024.0;
-                                var totalMb = total / 1024.0 / 1024.0;
-                                var speedKb = speed / 1024.0;
-                                var percent = total > 0 ? (readTotal * 100.0 / total) : 0;
-                                var eta = speed > 0 ? TimeSpan.FromSeconds(Math.Max(0, (total - readTotal) / speed)) : TimeSpan.Zero;
-                                var etaLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_ETA", "预计");
-                                TxtProgress.Text = $"{doneMb:0.0}/{totalMb:0.0} MB  |  {percent:0}%  |  {speedKb:0.0} KB/s  |  {etaLabel} {eta:mm\\:ss}";
+                                var p = (int)Math.Round(e2.ProgressPercentage, MidpointRounding.AwayFromZero);
+                                Pb.Value = p;
+                                var totalMb = e2.TotalBytesToReceive > 0 ? (e2.TotalBytesToReceive / 1024.0 / 1024.0) : 0;
+                                var recvMb = e2.ReceivedBytesSize / 1024.0 / 1024.0;
+                                if (totalMb > 0)
+                                    TxtProgress.Text = $"{p}% ({recvMb:0.#}MB/{totalMb:0.#}MB) {e2.BytesPerSecondSpeed / 1024.0:0.0} KB/s";
+                                else
+                                    TxtProgress.Text = $"{recvMb:0.#}MB {e2.BytesPerSecondSpeed / 1024.0:0.0} KB/s";
                             }, DispatcherPriority.Background);
                         }
-                    }
+                        catch { }
+                    };
+                    BtnPause.IsEnabled = true; // 新方法支持暂停/继续
+                    _downloaderUsed = true;
+                    await _downSvc.DownloadFileTaskAsync(url, _downloadPath);
+                    usedDownloader = true;
+                    BtnPause.IsEnabled = false; // 下载完成，禁用
                 }
-                TxtProgress.Text += "  |  100% " + LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_Complete", "完成");
+                catch
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Warn("[Update] Downloader 失败，回退到 HttpClient 单连接下载");
+                    // 回退：单连接 HttpClient 流式下载
+                    var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    resp.EnsureSuccessStatusCode();
+                    var total = resp.Content.Headers.ContentLength ?? -1;
+                    using (var input = await resp.Content.ReadAsStreamAsync())
+                    using (var output = File.OpenWrite(_downloadPath))
+                    {
+                        var buffer = new byte[81920];
+                        int read;
+                        long readTotal = 0;
+                        while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await output.WriteAsync(buffer, 0, read);
+                            readTotal += read;
+                            if (total > 0)
+                            {
+                                Dispatcher.Invoke(() =>
+                                {
+                                    Pb.Maximum = total;
+                                    Pb.Value = readTotal;
+                                    var elapsed = sw.Elapsed.TotalSeconds;
+                                    var speed = elapsed > 0 ? readTotal / elapsed : 0;
+                                    var doneMb = readTotal / 1024.0 / 1024.0;
+                                    var totalMb = total / 1024.0 / 1024.0;
+                                    var speedKb = speed / 1024.0;
+                                    var percent = total > 0 ? (readTotal * 100.0 / total) : 0;
+                                    var eta = speed > 0 ? TimeSpan.FromSeconds(Math.Max(0, (total - readTotal) / speed)) : TimeSpan.Zero;
+                                    var etaLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_ETA", "预计");
+                                    TxtProgress.Text = $"{doneMb:0.0}/{totalMb:0.0} MB  |  {percent:0}%  |  {speedKb:0.0} KB/s  |  {etaLabel} {eta:mm\\:ss}";
+                                }, DispatcherPriority.Background);
+                            }
+                        }
+                    }
+                    BtnPause.IsEnabled = false; // 旧方法不支持暂停/继续
+                }
+                TxtProgress.Text += usedDownloader ? "" : ("  |  100% " + LibmpvIptvClient.Helpers.ResxLocalizer.Get("Progress_Complete", "完成"));
                 BtnInstall.IsEnabled = true;
             }
             catch (Exception ex)
@@ -127,6 +181,32 @@ namespace LibmpvIptvClient
                 LibmpvIptvClient.Services.HttpClientService.Instance.InvalidateClient();
                 System.Windows.MessageBox.Show(this, string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_DownloadFailed", "下载失败：\n{0}"), ex.Message), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 BtnDownload.IsEnabled = true;
+            }
+        }
+
+        private void BtnPause_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!_downloaderUsed || _downSvc == null) return;
+                if (!_paused)
+                {
+                    _downSvc.Pause();
+                    _paused = true;
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[Update] 下载已暂停");
+                    try { BtnPause.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_Resume", "继续"); } catch { }
+                }
+                else
+                {
+                    _downSvc.Resume();
+                    _paused = false;
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[Update] 下载继续");
+                    try { BtnPause.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_Pause", "暂停"); } catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Warn("[Update] 暂停/继续 操作失败: " + ex.Message);
             }
         }
 

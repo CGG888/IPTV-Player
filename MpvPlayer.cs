@@ -37,6 +37,11 @@ namespace LibmpvIptvClient
             SetString("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             // 忽略 HTTPS 证书错误，解决部分自签名源无法播放的问题
             SetString("tls-verify", "no");
+            // 用户语言偏好与网络超时
+            if (!string.IsNullOrWhiteSpace(_settings.Alang)) SetString("alang", _settings.Alang);
+            if (!string.IsNullOrWhiteSpace(_settings.Slang)) SetString("slang", _settings.Slang);
+            if (_settings.MpvNetworkTimeoutSec > 0) SetString("network-timeout", _settings.MpvNetworkTimeoutSec.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} net_to={_settings.MpvNetworkTimeoutSec}");
         }
         public void SetWid(IntPtr hwnd)
         {
@@ -74,6 +79,7 @@ namespace LibmpvIptvClient
                 SetString("demuxer-lavf-format", ""); 
                 SetString("demuxer-lavf-probesize", "32"); // Fast probe
                 SetString("demuxer-lavf-analyzeduration", "0");
+                Logger.Debug($"[mpv] rtsp cache={(_settings.CacheSecs>0?"yes":"no")} cache-secs={_settings.CacheSecs} probesize=32 adur=0 url={url}");
                 return;
             }
 
@@ -90,6 +96,7 @@ namespace LibmpvIptvClient
                 {
                     SetString("cache", "no");
                     SetString("demuxer-max-back-bytes", "0");
+                    Logger.Debug($"[mpv] udp-ts demux=mpegts cache=no max-back=0 probesize=32 adur=0 url={url}");
                 }
                 else
                 {
@@ -98,6 +105,7 @@ namespace LibmpvIptvClient
                         SetString("cache-secs", _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     SetString("demuxer-max-bytes", $"{_settings.DemuxerMaxBytesMiB}MiB");
                     SetString("demuxer-max-back-bytes", $"{_settings.DemuxerMaxBackBytesMiB}MiB");
+                    Logger.Debug($"[mpv] http-ts demux=mpegts cache={( _settings.CacheSecs>0?"yes":"no")} cache-secs={_settings.CacheSecs} max={_settings.DemuxerMaxBytesMiB}MiB back={_settings.DemuxerMaxBackBytesMiB}MiB probesize=32 adur=0 url={url}");
                 }
             }
             else
@@ -106,6 +114,15 @@ namespace LibmpvIptvClient
                 SetString("demuxer-lavf-format", "");
                 // Ensure default cache settings for other protocols (like http/hls)
                 SetString("cache", "yes");
+                Logger.Debug($"[mpv] generic http cache=yes url={url}");
+            }
+            // 3. HLS 自适应（仅在启用时）
+            if (_settings.EnableProtocolAdaptive && (u.Contains(".m3u8") || u.Contains("format=hls")))
+            {
+                if (_settings.HlsStartAtLiveEdge) SetString("hls-playlist-start", "no");
+                if (_settings.HlsReadaheadSecs > 0)
+                    SetString("demuxer-readahead-secs", _settings.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture));
+                Logger.Debug($"[mpv] hls opts start_live={_settings.HlsStartAtLiveEdge} readahead={_settings.HlsReadaheadSecs} url={url}");
             }
         }
         public string? GetString(string name)

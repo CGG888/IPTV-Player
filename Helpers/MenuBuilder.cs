@@ -137,12 +137,10 @@ namespace LibmpvIptvClient.Helpers
             cm.Items.Add(miList);
 
             var miSettings = new MenuItem { Header = Localizer.S("Menu_Settings", "设置") };
-            try { miSettings.SetResourceReference(MenuItem.StyleProperty, "CenteredMenuItem"); } catch { }
             miSettings.Click += (s, args) => openSettings?.Invoke();
             cm.Items.Add(new Separator());
             cm.Items.Add(miSettings);
             var miExit = new MenuItem { Header = Localizer.S("Menu_Exit", "退出") };
-            try { miExit.SetResourceReference(MenuItem.StyleProperty, "CenteredMenuItem"); } catch { }
             miExit.Click += (s, args) => exitApp?.Invoke();
             cm.Items.Add(miExit);
 

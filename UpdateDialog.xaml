@@ -36,7 +36,7 @@
                         <TextBlock x:Name="TxtNotes" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="8" />
                     </ScrollViewer>
                 </GroupBox>
-                <Grid Grid.Row="3" Margin="0,8,0,8" VerticalAlignment="Center">
+                <Grid Grid.Row="3" Margin="0,8,0,4" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -46,7 +46,11 @@
                                FontFamily="Consolas" FontSize="12" VerticalAlignment="Center"
                                Margin="0,0,0,0" />
                 </Grid>
-                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                <!-- Pause/Resume row -->
+                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,6">
+                    <Button x:Name="BtnPause" Content="{DynamicResource UI_Pause}" Width="88" IsEnabled="False" Click="BtnPause_Click" Style="{StaticResource ChipButton}"/>
+                </StackPanel>
+                <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button x:Name="BtnDownload" Content="{DynamicResource Update_Download}" Width="96" Margin="0,0,8,0" Click="BtnDownload_Click" Style="{StaticResource ChipButton}"/>
                     <Button x:Name="BtnInstall" Content="{DynamicResource Update_Install}" Width="100" IsEnabled="False" Click="BtnInstall_Click" Style="{StaticResource AccentButtonStyle}"/>
                 </StackPanel>

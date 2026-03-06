@@ -95,10 +95,7 @@ namespace LibmpvIptvClient
                 }
                 catch (Exception ex)
                 {
-                    // Log error (debug only)
-                    System.Diagnostics.Debug.WriteLine($"[AsyncImageConverter] Failed to load {url}: {ex.Message}");
-                    // Do NOT cache failure (or cache null/default) so it retries next time? 
-                    // For now, return default.
+                    LibmpvIptvClient.Diagnostics.Logger.Warn($"[Logo] 加载失败: {url} -> {ex.Message}");
                 }
             }
             

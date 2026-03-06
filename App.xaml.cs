@@ -1,11 +1,14 @@
 using System.Windows;
 using System.Text;
 using System;
-using System.Runtime.InteropServices;
 using LibmpvIptvClient.Diagnostics;
 using ModernWpf;
 using System.Globalization;
 using System.Threading;
+using System.Diagnostics;
+using System.Linq;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace LibmpvIptvClient
 {
@@ -13,26 +16,113 @@ namespace LibmpvIptvClient
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool FreeConsole();
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        const int SW_HIDE = 0;
 
         public static event Action? LanguageChanged;
         public App()
         {
-            // 尝试释放可能存在的控制台窗口（防止 Debug 模式下出现空黑窗）
-            try { FreeConsole(); } catch { }
+            try
+            {
+                try
+                {
+                    var h = GetConsoleWindow();
+                    if (h != IntPtr.Zero)
+                    {
+                        ShowWindow(h, SW_HIDE);
+                        FreeConsole();
+                    }
+                }
+                catch { }
+                try
+                {
+                    var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    var logDir = System.IO.Path.Combine(baseDir, "logs");
+                    Directory.CreateDirectory(logDir);
+                    var envLevel = Environment.GetEnvironmentVariable("SRCBOX_LOG_LEVEL");
+                    if (!string.IsNullOrWhiteSpace(envLevel))
+                    {
+                        try
+                        {
+                            if (Enum.TryParse<LibmpvIptvClient.Diagnostics.LogLevel>(envLevel, true, out var lvl))
+                                LibmpvIptvClient.Diagnostics.Logger.MinimumLevel = lvl;
+                        }
+                        catch { }
+                    }
+                    CleanupOldLogs(logDir, 7);
+                    LibmpvIptvClient.Diagnostics.Logger.OnMessageLeveled += (level, msg) =>
+                    {
+                        try
+                        {
+                            var day = DateTime.Now.ToString("yyyyMMdd");
+                            var file = System.IO.Path.Combine(logDir, $"SrcBox-{day}.log");
+                            File.AppendAllText(file, msg + Environment.NewLine);
+                            var fileByLevel = System.IO.Path.Combine(logDir, $"SrcBox-{level}-{day}.log");
+                            File.AppendAllText(fileByLevel, msg + Environment.NewLine);
+                        }
+                        catch { }
+                    };
+                }
+                catch { }
+            }
+            catch { }
 
             this.DispatcherUnhandledException += (s, e) =>
             {
-                try { Logger.Log("未处理异常 " + e.Exception?.ToString()); } catch { }
+                try { Logger.Fatal("未处理异常 " + e.Exception?.ToString()); } catch { }
                 System.Windows.MessageBox.Show(e.Exception?.Message ?? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_Unknown", "未知错误"),
                     LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Handled = true;
             };
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
-                try { Logger.Log("未处理异常 " + e.ExceptionObject?.ToString()); } catch { }
+                try { Logger.Fatal("未处理异常 " + e.ExceptionObject?.ToString()); } catch { }
                 System.Windows.MessageBox.Show(e.ExceptionObject?.ToString() ?? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_Unknown", "未知错误"),
                     LibmpvIptvClient.Helpers.ResxLocalizer.Get("Err_UnhandledTitle", "错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             };
+        }
+        static void CleanupOldLogs(string dir, int keepDays)
+        {
+            try
+            {
+                var files = Directory.GetFiles(dir, "SrcBox-*.log", SearchOption.TopDirectoryOnly);
+                var cutoff = DateTime.Today.AddDays(-keepDays + 1);
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var name = Path.GetFileNameWithoutExtension(f);
+                        var m = System.Text.RegularExpressions.Regex.Match(name, @"(\d{8})$");
+                        if (m.Success)
+                        {
+                            if (DateTime.TryParseExact(m.Groups[1].Value, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt))
+                            {
+                                if (dt < cutoff) File.Delete(f);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+        static bool IsTestEnvironment()
+        {
+            try
+            {
+                var pn = Process.GetCurrentProcess()?.ProcessName ?? "";
+                var fn = AppDomain.CurrentDomain?.FriendlyName ?? "";
+                var args = Environment.GetCommandLineArgs() ?? Array.Empty<string>();
+                if (pn.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (fn.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (args.Any(a => a.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) >= 0 || a.IndexOf("vstest", StringComparison.OrdinalIgnoreCase) >= 0)) return true;
+            }
+            catch { }
+            return false;
         }
         protected override void OnStartup(StartupEventArgs e)
         {

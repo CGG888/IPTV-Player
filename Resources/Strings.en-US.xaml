@@ -79,6 +79,8 @@
   <sys:String x:Key="Common_OK">OK</sys:String>
   <sys:String x:Key="Common_Cancel">Cancel</sys:String>
   <sys:String x:Key="Favorite_Toggle">Favorite/Unfavorite</sys:String>
+  <sys:String x:Key="UI_Pause">Pause</sys:String>
+  <sys:String x:Key="UI_Resume">Resume</sys:String>
   
   <!-- Exit Dialog -->
   <sys:String x:Key="Dlg_ExitTitle">Exit</sys:String>
@@ -147,6 +149,16 @@
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_FCCPrefetch">FCC prefetch count</sys:String>
   <sys:String x:Key="UI_Playback_TimeoutSec">Source timeout (sec)</sys:String>
+  <sys:String x:Key="UI_Playback_EnableAdaptive">Protocol adaptive tuning</sys:String>
+  <sys:String x:Key="UI_Playback_HlsStartLive">HLS start at live edge</sys:String>
+  <sys:String x:Key="UI_Playback_HlsReadahead">HLS readahead seconds</sys:String>
+  <sys:String x:Key="UI_Playback_Alang">Preferred audio languages (alang)</sys:String>
+  <sys:String x:Key="UI_Playback_Slang">Preferred subtitle languages (slang)</sys:String>
+  <sys:String x:Key="UI_Playback_MpvNetworkTimeout">mpv network-timeout (sec)</sys:String>
+  <sys:String x:Key="UI_Playback_AdaptiveHint">Automatically tune probe/cache per protocol; off = use generic defaults.</sys:String>
+  <sys:String x:Key="UI_Playback_HlsHint">Start from live edge. Lower readahead reduces start delay but may stutter on weak networks.</sys:String>
+  <sys:String x:Key="UI_Playback_LangHint">Example: zh,en. Only effective for multi-track streams; falls back to auto when unmatched.</sys:String>
+  <sys:String x:Key="UI_Playback_MpvTimeoutHint">Affects mpv’s network-timeout only; the “Source timeout (sec)” logic remains unchanged.</sys:String>
 
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
