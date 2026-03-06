@@ -36,6 +36,7 @@ namespace LibmpvIptvClient
         public SettingsWindow(PlaybackSettings current)
         {
             InitializeComponent();
+            PreviewKeyDown += Settings_PreviewKeyDown;
             
             // Deep copy for temp configs
             _tempReplay = new ReplayConfig 
@@ -94,6 +95,40 @@ namespace LibmpvIptvClient
                 _logoDrawer = LogoSettingsControl;
                 _playbackDrawer = ReplaySettingsControl;
                 _timeshiftDrawer = TimeshiftSettingsControl;
+                
+                // Time Override UI init
+                try
+                {
+                    var to = current.TimeOverride ?? new TimeOverrideConfig();
+                    if (CbTimeOverrideEnabled != null) CbTimeOverrideEnabled.IsChecked = to.Enabled;
+                    if (CbTimeOverrideMode != null)
+                    {
+                        CbTimeOverrideMode.SelectedIndex = string.Equals(to.Mode, "replace_all", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                        _prevModeIndex = CbTimeOverrideMode.SelectedIndex;
+                        CbTimeOverrideMode.SelectionChanged += (_, __) => OnTimeOverrideModeChanged();
+                    }
+                    if (CbTimeLayout != null)
+                    {
+                        if (string.Equals(to.Layout, "playseek", StringComparison.OrdinalIgnoreCase)) CbTimeLayout.SelectedIndex = 1;
+                        else if (string.Equals(to.Layout, "start_duration", StringComparison.OrdinalIgnoreCase)) CbTimeLayout.SelectedIndex = 2;
+                        else CbTimeLayout.SelectedIndex = 0;
+                        CbTimeLayout.SelectionChanged += (_, __) => UpdateTimeOverrideKeyFieldsVisibility();
+                    }
+                    if (CbTimeEncoding != null)
+                    {
+                        if (string.Equals(to.Encoding, "utc", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 1;
+                        else if (string.Equals(to.Encoding, "unix", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 2;
+                        else if (string.Equals(to.Encoding, "unix_ms", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 3;
+                        else CbTimeEncoding.SelectedIndex = 0;
+                    }
+                    if (CbStartKey != null) CbStartKey.Text = to.StartKey ?? "start";
+                    if (CbEndKey != null) CbEndKey.Text = to.EndKey ?? "end";
+                    if (CbDurationKey != null) CbDurationKey.Text = to.DurationKey ?? "duration";
+                    if (CbPlayseekKey != null) CbPlayseekKey.Text = to.PlayseekKey ?? "playseek";
+                    if (CbUrlEncode != null) CbUrlEncode.IsChecked = to.UrlEncode;
+                    UpdateTimeOverrideKeyFieldsVisibility();
+                }
+                catch { }
             }
             catch { }
 
@@ -138,6 +173,42 @@ namespace LibmpvIptvClient
             catch { }
             _ = CheckUpdateInlineAsync(false);
         }
+        void Settings_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            try
+            {
+                if (e.Key == System.Windows.Input.Key.F1)
+                {
+                    DebugRequested?.Invoke();
+                    e.Handled = true;
+                }
+            }
+            catch { }
+        }
+        
+        int _prevModeIndex = 0;
+        void OnTimeOverrideModeChanged()
+        {
+            try
+            {
+                if (CbTimeOverrideMode == null) return;
+                var idx = CbTimeOverrideMode.SelectedIndex;
+                if (idx == 1)
+                {
+                    var msg = LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_TimeOverride_ConfirmReplaceAll",
+                        "将完全替换时间参数，可能影响非时间参数的顺序或兼容性。确定继续？");
+                    var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示");
+                    var ok = ModernMessageBox.Show(this, msg, title, MessageBoxButton.YesNo) == true;
+                    if (!ok)
+                    {
+                        CbTimeOverrideMode.SelectedIndex = _prevModeIndex;
+                        return;
+                    }
+                }
+                _prevModeIndex = idx;
+            }
+            catch { }
+        }
         void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             var s = new PlaybackSettings();
@@ -178,11 +249,200 @@ namespace LibmpvIptvClient
             }
             catch { }
             Result = s;
+            
+            // TimeOverride save
+            try
+            {
+                var to = new TimeOverrideConfig();
+                to.Enabled = CbTimeOverrideEnabled?.IsChecked == true;
+                to.Mode = GetSelectedTag(CbTimeOverrideMode);
+                to.Layout = GetSelectedTag(CbTimeLayout);
+                to.Encoding = GetSelectedTag(CbTimeEncoding);
+                to.StartKey = (CbStartKey?.Text ?? "start").Trim();
+                to.EndKey = (CbEndKey?.Text ?? "end").Trim();
+                to.DurationKey = (CbDurationKey?.Text ?? "duration").Trim();
+                to.PlayseekKey = (CbPlayseekKey?.Text ?? "playseek").Trim();
+                to.UrlEncode = CbUrlEncode?.IsChecked == true;
+                s.TimeOverride = to;
+            }
+            catch { }
             ApplySettingsRequested?.Invoke(s);
 
             ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_SettingsSaved", "设置已保存"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
             // DialogResult = true;
             // Close();
+        }
+        
+        void BtnPreviewReplay_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var now = DateTime.Now;
+                var start = now.AddHours(-3);
+                var end = start.AddHours(1);
+                var settings = BuildTempSettings();
+                settings.TimeOverride.Enabled = true;
+                var baseUrl = TbBaseUrl?.Text?.Trim() ?? "";
+                var url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(settings, baseUrl, start, end, false);
+                if (TbPreviewResult != null) TbPreviewResult.Text = url;
+                if (TbPreviewTemplate != null) TbPreviewTemplate.Text = BuildPlaceholderPreview(baseUrl, false);
+            }
+            catch { }
+        }
+        void BtnPreviewTimeshift_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var now = DateTime.Now;
+                var start = now.AddHours(-3);
+                var end = start.AddHours(1);
+                var settings = BuildTempSettings();
+                settings.TimeOverride.Enabled = true;
+                var baseUrl = TbBaseUrl?.Text?.Trim() ?? "";
+                var url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(settings, baseUrl, start, end, true);
+                if (TbPreviewResult != null) TbPreviewResult.Text = url;
+                if (TbPreviewTemplate != null) TbPreviewTemplate.Text = BuildPlaceholderPreview(baseUrl, true);
+            }
+            catch { }
+        }
+        PlaybackSettings BuildTempSettings()
+        {
+            var s = new PlaybackSettings();
+            try
+            {
+                var to = new TimeOverrideConfig();
+                to.Enabled = CbTimeOverrideEnabled?.IsChecked == true;
+                to.Mode = GetSelectedTag(CbTimeOverrideMode);
+                to.Layout = GetSelectedTag(CbTimeLayout);
+                to.Encoding = GetSelectedTag(CbTimeEncoding);
+                to.StartKey = (CbStartKey?.Text ?? "start").Trim();
+                to.EndKey = (CbEndKey?.Text ?? "end").Trim();
+                to.DurationKey = (CbDurationKey?.Text ?? "duration").Trim();
+                to.PlayseekKey = (CbPlayseekKey?.Text ?? "playseek").Trim();
+                to.UrlEncode = CbUrlEncode?.IsChecked == true;
+                s.TimeOverride = to;
+            }
+            catch { }
+            return s;
+        }
+        void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            try { Close(); } catch { }
+        }
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            try
+            {
+                if (Owner != null)
+                {
+                    Owner.Activate();
+                }
+            }
+            catch { }
+        }
+        void BtnOpenDocs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://srcbox.top/guide/catchup-timeshift.html",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+        void BtnOpenIssues_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://github.com/CGG888/SrcBox/issues",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+        
+        void UpdateTimeOverrideKeyFieldsVisibility()
+        {
+            try
+            {
+                var layout = GetSelectedTag(CbTimeLayout);
+                if (string.IsNullOrEmpty(layout)) layout = "start_end";
+                bool showStart = layout == "start_end" || layout == "start_duration";
+                bool showEnd = layout == "start_end";
+                bool showDuration = layout == "start_duration";
+                bool showPlayseek = layout == "playseek";
+                
+                if (CbStartKey != null) CbStartKey.Visibility = showStart ? Visibility.Visible : Visibility.Collapsed;
+                if (CbEndKey != null) CbEndKey.Visibility = showEnd ? Visibility.Visible : Visibility.Collapsed;
+                if (CbDurationKey != null) CbDurationKey.Visibility = showDuration ? Visibility.Visible : Visibility.Collapsed;
+                if (SpPlayseekRow != null) SpPlayseekRow.Visibility = showPlayseek ? Visibility.Visible : Visibility.Collapsed;
+                if (CbPlayseekKey != null) CbPlayseekKey.Visibility = showPlayseek ? Visibility.Visible : Visibility.Collapsed;
+                
+                // 对应标签同步隐藏/显示
+                if (LblStartKey != null) LblStartKey.Visibility = showStart ? Visibility.Visible : Visibility.Collapsed;
+                if (LblEndKey != null) LblEndKey.Visibility = showEnd ? Visibility.Visible : Visibility.Collapsed;
+                if (LblDurationKey != null) LblDurationKey.Visibility = showDuration ? Visibility.Visible : Visibility.Collapsed;
+                if (LblPlayseekKey != null) LblPlayseekKey.Visibility = showPlayseek ? Visibility.Visible : Visibility.Collapsed;
+            }
+            catch { }
+        }
+        
+        string BuildPlaceholderPreview(string baseUrl, bool isTimeshift)
+        {
+            try
+            {
+                var layout = GetSelectedTag(CbTimeLayout);
+                var encoding = GetSelectedTag(CbTimeEncoding);
+                if (string.IsNullOrEmpty(layout)) layout = "start_end";
+                if (string.IsNullOrEmpty(encoding)) encoding = "local";
+                var startKey = (CbStartKey?.Text ?? "start").Trim();
+                var endKey = (CbEndKey?.Text ?? "end").Trim();
+                var durationKey = (CbDurationKey?.Text ?? "duration").Trim();
+                var playseekKey = (CbPlayseekKey?.Text ?? "playseek").Trim();
+
+                // Choose placeholder tokens by encoding
+                string pStart, pEnd, pDur = "${duration}";
+                if (encoding.Equals("utc", StringComparison.OrdinalIgnoreCase))
+                {
+                    pStart = "${(b)yyyyMMddHHmmss|UTC}";
+                    pEnd = "${(e)yyyyMMddHHmmss|UTC}";
+                }
+                else if (encoding.Equals("unix", StringComparison.OrdinalIgnoreCase) || encoding.Equals("unix_ms", StringComparison.OrdinalIgnoreCase))
+                {
+                    pStart = "${timestamp}";
+                    pEnd = "${end_timestamp}";
+                }
+                else
+                {
+                    pStart = "${(b)yyyyMMddHHmmss}";
+                    pEnd = "${(e)yyyyMMddHHmmss}";
+                }
+
+                string query;
+                if (layout == "playseek")
+                {
+                    query = $"{playseekKey}={pStart}-{pEnd}";
+                }
+                else if (layout == "start_duration" || (layout == "auto" && isTimeshift))
+                {
+                    query = $"{startKey}={pStart}&{durationKey}={pDur}";
+                }
+                else
+                {
+                    query = $"{startKey}={pStart}&{endKey}={pEnd}";
+                }
+
+                if (string.IsNullOrWhiteSpace(baseUrl)) return query;
+                var sep = baseUrl.Contains("?") ? "&" : "?";
+                return baseUrl + sep + query;
+            }
+            catch { }
+            return "";
         }
         string GetSelectedTag(System.Windows.Controls.ComboBox cb)
         {

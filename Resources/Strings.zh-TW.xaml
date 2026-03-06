@@ -24,6 +24,49 @@
   <sys:String x:Key="UI_MoveDown">下移</sys:String>
   <sys:String x:Key="UI_Delete">刪除</sys:String>
   <sys:String x:Key="UI_SortBySpeed">依速度排序</sys:String>
+  
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_Tab">時間覆蓋</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Enable">啟用覆蓋（僅替換時間片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode">覆蓋模式</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_TimeOnly">僅改時間</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_ReplaceAll">完全替換</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout">時間佈局</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartEnd">start+end</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Playseek">playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartDuration">start+duration</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding">時間編碼</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Local">本地 yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Utc">UTC yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Unix">Unix 秒 (10位)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_UnixMs">Unix 毫秒 (13位)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_StartKey">start 鍵名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_EndKey">end 鍵名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_DurationKey">duration 鍵名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_PlayseekKey">playseek 鍵名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_UrlEncode">URL 編碼</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Group">預覽（僅拼接基礎位址 + 時間片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_BaseUrl">基礎位址（可選，不填則僅顯示時間片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Replay">預覽回放</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Timeshift">預覽時移</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Template">時間佔位符樣式（模板示例，僅供查看）</sys:String>
+  <sys:String x:Key="UI_Playback_TimeOverride_Note">【重要】頻道的 catchup-source 與「回放/時移模板」負責生成基礎位址與參數；若啟用「時間覆蓋」，只重寫時間片段（佈局/鍵名/編碼），不改網域/路徑/非時間參數。優先順序：頻道模板 &gt; 設定模板（備援）；時間覆蓋對兩者的輸出皆生效。</sys:String>
+  <sys:String x:Key="UI_Timeshift_TimeOverride_Note">【重要】啟用「時間覆蓋」後，時移的時間表達將依此頁籤設定統一；未啟用則完全依頻道/模板原樣輸出。</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Global_Note">【重要】這是全域層面的時間片段標準化：僅替換「時間參數」，用於統一不同頻道或模板的時間表達（start/end、playseek、UTC/Unix 等）。建議預設關閉，驗證通過後再啟用。</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Tip">選擇時間佈局：start+end / start+duration / playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Tip">本地：yyyyMMddHHmmss；UTC：同上但以 UTC 格式化；Unix 秒：10 位；Unix 毫秒：13 位</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Key_Tip">常見鍵名：start/starttime/begin、end/endtime/finish、duration、playseek（可自訂）</sys:String>
+  <sys:String x:Key="UI_OpenDocs">查看文件</sys:String>
+  <sys:String x:Key="UI_Advanced_Options">進階選項（預覽）</sys:String>
+  <sys:String x:Key="UI_Advanced_Desc">以下為預覽項，後續版本將提供 ISO‑8601 預設、日期/時間拆分與路徑佔位替換。</sys:String>
+  <sys:String x:Key="UI_Advanced_IsoPreset">ISO‑8601 預設</sys:String>
+  <sys:String x:Key="UI_Advanced_Split">啟用日期/時間拆分（begin_date/begin_time…）</sys:String>
+  <sys:String x:Key="UI_Advanced_Path">啟用路徑式時間佔位替換（如 {utc:…}）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_ConfirmReplaceAll">將完全替換時間參數，可能影響非時間參數順序或相容性。確定繼續？</sys:String>
+  
+  <!-- Overlay Preview -->
+  <sys:String x:Key="Overlay_PreviewUrl">預覽拼接</sys:String>
+  <sys:String x:Key="Overlay_Preview_Title">預覽拼接</sys:String>
 
   <sys:String x:Key="UI_CheckUpdate">檢查更新</sys:String>
   <sys:String x:Key="UI_ViewUpdate">查看更新</sys:String>

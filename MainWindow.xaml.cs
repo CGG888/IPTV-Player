@@ -168,6 +168,12 @@ namespace LibmpvIptvClient
                     e.Handled = true;
                     return;
                 }
+                if (e.Key == System.Windows.Input.Key.F1)
+                {
+                    BtnDebug_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+                }
             }
             catch { }
         }
@@ -545,6 +551,55 @@ namespace LibmpvIptvClient
             _overlayWpf.Rew += () => BtnRew_Click(this, new RoutedEventArgs());
             _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
             _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
+            _overlayWpf.PreviewRequested += () =>
+            {
+                try
+                {
+                    if (_currentChannel == null) return;
+                    DateTime s = DateTime.Now.AddHours(-3);
+                    DateTime e2 = s.AddHours(1);
+                    if (_timeshiftActive)
+                    {
+                        var total = Math.Max(1, (_timeshiftMax - _timeshiftMin).TotalSeconds);
+                        var cursor = Math.Max(0, Math.Min(total, _timeshiftCursorSec));
+                        s = _timeshiftMin.AddSeconds(cursor);
+                        e2 = s.AddMinutes(10);
+                    }
+                    else if (_currentPlayingProgram != null)
+                    {
+                        s = _currentPlayingProgram.Start;
+                        e2 = _currentPlayingProgram.End;
+                    }
+                    var baseUrl = _currentChannel.CatchupSource;
+                    if (string.IsNullOrWhiteSpace(baseUrl))
+                    {
+                        if (AppSettings.Current.Replay.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Replay.UrlFormat))
+                        {
+                            var fmt = AppSettings.Current.Replay.UrlFormat;
+                            if (!string.IsNullOrEmpty(fmt) && (fmt.StartsWith("?") || fmt.StartsWith("&")))
+                            {
+                                var live = (_currentChannel.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
+                                           : (_currentChannel.Sources != null && _currentChannel.Sources.Count > 0 ? _currentChannel.Sources[0].Url : "");
+                                if (!string.IsNullOrEmpty(live))
+                                {
+                                    var sep = live.Contains("?") ? "&" : "?";
+                                    baseUrl = live + sep + fmt.TrimStart('?', '&');
+                                }
+                            }
+                            else
+                            {
+                                baseUrl = fmt.Replace("{id}", _currentChannel.Id ?? _currentChannel.Name);
+                            }
+                        }
+                    }
+                    baseUrl = baseUrl ?? "";
+                    var preview = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, baseUrl, s, e2, _timeshiftActive);
+                    var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Overlay_Preview_Title", "预览拼接");
+                    var msg = string.IsNullOrEmpty(baseUrl) ? preview : preview;
+                    ModernMessageBox.Show(this, msg, title, MessageBoxButton.OK);
+                }
+                catch { }
+            };
             _overlayWpf.DrawerToggled += (visible) => SetDrawerCollapsed(!visible);
             _overlayWpf.EpgToggled += (visible) => 
             { 
@@ -786,6 +841,7 @@ namespace LibmpvIptvClient
                 }
                 catch { }
                 url = ProcessUrlPlaceholders(url, start, end);
+                try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _timeshiftActive); } catch { }
                 
                 Logger.Log($"[Timeshift] 开始时移/回看 - 频道: {ch.Name}, 时间点: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _mpv?.LoadFile(url);
@@ -1130,6 +1186,20 @@ namespace LibmpvIptvClient
         void OpenSettings()
         {
             var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+            // If already open, bring it to front
+            try
+            {
+                foreach (Window w in System.Windows.Application.Current.Windows)
+                {
+                    if (w is SettingsWindow existing)
+                    {
+                        try { existing.Owner = owner; } catch { }
+                        try { existing.Activate(); existing.Topmost = existing.Topmost; } catch { }
+                        return;
+                    }
+                }
+            }
+            catch { }
             var dlg = new SettingsWindow(AppSettings.Current) { Owner = owner };
             dlg.DebugRequested += () => BtnDebug_Click(this, new RoutedEventArgs());
             try { dlg.Topmost = _isFullscreen; } catch { }
@@ -1173,6 +1243,25 @@ namespace LibmpvIptvClient
                 // 界面设置
                 AppSettings.Current.Language = settings.Language;
                 AppSettings.Current.ThemeMode = settings.ThemeMode;
+                // 时间覆盖持久化
+                try
+                {
+                    if (settings.TimeOverride != null)
+                    {
+                        if (AppSettings.Current.TimeOverride == null)
+                            AppSettings.Current.TimeOverride = new TimeOverrideConfig();
+                        AppSettings.Current.TimeOverride.Enabled = settings.TimeOverride.Enabled;
+                        AppSettings.Current.TimeOverride.Mode = settings.TimeOverride.Mode ?? "time_only";
+                        AppSettings.Current.TimeOverride.Layout = settings.TimeOverride.Layout ?? "start_end";
+                        AppSettings.Current.TimeOverride.Encoding = settings.TimeOverride.Encoding ?? "local";
+                        AppSettings.Current.TimeOverride.StartKey = settings.TimeOverride.StartKey ?? "start";
+                        AppSettings.Current.TimeOverride.EndKey = settings.TimeOverride.EndKey ?? "end";
+                        AppSettings.Current.TimeOverride.DurationKey = settings.TimeOverride.DurationKey ?? "duration";
+                        AppSettings.Current.TimeOverride.PlayseekKey = settings.TimeOverride.PlayseekKey ?? "playseek";
+                        AppSettings.Current.TimeOverride.UrlEncode = settings.TimeOverride.UrlEncode;
+                    }
+                }
+                catch { }
                 try
                 {
                     Logger.Debug($"[Settings] apply hwdec={settings.Hwdec} cache={settings.CacheSecs} max={settings.DemuxerMaxBytesMiB} back={settings.DemuxerMaxBackBytesMiB} fcc={settings.FccPrefetchCount} src_to={settings.SourceTimeoutSec} adaptive={settings.EnableProtocolAdaptive} hls_live={settings.HlsStartAtLiveEdge} hls_ra={settings.HlsReadaheadSecs} alang={settings.Alang} slang={settings.Slang} mpv_to={settings.MpvNetworkTimeoutSec}");
@@ -1192,7 +1281,7 @@ namespace LibmpvIptvClient
                 catch { }
             };
 
-            dlg.ShowDialog();
+            dlg.Show();
         }
         void SetDrawerCollapsed(bool collapsed)
         {
@@ -2152,6 +2241,7 @@ namespace LibmpvIptvClient
                 // ... (url processing) ...
                 // 替换占位符 (统一处理)
                 url = ProcessUrlPlaceholders(url, prog.Start, prog.End);
+                try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, prog.Start, prog.End, false); } catch { }
 
                 Logger.Log($"[Replay] 开始回放 - 节目: {prog.Title}, 频道: {ch.Name}, 时间: {prog.Start:HH:mm}-{prog.End:HH:mm}, URL: {url}");
                 _mpv?.LoadFile(url);
@@ -2209,9 +2299,12 @@ namespace LibmpvIptvClient
         string ProcessUrlPlaceholders(string url, DateTime start, DateTime end)
         {
             // 1. Unix Timestamp & Duration (rtp2httpd macros)
-            long ts = new DateTimeOffset(start).ToUnixTimeSeconds();
-            url = url.Replace("${timestamp}", ts.ToString());
-            url = url.Replace("{timestamp}", ts.ToString());
+            long tsStart = new DateTimeOffset(start).ToUnixTimeSeconds();
+            long tsEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
+            url = url.Replace("${timestamp}", tsStart.ToString());
+            url = url.Replace("{timestamp}", tsStart.ToString());
+            url = url.Replace("${end_timestamp}", tsEnd.ToString());
+            url = url.Replace("{end_timestamp}", tsEnd.ToString());
             
             long dur = (long)(end - start).TotalSeconds;
             url = url.Replace("${duration}", dur.ToString());
@@ -2237,6 +2330,15 @@ namespace LibmpvIptvClient
                 {
                     dt = dt.ToUniversalTime();
                     fmt = fmt.Substring(0, fmt.Length - 4);
+                }
+                
+                // Unix seconds for start/end
+                if (string.Equals(fmt, "timestamp", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(fmt, "unix", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(fmt, "epoch", StringComparison.OrdinalIgnoreCase))
+                {
+                    var unix = new DateTimeOffset(dt.ToUniversalTime()).ToUnixTimeSeconds();
+                    return unix.ToString();
                 }
                 try { return dt.ToString(fmt); } catch { return m.Value; }
             });
@@ -3039,19 +3141,22 @@ namespace LibmpvIptvClient
 
             return s;
         }
-        void BtnDebug_Click(object sender, RoutedEventArgs e)
+        void ToggleDebugWindow()
         {
-            if (_debug == null || !_debug.IsVisible)
+            try
             {
+                if (_debug != null && _debug.IsVisible)
+                {
+                    _debug.Close();
+                    return;
+                }
                 _debug = new DebugWindow();
                 _debug.Owner = this;
                 _debug.Show();
             }
-            else
-            {
-                _debug.Activate();
-            }
+            catch { }
         }
+        void BtnDebug_Click(object sender, RoutedEventArgs e) => ToggleDebugWindow();
         void OnSourceTimeout(object? sender, EventArgs e)
         {
             _sourceTimeoutTimer.Stop();

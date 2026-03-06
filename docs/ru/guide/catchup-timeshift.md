@@ -83,6 +83,40 @@ https://example.com/live/index.m3u8
 ?start={start}&end={end}
 ```
 
+### 4) Unix-метки (секунды) — начало/конец
+
+Плеер поддерживает 10‑значные Unix-метки времени:
+
+- Начало: `${timestamp}`, `{timestamp}`, `${(b)timestamp}`, `${(b)unix}`, `${(b)epoch}`
+- Конец: `${end_timestamp}`, `{end_timestamp}`, `${(e)timestamp}`, `${(e)unix}`, `${(e)epoch}`
+- Длительность (в секундах): `${duration}`, `{duration}`
+
+Примеры распространённых интерфейсов:
+
+```text
+// 1) Параметры start/end
+?start=${timestamp}&end=${end_timestamp}
+
+// 2) playseek (начало-конец)
+playseek=${(b)timestamp}-${(e)timestamp}
+
+// 3) начало + длительность
+?start=${timestamp}&duration=${duration}
+```
+
+Интеграция в M3U:
+
+```m3u
+#EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&end=${end_timestamp}",Demo
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="Demo" catchup="append" catchup-source="https://example.com/live/index.m3u8?playseek=${(b)timestamp}-${(e)timestamp}",Demo
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&duration=${duration}",Demo
+https://example.com/live/index.m3u8
+```
+
 ## Примеры шаблонов
 
 ### HTTP unicast (HLS m3u8, UTC + `T`)
@@ -106,6 +140,19 @@ rtsp://example.com/live.smil
 https://example.com/live/stream
 ```
 
+## Приоритет и переопределение
+
+- `catchup-source` канала → формирует базовый URL и плейсхолдеры времени (рекомендуется настраивать для каждого канала).
+- Шаблон Replay/Timeshift в Настройках → используется как fallback, если `catchup-source` отсутствует.
+- Time Override (Настройки → Переопределение времени) → при включении изменяет только временную часть (схема/ключи/кодирование), не трогая домен/путь и нетемпоральные параметры. Применяется как к шаблонам канала, так и к fallback.
+- Советы: сначала добейтесь корректного URL через шаблон канала/fallback, затем используйте Time Override для унификации формата времени (starttime/endtime, UTC, Unix секунды).
+
+## Отсутствующие форматы / частные плейсхолдеры
+
+- Если нужного формата нет в списке, либо источник использует частные плейсхолдеры/время в пути:
+  - Включите Time Override и выберите ближайшую схему/кодирование;
+  - Либо откройте issue с примерами; мы рассмотрим добавление пресетов или более гибкой настройки.
+- Issues: https://github.com/CGG888/SrcBox/issues
 ## Дополнительные примеры плейсхолдеров (расширенные форматы)
 
 - **RFC3339/ISO-8601 с часовым поясом**

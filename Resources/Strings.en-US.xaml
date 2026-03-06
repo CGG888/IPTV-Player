@@ -24,6 +24,49 @@
   <sys:String x:Key="UI_MoveDown">Move down</sys:String>
   <sys:String x:Key="UI_Delete">Delete</sys:String>
   <sys:String x:Key="UI_SortBySpeed">Sort by speed</sys:String>
+  
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_Tab">Time Override</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Enable">Enable override (replace time params only)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode">Override mode</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_TimeOnly">Time only</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_ReplaceAll">Replace all</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout">Time layout</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartEnd">start+end</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Playseek">playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartDuration">start+duration</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding">Time encoding</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Local">Local yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Utc">UTC yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Unix">Unix seconds (10-digit)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_UnixMs">Unix milliseconds (13-digit)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_StartKey">start key</sys:String>
+  <sys:String x:Key="UI_TimeOverride_EndKey">end key</sys:String>
+  <sys:String x:Key="UI_TimeOverride_DurationKey">duration key</sys:String>
+  <sys:String x:Key="UI_TimeOverride_PlayseekKey">playseek key</sys:String>
+  <sys:String x:Key="UI_TimeOverride_UrlEncode">URL encode</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Group">Preview (base URL + time params only)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_BaseUrl">Base URL (optional; leave empty to show only time query)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Replay">Preview Replay</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Timeshift">Preview Timeshift</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Template">Time placeholder template (for reference)</sys:String>
+  <sys:String x:Key="UI_Playback_TimeOverride_Note">[Important] Channel catchup-source and Replay/Timeshift templates generate the base URL. When Time Override is enabled, only the time part (layout/keys/encoding) is rewritten. Domain/path and non-time params are kept. Priority: channel template &gt; settings template (fallback). Time Override applies to both.</sys:String>
+  <sys:String x:Key="UI_Timeshift_TimeOverride_Note">[Important] With Time Override enabled, timeshift time parameters are rewritten to the configured layout/keys/encoding; if disabled, the original channel/template output is used.</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Global_Note">[Important] This is a global normalization for time parameters only. Use it to unify start/end or playseek and UTC/Unix encodings across channels. Keep it off by default; enable after verification.</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Tip">Select time layout: start+end / start+duration / playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Tip">Local: yyyyMMddHHmmss; UTC: same in UTC; Unix seconds: 10-digit; Unix ms: 13-digit</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Key_Tip">Common keys: start/starttime/begin, end/endtime/finish, duration, playseek (editable)</sys:String>
+  <sys:String x:Key="UI_OpenDocs">Open Docs</sys:String>
+  <sys:String x:Key="UI_Advanced_Options">Advanced options (preview)</sys:String>
+  <sys:String x:Key="UI_Advanced_Desc">Preview-only: ISO‑8601 presets, date/time split and path placeholder replacement will be provided in future versions.</sys:String>
+  <sys:String x:Key="UI_Advanced_IsoPreset">ISO‑8601 preset</sys:String>
+  <sys:String x:Key="UI_Advanced_Split">Enable date/time split (begin_date/begin_time…)</sys:String>
+  <sys:String x:Key="UI_Advanced_Path">Enable path time placeholder replacement (e.g., {utc:…})</sys:String>
+  <sys:String x:Key="UI_TimeOverride_ConfirmReplaceAll">Replace ALL time params; this may affect non-time params order/compatibility. Continue?</sys:String>
+  
+  <!-- Overlay Preview -->
+  <sys:String x:Key="Overlay_PreviewUrl">Preview URL</sys:String>
+  <sys:String x:Key="Overlay_Preview_Title">Preview URL</sys:String>
 
   <sys:String x:Key="UI_CheckUpdate">Check updates</sys:String>
   <sys:String x:Key="UI_ViewUpdate">View updates</sys:String>

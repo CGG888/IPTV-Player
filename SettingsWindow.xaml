@@ -296,6 +296,121 @@
               <controls:TimeshiftDrawer x:Name="TimeshiftSettingsControl"/>
           </TabItem>
 
+          <!-- 时间覆盖（仅替换时间片段） -->
+          <TabItem x:Name="TabTimeOverride" Header="{DynamicResource UI_TimeOverride_Tab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <CheckBox x:Name="CbTimeOverrideEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_TimeOverride_Enable}" Margin="0,0,0,12"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Mode}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <ComboBox x:Name="CbTimeOverrideMode" Grid.Row="1" Grid.Column="1" Height="30" Width="220">
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_TimeOnly}" Tag="time_only"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_ReplaceAll}" Tag="replace_all"/>
+                </ComboBox>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Layout}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbTimeLayout" Grid.Row="2" Grid.Column="1" Height="30" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Layout_Tip}">
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartEnd}" Tag="start_end"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_Playseek}" Tag="playseek"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartDuration}" Tag="start_duration"/>
+                </ComboBox>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Encoding}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbTimeEncoding" Grid.Row="3" Grid.Column="1" Height="30" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Encoding_Tip}">
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Local}" Tag="local"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Utc}" Tag="utc"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Unix}" Tag="unix"/>
+                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_UnixMs}" Tag="unix_ms"/>
+                </ComboBox>
+
+                <TextBlock x:Name="LblStartKey" Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_StartKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbStartKey" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
+                  <ComboBoxItem Content="start"/>
+                  <ComboBoxItem Content="starttime"/>
+                  <ComboBoxItem Content="begin"/>
+                </ComboBox>
+
+                <TextBlock x:Name="LblEndKey" Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_EndKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbEndKey" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
+                  <ComboBoxItem Content="end"/>
+                  <ComboBoxItem Content="endtime"/>
+                  <ComboBoxItem Content="finish"/>
+                </ComboBox>
+
+                <TextBlock x:Name="LblDurationKey" Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_DurationKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbDurationKey" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
+                  <ComboBoxItem Content="duration"/>
+                  <ComboBoxItem Content="dur"/>
+                  <ComboBoxItem Content="len"/>
+                </ComboBox>
+
+                <TextBlock x:Name="LblPlayseekKey" Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_PlayseekKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <StackPanel x:Name="SpPlayseekRow" Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
+                  <ComboBox x:Name="CbPlayseekKey" Height="30" Width="160" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
+                    <ComboBoxItem Content="playseek"/>
+                  </ComboBox>
+                  <CheckBox x:Name="CbUrlEncode" Content="{DynamicResource UI_TimeOverride_UrlEncode}" Margin="12,6,0,0"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="{DynamicResource UI_TimeOverride_Global_Note}" FontSize="12" Foreground="#FF3B30" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <!-- Bottom container: buttons + advanced + preview, stacked to avoid overlap -->
+                <StackPanel Grid.Row="9" Grid.ColumnSpan="2">
+                  <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnOpenDocs" Content="{DynamicResource UI_OpenDocs}" Width="96" Click="BtnOpenDocs_Click" Style="{StaticResource ChipButton}" Margin="0,0,8,0"/>
+                    <Button x:Name="BtnOpenIssues" Content="Issues" Width="96" Click="BtnOpenIssues_Click" Style="{StaticResource ChipButton}"/>
+                  </StackPanel>
+                  
+                  <GroupBox Header="{DynamicResource UI_Advanced_Options}" Margin="0,8,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
+                    <StackPanel Margin="8">
+                      <TextBlock Text="{DynamicResource UI_Advanced_Desc}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+                      <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock Text="{DynamicResource UI_Advanced_IsoPreset}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <ComboBox x:Name="CbIsoPreset" Width="220" IsEnabled="False">
+                          <ComboBoxItem Content="ISO-8601 UTC (Z)"/>
+                          <ComboBoxItem Content="ISO-8601 K (auto Z/offset)"/>
+                          <ComboBoxItem Content="ISO-8601 +zzz"/>
+                        </ComboBox>
+                      </StackPanel>
+                      <CheckBox x:Name="CbSplitDateTime" Content="{DynamicResource UI_Advanced_Split}" IsEnabled="False" Margin="0,6,0,0"/>
+                      <CheckBox x:Name="CbPathPlaceholder" Content="{DynamicResource UI_Advanced_Path}" IsEnabled="False" Margin="0,6,0,0"/>
+                    </StackPanel>
+                  </GroupBox>
+                  
+                  <GroupBox Header="{DynamicResource UI_TimeOverride_Preview_Group}" Margin="0,12,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
+                    <StackPanel Margin="8">
+                      <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_BaseUrl}" FontWeight="SemiBold"/>
+                      <TextBox x:Name="TbBaseUrl" Height="30" Margin="0,6,0,8"/>
+                      <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnPreviewReplay" Content="{DynamicResource UI_TimeOverride_Preview_Replay}" Width="96" Click="BtnPreviewReplay_Click" Style="{StaticResource ChipButton}"/>
+                        <Button x:Name="BtnPreviewTimeshift" Content="{DynamicResource UI_TimeOverride_Preview_Timeshift}" Width="96" Margin="8,0,0,0" Click="BtnPreviewTimeshift_Click" Style="{StaticResource ChipButton}"/>
+                      </StackPanel>
+                      <TextBox x:Name="TbPreviewResult" Height="90" Margin="0,8,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                      <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_Template}" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                      <TextBox x:Name="TbPreviewTemplate" Height="74" Margin="0,6,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                    </StackPanel>
+                  </GroupBox>
+                </StackPanel>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
           <!-- 更新与镜像 -->
           <TabItem Header="{DynamicResource UI_TabUpdateMirrors}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
@@ -397,7 +512,7 @@
         <DockPanel Grid.Row="1" LastChildFill="False" Margin="0,16,0,0">
           <Button Width="96" Margin="0,0,12,0" Content="{DynamicResource UI_DebugLog}" Click="BtnDebug_Click" DockPanel.Dock="Right" Style="{StaticResource ChipButton}"/>
           <Button Width="96" Margin="0,0,12,0" Content="{DynamicResource UI_Save}" IsDefault="True" Click="BtnSave_Click" DockPanel.Dock="Right" Style="{StaticResource AccentButtonStyle}"/>
-          <Button Width="96" Content="{DynamicResource UI_Cancel}" IsCancel="True" DockPanel.Dock="Right" Style="{StaticResource ChipButton}"/>
+          <Button Width="96" Content="{DynamicResource UI_Cancel}" IsCancel="True" Click="BtnCancel_Click" DockPanel.Dock="Right" Style="{StaticResource ChipButton}"/>
         </DockPanel>
       </Grid>
     </Grid>

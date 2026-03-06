@@ -65,6 +65,8 @@ namespace LibmpvIptvClient
         public LogoConfig Logo { get; set; } = new LogoConfig();
         public ReplayConfig Replay { get; set; } = new ReplayConfig();
         public TimeshiftConfig Timeshift { get; set; } = new TimeshiftConfig();
+        
+        public TimeOverrideConfig TimeOverride { get; set; } = new TimeOverrideConfig();
 
         // Compatibility Properties (Deprecated)
         [System.Text.Json.Serialization.JsonIgnore]
@@ -114,5 +116,18 @@ namespace LibmpvIptvClient
     public static class AppSettings
     {
         public static PlaybackSettings Current { get; set; } = PlaybackSettings.Load();
+    }
+    
+    public class TimeOverrideConfig
+    {
+        public bool Enabled { get; set; } = false;
+        public string Mode { get; set; } = "time_only";
+        public string Layout { get; set; } = "start_end";
+        public string Encoding { get; set; } = "local";
+        public string StartKey { get; set; } = "start";
+        public string EndKey { get; set; } = "end";
+        public string DurationKey { get; set; } = "duration";
+        public string PlayseekKey { get; set; } = "playseek";
+        public bool UrlEncode { get; set; } = true;
     }
 }

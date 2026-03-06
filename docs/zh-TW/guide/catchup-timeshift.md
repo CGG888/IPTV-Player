@@ -106,7 +106,40 @@ rtp2httpd 其他格式的對應寫法：
 ?start=${timestamp}&duration=${duration}
 ```
 
-## 常用模板範例
+### 5）Unix 時間戳（秒）— 開始/結束
+
+支援以下 10 位 Unix 時間戳佔位符：
+
+- 開始時間：`${timestamp}`、`{timestamp}`、`${(b)timestamp}`、`${(b)unix}`、`${(b)epoch}`
+- 結束時間：`${end_timestamp}`、`{end_timestamp}`、`${(e)timestamp}`、`${(e)unix}`、`${(e)epoch}`
+- 時長（秒）：`${duration}`、`{duration}`
+常見介面範例：
+範例：
+
+// 1) start/end 參數介面
+?start=${timestamp}&end=${end_timestamp}
+
+// 2) playseek（開始-結束）
+playseek=${(b)timestamp}-${(e)timestamp}
+
+// 3) 開始 + 時長
+?start=${timestamp}&duration=${duration}
+```
+
+M3U 整合範例：
+
+```m3u
+#EXTINF:-1 tvg-name="示例頻道" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&end=${end_timestamp}",示例頻道
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="示例頻道" catchup="append" catchup-source="https://example.com/live/index.m3u8?playseek=${(b)timestamp}-${(e)timestamp}",示例頻道
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="示例頻道" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&duration=${duration}",示例頻道
+https://example.com/live/index.m3u8
+playseek=${(b)timestamp}-${(e)timestamp}
+```
+
 
 ### HTTP 單播（HLS m3u8，UTC + T）
 
@@ -129,6 +162,19 @@ rtsp://example.com/live.smil
 https://example.com/live/stream
 ```
 
+## 優先級與覆蓋
+
+- 頻道 `catchup-source` → 生成基礎位址與時間佔位（建議每頻道獨立配置）。
+- 設定中的「回放/時移模板」 → 當頻道沒有 `catchup-source` 時作為備援生成。
+- 時間覆蓋（設定頁「時間覆蓋」）→ 若啟用，只重寫「時間片段」（佈局/鍵名/編碼），不改網域/路徑/非時間參數；對頻道模板與備援模板皆生效。
+- 調試建議：先用頻道模板或備援模板生成可播連結，再用「時間覆蓋」統一為營運商要求的時間表達（如 starttime/endtime、UTC 或 Unix 秒）。
+
+## 私有時間佔位符回饋
+
+- 如需本文未涵蓋的時間格式，或營運商使用私有佔位/路徑式時間片段：
+  - 可在設定頁啟用「時間覆蓋」選擇最接近的佈局與編碼進行適配；
+  - 或到 Issues 提交需求（附示例與說明），我們會評估加入預設或提供更通用的自訂能力。
+- 提交地址：https://github.com/CGG888/SrcBox/issues
 ## 更多寫法示例（豐富格式）
 
 - **RFC3339/ISO-8601（帶時區資訊）**

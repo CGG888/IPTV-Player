@@ -24,6 +24,49 @@
   <sys:String x:Key="UI_MoveDown">Вниз</sys:String>
   <sys:String x:Key="UI_Delete">Удалить</sys:String>
   <sys:String x:Key="UI_SortBySpeed">Сортировать по скорости</sys:String>
+  
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_Tab">Переопределение времени</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Enable">Включить (заменять только временные параметры)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode">Режим</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_TimeOnly">Только время</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_ReplaceAll">Заменить всё</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout">Схема времени</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartEnd">start+end</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Playseek">playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartDuration">start+duration</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding">Кодирование времени</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Local">Локальное yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Utc">UTC yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Unix">Unix секунды (10 знаков)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_UnixMs">Unix миллисекунды (13 знаков)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_StartKey">Ключ start</sys:String>
+  <sys:String x:Key="UI_TimeOverride_EndKey">Ключ end</sys:String>
+  <sys:String x:Key="UI_TimeOverride_DurationKey">Ключ duration</sys:String>
+  <sys:String x:Key="UI_TimeOverride_PlayseekKey">Ключ playseek</sys:String>
+  <sys:String x:Key="UI_TimeOverride_UrlEncode">URL-кодирование</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Group">Предпросмотр (только базовый URL + параметры времени)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_BaseUrl">Базовый URL (необязательно; оставьте пустым для вывода только параметров)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Replay">Предпросмотр архива</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Timeshift">Предпросмотр таймшифта</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Template">Шаблон плейсхолдеров времени (для ознакомления)</sys:String>
+  <sys:String x:Key="UI_Playback_TimeOverride_Note">[Важно] channel catchup-source и шаблоны Replay/Timeshift формируют базовый URL. При включённом Time Override меняется только часть времени (схема/ключи/кодирование). Домен/путь и нетемпоральные параметры не трогаются. Приоритет: шаблон канала &gt; шаблон настроек (fallback). Time Override применяется к обоим.</sys:String>
+  <sys:String x:Key="UI_Timeshift_TimeOverride_Note">[Важно] При включённом Time Override параметры времени таймшифта переписываются согласно выбранной схеме; при выключенном используется исходный вывод канала/шаблона.</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Global_Note">[Важно] Это глобальная нормализация только временных параметров. Используйте для унификации start/end или playseek и UTC/Unix кодирования. Держите выключенным по умолчанию; включайте после проверки.</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Tip">Выберите схему времени: start+end / start+duration / playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Tip">Local: yyyyMMddHHmmss; UTC: то же в UTC; Unix sec: 10 знаков; Unix ms: 13 знаков</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Key_Tip">Ключи: start/starttime/begin, end/endtime/finish, duration, playseek (настраиваемые)</sys:String>
+  <sys:String x:Key="UI_OpenDocs">Документация</sys:String>
+  <sys:String x:Key="UI_Advanced_Options">Доп. параметры (превью)</sys:String>
+  <sys:String x:Key="UI_Advanced_Desc">Предпросмотр: пресеты ISO‑8601, разделение даты/времени и замена плейсхолдеров в пути будут добавлены в будущих версиях.</sys:String>
+  <sys:String x:Key="UI_Advanced_IsoPreset">Преcет ISO‑8601</sys:String>
+  <sys:String x:Key="UI_Advanced_Split">Включить разделение даты/времени (begin_date/begin_time…)</sys:String>
+  <sys:String x:Key="UI_Advanced_Path">Включить замену времени в пути (например, {utc:…})</sys:String>
+  <sys:String x:Key="UI_TimeOverride_ConfirmReplaceAll">Заменить ВСЕ временные параметры; это может затронуть порядок/совместимость нетемпоральных параметров. Продолжить?</sys:String>
+  
+  <!-- Overlay Preview -->
+  <sys:String x:Key="Overlay_PreviewUrl">Предпросмотр URL</sys:String>
+  <sys:String x:Key="Overlay_Preview_Title">Предпросмотр URL</sys:String>
 
   <sys:String x:Key="UI_CheckUpdate">Проверить обновления</sys:String>
   <sys:String x:Key="UI_ViewUpdate">Просмотреть обновления</sys:String>

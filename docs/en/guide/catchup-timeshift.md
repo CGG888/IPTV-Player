@@ -106,6 +106,40 @@ Example:
 ?start=${timestamp}&duration=${duration}
 ```
 
+### 5) Unix timestamp (seconds) — begin/end
+
+The player supports the following 10‑digit Unix timestamp placeholders:
+
+- Begin: `${timestamp}`, `{timestamp}`, `${(b)timestamp}`, `${(b)unix}`, `${(b)epoch}`
+- End: `${end_timestamp}`, `{end_timestamp}`, `${(e)timestamp}`, `${(e)unix}`, `${(e)epoch}`
+- Duration (seconds): `${duration}`, `{duration}`
+
+Common interface examples:
+
+```text
+// 1) start/end parameter interface
+?start=${timestamp}&end=${end_timestamp}
+
+// 2) playseek (begin-end)
+playseek=${(b)timestamp}-${(e)timestamp}
+
+// 3) begin + duration
+?start=${timestamp}&duration=${duration}
+```
+
+M3U integration examples:
+
+```m3u
+#EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&end=${end_timestamp}",Demo
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="Demo" catchup="append" catchup-source="https://example.com/live/index.m3u8?playseek=${(b)timestamp}-${(e)timestamp}",Demo
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&duration=${duration}",Demo
+https://example.com/live/index.m3u8
+```
+
 ## Common template examples
 
 ### HTTP unicast (HLS m3u8, UTC + `T`)
@@ -127,6 +161,20 @@ rtsp://example.com/live.smil
 ```m3u
 #EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/stream?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}",Demo
 https://example.com/live/stream
+```
+## Priority and Override
+
+- Channel `catchup-source` → builds the base URL and time placeholders (recommended per channel).
+- Settings Replay/Timeshift template → used as a fallback when the channel doesn't provide `catchup-source`.
+- Time Override (Settings → Time Override) → when enabled, rewrites only the time section (layout/keys/encoding), leaving domain/path and non-time params intact. Applies to both channel and fallback templates.
+- Tip: first generate a working URL via channel/fallback template, then use Time Override to unify the time expression required by your provider (e.g., starttime/endtime, UTC, or Unix seconds).
+
+## Missing formats / private placeholders
+
+- If your format isn't listed here, or your provider uses private placeholders/path-based time:
+  - Try enabling Time Override and pick the closest layout/encoding;
+  - Or file an issue (with examples). We will evaluate adding presets or more generic customization.
+- Issues: https://github.com/CGG888/SrcBox/issues
 ```
 
 ## More placeholder examples (richer formats)

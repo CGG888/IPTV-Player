@@ -22,6 +22,49 @@
   <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
   <sys:String x:Key="UI_Cdn_Help">CDN（内容分发网络）用于加速 GitHub 文件的下载。如果检查更新或下载失败，请尝试切换或添加新的镜像线路。</sys:String>
   <sys:String x:Key="UI_Add">添加</sys:String>
+  
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_Tab">时间覆盖</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Enable">启用覆盖（仅替换时间片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode">覆盖模式</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_TimeOnly">仅改时间</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Mode_ReplaceAll">完全替换</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout">时间布局</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartEnd">start+end</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Playseek">playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_StartDuration">start+duration</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding">时间编码</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Local">本地 yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Utc">UTC yyyyMMddHHmmss</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Unix">Unix 秒 (10位)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_UnixMs">Unix 毫秒 (13位)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_StartKey">start 键名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_EndKey">end 键名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_DurationKey">duration 键名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_PlayseekKey">playseek 键名</sys:String>
+  <sys:String x:Key="UI_TimeOverride_UrlEncode">URL 编码</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Group">预览（仅拼接基础地址 + 时间片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_BaseUrl">基础地址（可选，不填则仅显示时间片段）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Replay">预览回放</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Timeshift">预览时移</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Preview_Template">时间占位符样式（模板示例，仅用于查看）</sys:String>
+  <sys:String x:Key="UI_Playback_TimeOverride_Note">【重要】频道的 catchup-source 与“回放/时移模板”负责生成基础地址与参数；若启用“时间覆盖”，只重写时间片段（布局/键名/编码），不改域名/路径/非时间参数。优先顺序：频道模板 &gt; 设置模板（兜底）；时间覆盖对两者的输出均生效。</sys:String>
+  <sys:String x:Key="UI_Timeshift_TimeOverride_Note">【重要】启用“时间覆盖”后，时移的时间表达将按此页签配置重写为统一的布局/键名/编码；若未启用，则完全以频道或模板原样输出。</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Global_Note">【重要】这是全局层面的时间片段标准化：只替换“时间参数”，用于统一不同频道或模板的时间表达（start/end、playseek、UTC/Unix 等）。请保持关闭作为默认，调试通过后再启用。</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Layout_Tip">选择时间参数布局：start+end / start+duration / playseek(begin-end)</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Encoding_Tip">本地：yyyyMMddHHmmss；UTC：同上但以 UTC 格式化；Unix 秒：10 位；Unix 毫秒：13 位</sys:String>
+  <sys:String x:Key="UI_TimeOverride_Key_Tip">常见键名：start/starttime/begin、end/endtime/finish、duration、playseek（可自定义）</sys:String>
+  <sys:String x:Key="UI_OpenDocs">查看文档</sys:String>
+  <sys:String x:Key="UI_Advanced_Options">高级选项（预览）</sys:String>
+  <sys:String x:Key="UI_Advanced_Desc">以下为预览项，后续版本将提供 ISO‑8601 预设、日期/时间拆分与路径占位替换的完整能力。</sys:String>
+  <sys:String x:Key="UI_Advanced_IsoPreset">ISO‑8601 预设</sys:String>
+  <sys:String x:Key="UI_Advanced_Split">启用日期/时间拆分（begin_date/begin_time…）</sys:String>
+  <sys:String x:Key="UI_Advanced_Path">启用路径式时间占位替换（如 {utc:…}）</sys:String>
+  <sys:String x:Key="UI_TimeOverride_ConfirmReplaceAll">将完全替换时间参数，可能影响非时间参数顺序或兼容性。确定继续？</sys:String>
+  
+  <!-- Overlay Preview -->
+  <sys:String x:Key="Overlay_PreviewUrl">预览拼接</sys:String>
+  <sys:String x:Key="Overlay_Preview_Title">预览拼接</sys:String>
   <sys:String x:Key="UI_MoveUp">上移</sys:String>
   <sys:String x:Key="UI_MoveDown">下移</sys:String>
   <sys:String x:Key="UI_Delete">删除</sys:String>

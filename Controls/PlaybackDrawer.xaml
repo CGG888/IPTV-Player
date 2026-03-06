@@ -21,6 +21,7 @@
                 <TextBlock Text="{DynamicResource UI_Playback_UrlFormat}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                 <TextBox x:Name="TbUrlFormat" Height="32" Padding="4" ToolTip="{DynamicResource UI_Playback_UrlFormat_Tip}"/>
                 <TextBlock Text="{DynamicResource UI_Playback_UrlFormat_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
+                <TextBlock Text="{DynamicResource UI_Playback_TimeOverride_Note}" FontSize="12" Foreground="#FF3B30" Margin="0,0,0,16" TextWrapping="Wrap"/>
                 
                 <!-- Duration -->
                 <TextBlock Text="{DynamicResource UI_Playback_Duration}" FontWeight="SemiBold" Margin="0,0,0,8"/>

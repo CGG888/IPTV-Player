@@ -216,6 +216,7 @@ namespace LibmpvIptvClient
         public void SetInfo(string text) { LblInfo.Text = text; }
         void BtnSourceMenu_Click(object sender, RoutedEventArgs e) => SourceMenuRequested?.Invoke();
         public event Action<bool>? MuteChanged;
+        public event Action? PreviewRequested;
         public void OpenSourceContextMenu(ContextMenu menu)
         {
             try
@@ -238,6 +239,7 @@ namespace LibmpvIptvClient
                 new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
             BtnSources.ContextMenu.IsOpen = true;
         }
+        void BtnPreview_Click(object sender, RoutedEventArgs e) => PreviewRequested?.Invoke();
         public void SetTags(System.Collections.Generic.List<string> tags)
         {
             try

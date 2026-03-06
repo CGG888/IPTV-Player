@@ -116,6 +116,40 @@ rtp2httpd 其他格式的对应写法：
 ?start=${timestamp}&duration=${duration}
 ```
 
+### 5）Unix 时间戳（秒）扩展（开始/结束）
+
+支持以下“秒级 Unix 时间戳”占位符（10 位）：
+
+- 开始时间：`${timestamp}`、`{timestamp}`、`${(b)timestamp}`、`${(b)unix}`、`${(b)epoch}`
+- 结束时间：`${end_timestamp}`、`{end_timestamp}`、`${(e)timestamp}`、`${(e)unix}`、`${(e)epoch}`
+- 时长（秒）：`${duration}`、`{duration}`
+
+常见接口示例：
+
+```text
+// 1) start/end 参数接口
+?start=${timestamp}&end=${end_timestamp}
+
+// 2) playseek 接口（开始-结束）
+playseek=${(b)timestamp}-${(e)timestamp}
+
+// 3) 开始+时长
+?start=${timestamp}&duration=${duration}
+```
+
+M3U 集成示例：
+
+```m3u
+#EXTINF:-1 tvg-name="示例频道" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&end=${end_timestamp}",示例频道
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="示例频道" catchup="append" catchup-source="https://example.com/live/index.m3u8?playseek=${(b)timestamp}-${(e)timestamp}",示例频道
+https://example.com/live/index.m3u8
+
+#EXTINF:-1 tvg-name="示例频道" catchup="default" catchup-source="https://example.com/live/index.m3u8?start=${timestamp}&duration=${duration}",示例频道
+https://example.com/live/index.m3u8
+```
+
 ## 常用模板示例
 
 ### HTTP 单播（HLS m3u8，UTC + T）
@@ -137,6 +171,20 @@ rtsp://example.com/live.smil
 ```m3u
 #EXTINF:-1 tvg-name="示例频道" catchup="default" catchup-source="https://example.com/live/stream?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}",示例频道
 https://example.com/live/stream
+
+## 优先级与覆盖
+
+- 频道 `catchup-source` → 生成基础地址与时间占位（推荐每频道独立配置）。
+- 设置中的“回放/时移模板” → 当频道没有 `catchup-source` 时作为兜底生成。
+- 时间覆盖（设置页“时间覆盖”）→ 若启用，只重写“时间片段”（布局/键名/编码），不改域名/路径/非时间参数；对频道模板与兜底模板均生效。
+- 调试建议：先用频道模板或兜底模板生成可播放链接，再用“时间覆盖”统一为运营商要求的时间表达（如 starttime/endtime、UTC 或 Unix 秒）。
+
+## 反馈私有时间占位符
+
+- 如需本文未覆盖的时间格式，或运营商使用私有占位/路径式时间片段：
+  - 可在设置页启用“时间覆盖”选择最接近的布局与编码进行适配；
+  - 或到 Issues 提交需求（附示例与说明），我们会评估加入预设或提供更通用的自定义能力。
+- 提交地址：https://github.com/CGG888/SrcBox/issues
 ```
 
 ## 更多写法示例（丰富格式）
