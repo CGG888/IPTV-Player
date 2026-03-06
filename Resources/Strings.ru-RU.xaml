@@ -214,6 +214,11 @@
   <sys:String x:Key="UI_Logo_Config">Настройки логотипов</sys:String>
   <sys:String x:Key="UI_Logo_Desc">Источник логотипов каналов</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">Поддержка {name}</sys:String>
+  <sys:String x:Key="UI_Logo_Cache_Enable">Включить кэш логотипов</sys:String>
+  <sys:String x:Key="UI_Logo_CacheDir">Каталог кэша</sys:String>
+  <sys:String x:Key="UI_Logo_CacheTtl">Время жизни кэша (часы)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheMax">Лимит кэша (MiB)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheClear">Очистить кэш</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Настройки записи</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Включить запись</sys:String>

@@ -222,6 +222,11 @@
   <sys:String x:Key="UI_Logo_Config">Logo Config</sys:String>
   <sys:String x:Key="UI_Logo_Desc">Configure channel logo source</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">Supports placeholder {name}</sys:String>
+  <sys:String x:Key="UI_Logo_Cache_Enable">Enable logo cache</sys:String>
+  <sys:String x:Key="UI_Logo_CacheDir">Cache directory</sys:String>
+  <sys:String x:Key="UI_Logo_CacheTtl">Cache TTL (hours)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheMax">Cache limit (MiB)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheClear">Clear cache</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Enable Replay</sys:String>

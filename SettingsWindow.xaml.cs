@@ -60,7 +60,11 @@ namespace LibmpvIptvClient
             _tempLogo = new LogoConfig
             {
                 Enabled = current.Logo.Enabled,
-                Url = current.Logo.Url
+                Url = current.Logo.Url,
+                EnableCache = current.Logo.EnableCache,
+                CacheDir = current.Logo.CacheDir,
+                CacheTtlHours = current.Logo.CacheTtlHours,
+                CacheMaxMiB = current.Logo.CacheMaxMiB
             };
 
             CbHwdec.IsChecked = current.Hwdec;

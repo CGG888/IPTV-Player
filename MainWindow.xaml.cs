@@ -233,6 +233,12 @@ namespace LibmpvIptvClient
                     foreach (var s in AppSettings.Current.SavedSources) s.IsSelected = false;
                     AppSettings.Current.Save();
                 }
+                try
+                {
+                    AppSettings.Current.LastLocalM3uPath = dlg.FileName;
+                    AppSettings.Current.Save();
+                }
+                catch { }
                 _ = LoadChannels(dlg.FileName);
             }
         }
@@ -416,6 +422,12 @@ namespace LibmpvIptvClient
                     s.IsSelected = (s == src); // Match by reference for uniqueness
                 AppSettings.Current.Save();
             }
+            try
+            {
+                AppSettings.Current.LastLocalM3uPath = "";
+                AppSettings.Current.Save();
+            }
+            catch { }
             _ = LoadChannels(src.Url);
         }
 
@@ -447,6 +459,18 @@ namespace LibmpvIptvClient
             try
             {
                 TryEnableDarkTitleBar();
+                try
+                {
+                    var oldDefault = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SrcBox", "logo-cache");
+                    if (!string.IsNullOrWhiteSpace(AppSettings.Current.Logo.CacheDir) &&
+                        string.Equals(AppSettings.Current.Logo.CacheDir, oldDefault, StringComparison.OrdinalIgnoreCase))
+                    {
+                        AppSettings.Current.Logo.CacheDir = "";
+                        AppSettings.Current.Save();
+                        try { LibmpvIptvClient.Diagnostics.Logger.Log("[LogoCache] migrate old default path to EXE-based default"); } catch { }
+                    }
+                }
+                catch { }
                 try
                 {
                     var s1 = OverlayVisibilityPolicy.ShouldShowBottom(1080, 1070, 160, 0.26, false) == true;
@@ -500,7 +524,12 @@ namespace LibmpvIptvClient
             try { _userDataStore.Load(); } catch { }
             
             // Auto-load last selected source if available
-            if (AppSettings.Current.SavedSources != null)
+            if (AppSettings.Current.AutoLoadLastSource && !string.IsNullOrWhiteSpace(AppSettings.Current.LastLocalM3uPath) && System.IO.File.Exists(AppSettings.Current.LastLocalM3uPath))
+            {
+                Logger.Log("自动加载上次本地 M3U: " + AppSettings.Current.LastLocalM3uPath);
+                _ = LoadChannels(AppSettings.Current.LastLocalM3uPath);
+            }
+            else if (AppSettings.Current.SavedSources != null)
             {
                 var lastSelected = AppSettings.Current.SavedSources.FirstOrDefault(s => s.IsSelected);
                 if (lastSelected != null)
@@ -1237,6 +1266,15 @@ namespace LibmpvIptvClient
                         AppSettings.Current.Timeshift.Enabled = settings.Timeshift.Enabled;
                         AppSettings.Current.Timeshift.UrlFormat = settings.Timeshift.UrlFormat ?? "";
                         AppSettings.Current.Timeshift.DurationHours = settings.Timeshift.DurationHours;
+                    }
+                    if (settings.Logo != null)
+                    {
+                        AppSettings.Current.Logo.Enabled = settings.Logo.Enabled;
+                        AppSettings.Current.Logo.Url = settings.Logo.Url ?? "";
+                        AppSettings.Current.Logo.EnableCache = settings.Logo.EnableCache;
+                        AppSettings.Current.Logo.CacheDir = settings.Logo.CacheDir ?? "";
+                        AppSettings.Current.Logo.CacheTtlHours = settings.Logo.CacheTtlHours;
+                        AppSettings.Current.Logo.CacheMaxMiB = settings.Logo.CacheMaxMiB;
                     }
                 }
                 catch { }

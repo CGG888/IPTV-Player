@@ -218,6 +218,11 @@
   <sys:String x:Key="UI_Logo_Config">台标配置</sys:String>
   <sys:String x:Key="UI_Logo_Desc">配置频道台标图片源</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">支持占位符 {name}</sys:String>
+  <sys:String x:Key="UI_Logo_Cache_Enable">启用台标本地缓存</sys:String>
+  <sys:String x:Key="UI_Logo_CacheDir">缓存目录</sys:String>
+  <sys:String x:Key="UI_Logo_CacheTtl">缓存有效期 (小时)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheMax">缓存上限 (MiB)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheClear">清空缓存</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">回放设置</sys:String>
   <sys:String x:Key="UI_EnablePlayback">启用回放</sys:String>

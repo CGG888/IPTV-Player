@@ -24,6 +24,10 @@ namespace LibmpvIptvClient
     {
         public bool Enabled { get; set; } = true;
         public string Url { get; set; } = "";
+        public bool EnableCache { get; set; } = false;
+        public string CacheDir { get; set; } = "";
+        public double CacheTtlHours { get; set; } = 168;
+        public int CacheMaxMiB { get; set; } = 500;
     }
 
     public class ReplayConfig
@@ -83,6 +87,8 @@ namespace LibmpvIptvClient
         public string Language { get; set; } = "";
         // 主题模式：System/Light/Dark
         public string ThemeMode { get; set; } = "System";
+        public string LastLocalM3uPath { get; set; } = "";
+        public bool AutoLoadLastSource { get; set; } = true;
 
         public static PlaybackSettings Load()
         {

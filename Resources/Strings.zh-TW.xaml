@@ -214,6 +214,11 @@
   <sys:String x:Key="UI_Logo_Config">台標設定</sys:String>
   <sys:String x:Key="UI_Logo_Desc">設定頻道台標圖片來源</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">支援佔位符 {name}</sys:String>
+  <sys:String x:Key="UI_Logo_Cache_Enable">啟用台標本地快取</sys:String>
+  <sys:String x:Key="UI_Logo_CacheDir">快取目錄</sys:String>
+  <sys:String x:Key="UI_Logo_CacheTtl">快取有效期 (小時)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheMax">快取上限 (MiB)</sys:String>
+  <sys:String x:Key="UI_Logo_CacheClear">清空快取</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">回放設定</sys:String>
   <sys:String x:Key="UI_EnablePlayback">啟用回放</sys:String>

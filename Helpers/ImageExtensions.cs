@@ -49,7 +49,6 @@ namespace LibmpvIptvClient.Helpers
             if (d is System.Windows.Controls.Image img)
             {
                 var url = e.NewValue as string;
-
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     img.Source = _defaultImage;
@@ -110,6 +109,7 @@ namespace LibmpvIptvClient.Helpers
 
                 if (processedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
+                    try { if (LogoCacheService.Instance.IsNegative(processedUrl)) return null; } catch { }
                     // True async call
                     try 
                     {
@@ -129,6 +129,7 @@ namespace LibmpvIptvClient.Helpers
                 {
                     // URL is neither a valid http(s) url nor a local file path
                     Logger.Warn($"Skipping invalid image source: {processedUrl} (Original: {url})");
+                    try { LogoCacheService.Instance.MarkNegative(processedUrl); } catch { }
                     return null;
                 }
 

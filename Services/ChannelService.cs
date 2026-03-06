@@ -36,7 +36,15 @@ namespace LibmpvIptvClient.Services
                 catch { }
             }
             LibmpvIptvClient.Diagnostics.Logger.Log("M3U频道数量 " + fromM3u.Count);
-            if (fromM3u.Count > 0) return fromM3u;
+            if (fromM3u.Count > 0)
+            {
+                try
+                {
+                    _ = LibmpvIptvClient.Services.LogoCacheService.Instance.WarmupAndSwapAsync(fromM3u);
+                }
+                catch { }
+                return fromM3u;
+            }
             var fromChecker = new List<Channel>();
             try
             {
@@ -68,6 +76,11 @@ namespace LibmpvIptvClient.Services
                 }
             }
 
+            try
+            {
+                _ = LibmpvIptvClient.Services.LogoCacheService.Instance.WarmupAndSwapAsync(merged);
+            }
+            catch { }
             return merged;
         }
         List<Channel> MergeChannels(List<Channel> a, List<Channel> b, bool aPriority)
