@@ -395,24 +395,7 @@ namespace LibmpvIptvClient
             dlg.ShowDialog();
         }
 
-        void ExitApp()
-        {
-            var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
-            var msg = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Confirm_ExitApp", "确定要退出软件吗？");
-            var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Dlg_ExitTitle", "退出");
-            if (ModernMessageBox.Show(owner, msg, title, MessageBoxButton.YesNo) == true)
-            {
-                if (_isFullscreen) ToggleFullscreen(false);
-                try
-                {
-                    _mpv?.Stop();
-                    _mpv?.SetWid(IntPtr.Zero);
-                }
-                catch { }
-
-                Close();
-            }
-        }
+        void ExitApp() => Close();
 
         void LoadM3uSource(M3uSource src)
         {
@@ -459,6 +442,17 @@ namespace LibmpvIptvClient
             try
             {
                 TryEnableDarkTitleBar();
+                try
+                {
+                    LibmpvIptvClient.Services.NotificationService.Instance.SetMenuCallbacks(
+                        openMain: () => { try { this.Dispatcher.Invoke(() => { this.Show(); this.WindowState = WindowState.Normal; this.Activate(); }); } catch { } },
+                        openSettings: () => { try { this.Dispatcher.Invoke(OpenSettings); } catch { } },
+                        exitApp: () => { try { System.Windows.Application.Current.Shutdown(); } catch { } },
+                        openReminderNotify: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate); } catch { } }
+                    );
+                }
+                catch { }
+                try { LibmpvIptvClient.Services.ReminderService.Instance.Start(); } catch { }
                 try
                 {
                     var oldDefault = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SrcBox", "logo-cache");
@@ -538,6 +532,39 @@ namespace LibmpvIptvClient
                     LoadM3uSource(lastSelected);
                 }
             }
+        }
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                if (AppSettings.Current.ConfirmOnClose)
+                {
+                    e.Cancel = true;
+                    var title = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_Title", "关闭确认");
+                    var label = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_Label", "选择操作：");
+                    var yesLine = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_LineYes", "是：退出软件");
+                    var noLine = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_LineNo", "否：最小化到系统托盘");
+                    var msg = label + Environment.NewLine + Environment.NewLine + yesLine + Environment.NewLine + noLine;
+                    var owner = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+                    var r = ModernMessageBox.Show(owner, msg, title, MessageBoxButton.YesNo);
+                    if (r.HasValue && r.Value == true)
+                    {
+                        try { _mpv?.Dispose(); } catch { }
+                        System.Windows.Application.Current.Shutdown();
+                        return;
+                    }
+                    else if (r.HasValue && r.Value == false)
+                    {
+                        try { if (_isFullscreen) ToggleFullscreen(false); } catch { }
+                        Hide();
+                        return;
+                    }
+                    // r == null -> user pressed X/ESC: just close the dialog and keep app visible (no action)
+                    return;
+                }
+            }
+            catch { }
+            base.OnClosing(e);
         }
         void ComputeGlobalIndex()
         {
@@ -2120,6 +2147,20 @@ namespace LibmpvIptvClient
             
             // Filter and display
             var filtered = programs.Where(p => p.Start.Date == _currentEpgDate).OrderBy(p => p.Start).ToList();
+            try
+            {
+                // 标记“已预约”状态
+                var key = _currentChannel.TvgId ?? _currentChannel.Id ?? "";
+                foreach (var p in filtered)
+                {
+                    p.IsBooked = AppSettings.Current.ScheduledReminders != null &&
+                                 AppSettings.Current.ScheduledReminders.Exists(r =>
+                                     r.Enabled && !r.Completed &&
+                                     string.Equals(r.ChannelId ?? "", key ?? "", StringComparison.OrdinalIgnoreCase) &&
+                                     Math.Abs((r.StartAtUtc - p.Start.ToUniversalTime()).TotalSeconds) <= 60);
+                }
+            }
+            catch { }
             ListEpg.ItemsSource = filtered;
             try { Logger.Log($"[EPG] 日期 {_currentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
             
@@ -2222,6 +2263,19 @@ namespace LibmpvIptvClient
             }
 
             var filtered = programs.Where(p => p.Start.Date == _currentEpgDate).OrderBy(p => p.Start).ToList();
+            try
+            {
+                var key = _currentChannel.TvgId ?? _currentChannel.Id ?? "";
+                foreach (var p in filtered)
+                {
+                    p.IsBooked = AppSettings.Current.ScheduledReminders != null &&
+                                 AppSettings.Current.ScheduledReminders.Exists(r =>
+                                     r.Enabled && !r.Completed &&
+                                     string.Equals(r.ChannelId ?? "", key ?? "", StringComparison.OrdinalIgnoreCase) &&
+                                     Math.Abs((r.StartAtUtc - p.Start.ToUniversalTime()).TotalSeconds) <= 60);
+                }
+            }
+            catch { }
             ListEpg.ItemsSource = filtered;
             
             // Scroll to current program if viewing today
@@ -2246,6 +2300,164 @@ namespace LibmpvIptvClient
                     e.Handled = true;
                 }
             }
+        }
+        void EpgMenu_Remind_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_currentChannel == null) return;
+                var mi = sender as System.Windows.Controls.MenuItem;
+                if (mi == null) return;
+                var ctx = mi.DataContext as EpgProgram;
+                if (ctx == null) return;
+                var now = DateTime.Now;
+                if (ctx.Start <= now) return;
+                var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                if (dlg.ShowDialog() == true)
+                {
+                    var r = new ScheduledReminder
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        ChannelId = _currentChannel.TvgId ?? _currentChannel.Id ?? "",
+                        ChannelName = _currentChannel.Name ?? "",
+                        ChannelLogo = _currentChannel.Logo ?? "",
+                        StartAtUtc = ctx.Start.ToUniversalTime(),
+                        PreAlertSeconds = dlg.PreAlertSeconds,
+                        Action = dlg.Action,
+                        Enabled = true,
+                        Note = ctx.Title ?? ""
+                    };
+                    if (AppSettings.Current.ScheduledReminders == null) AppSettings.Current.ScheduledReminders = new List<ScheduledReminder>();
+                    var dupKey = (r.ChannelId + "|" + r.StartAtUtc.ToString("o")).ToLowerInvariant();
+                    AppSettings.Current.ScheduledReminders.RemoveAll(x => (x.ChannelId + "|" + x.StartAtUtc.ToString("o")).ToLowerInvariant() == dupKey);
+                    AppSettings.Current.ScheduledReminders.Add(r);
+                    AppSettings.Current.Save();
+                    try { LibmpvIptvClient.Services.ReminderService.Instance.Start(); } catch { }
+                    try 
+                    { 
+                        var toast = new ReminderToastWindow(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false);
+                        toast.Show();
+                    } 
+                    catch 
+                    { 
+                        try { LibmpvIptvClient.Services.NotificationService.Instance.Show(r.ChannelName, $"{r.Note}  {r.StartAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}", 8000); } catch { } 
+                    }
+                }
+            }
+            catch { }
+        }
+        void EpgRemindButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_currentChannel == null) return;
+                if (sender is System.Windows.Controls.Button btn && btn.DataContext is EpgProgram ctx)
+                {
+                    if (ctx.Start <= DateTime.Now) return;
+                    // 乐观更新：立即标记为已预约
+                    var oldBooked = ctx.IsBooked;
+                    ctx.IsBooked = true;
+                    try { ListEpg.Items.Refresh(); } catch { }
+                    var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    if (dlg.ShowDialog() == true)
+                    {
+                        var r = new ScheduledReminder
+                        {
+                            Id = Guid.NewGuid().ToString("N"),
+                            ChannelId = _currentChannel.TvgId ?? _currentChannel.Id ?? "",
+                            ChannelName = _currentChannel.Name ?? "",
+                            ChannelLogo = _currentChannel.Logo ?? "",
+                            StartAtUtc = ctx.Start.ToUniversalTime(),
+                            PreAlertSeconds = dlg.PreAlertSeconds,
+                            Action = dlg.Action,
+                            Enabled = true,
+                            Note = ctx.Title ?? ""
+                        };
+                        if (AppSettings.Current.ScheduledReminders == null) AppSettings.Current.ScheduledReminders = new List<ScheduledReminder>();
+                        var dupKey = (r.ChannelId + "|" + r.StartAtUtc.ToString("o")).ToLowerInvariant();
+                        AppSettings.Current.ScheduledReminders.RemoveAll(x => (x.ChannelId + "|" + x.StartAtUtc.ToString("o")).ToLowerInvariant() == dupKey);
+                        AppSettings.Current.ScheduledReminders.Add(r);
+                        AppSettings.Current.Save();
+                        try { LibmpvIptvClient.Services.ReminderService.Instance.Start(); } catch { }
+                        try 
+                        { 
+                        var toast = new ReminderToastWindow(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false, null);
+                            toast.Show();
+                        } 
+                        catch 
+                        { 
+                            try { LibmpvIptvClient.Services.NotificationService.Instance.Show(r.ChannelName, $"{r.Note}  {r.StartAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}", 8000); } catch { } 
+                        }
+                    }
+                    else
+                    {
+                        // 回滚
+                        ctx.IsBooked = oldBooked;
+                        try { ListEpg.Items.Refresh(); } catch { }
+                    }
+                }
+            }
+            catch { }
+        }
+        public Rect GetVideoScreenRect()
+        {
+            try
+            {
+                FrameworkElement anchor = VideoHost ?? (FrameworkElement)this;
+                double w = anchor.ActualWidth;
+                double h = anchor.ActualHeight;
+                // 若未播放或布局未就绪，使用主窗口客户区作为锚点
+                if (w < 50 || h < 50)
+                {
+                    var winTopLeft = this.PointToScreen(new System.Windows.Point(0, 0));
+                    var dpiw = VisualTreeHelper.GetDpi(this);
+                    double wl = winTopLeft.X / dpiw.DpiScaleX;
+                    double wt = winTopLeft.Y / dpiw.DpiScaleY;
+                    double ww = this.ActualWidth > 0 ? this.ActualWidth : this.Width;
+                    double wh = this.ActualHeight > 0 ? this.ActualHeight : this.Height;
+                    return new Rect(wl, wt, ww, wh);
+                }
+                var topLeft = anchor.PointToScreen(new System.Windows.Point(0, 0));
+                var dpi = VisualTreeHelper.GetDpi(this);
+                double left = topLeft.X / dpi.DpiScaleX;
+                double top = topLeft.Y / dpi.DpiScaleY;
+                if (_isFullscreen && _fs != null)
+                {
+                    return new Rect(_fs.Left, _fs.Top, _fs.Width, _fs.Height);
+                }
+                return new Rect(left, top, w, h);
+            }
+            catch
+            {
+                // 兜底：窗口居中
+                var winTopLeft = this.PointToScreen(new System.Windows.Point(0, 0));
+                var dpi = VisualTreeHelper.GetDpi(this);
+                double wl = winTopLeft.X / dpi.DpiScaleX;
+                double wt = winTopLeft.Y / dpi.DpiScaleY;
+                double ww = this.ActualWidth > 0 ? this.ActualWidth : this.Width;
+                double wh = this.ActualHeight > 0 ? this.ActualHeight : this.Height;
+                return new Rect(wl, wt, ww, wh);
+            }
+        }
+
+        public void JumpToChannelByIdOrName(string id, string name)
+        {
+            try
+            {
+                if (_channels == null || _channels.Count == 0) return;
+                Channel? target = null;
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    target = _channels.FirstOrDefault(c => string.Equals(c?.TvgId ?? "", id, StringComparison.OrdinalIgnoreCase)
+                                                        || string.Equals(c?.Id ?? "", id, StringComparison.OrdinalIgnoreCase));
+                }
+                if (target == null && !string.IsNullOrWhiteSpace(name))
+                {
+                    target = _channels.FirstOrDefault(c => string.Equals(c?.Name ?? "", name, StringComparison.OrdinalIgnoreCase));
+                }
+                if (target != null) PlayChannel(target);
+            }
+            catch { }
         }
         private EpgProgram? _currentPlayingProgram; // Track playing catchup
 

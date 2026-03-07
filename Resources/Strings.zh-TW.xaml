@@ -219,6 +219,20 @@
   <sys:String x:Key="UI_Logo_CacheTtl">快取有效期 (小時)</sys:String>
   <sys:String x:Key="UI_Logo_CacheMax">快取上限 (MiB)</sys:String>
   <sys:String x:Key="UI_Logo_CacheClear">清空快取</sys:String>
+  <sys:String x:Key="EPG_Remind">預約</sys:String>
+  <sys:String x:Key="Reminder_Title">預約提醒</sys:String>
+  <sys:String x:Key="Reminder_PreAlert">提前提醒(秒)</sys:String>
+  <sys:String x:Key="Reminder_Notify">僅通知</sys:String>
+  <sys:String x:Key="Reminder_Autoplay">自動播放</sys:String>
+  <sys:String x:Key="Reminder_Record">錄播</sys:String>
+  <sys:String x:Key="Reminder_Added">已新增預約</sys:String>
+  <sys:String x:Key="EPG_Status_Booked">已預約</sys:String>
+  <sys:String x:Key="Tray_OpenMain">打開主畫面</sys:String>
+  <sys:String x:Key="CloseConfirm_Title">關閉確認</sys:String>
+  <sys:String x:Key="CloseConfirm_Message">選擇操作：&#x0a;&#x0a;是：退出軟體&#x0a;否：最小化到系統托盤</sys:String>
+  <sys:String x:Key="CloseConfirm_Label">選擇操作：</sys:String>
+  <sys:String x:Key="CloseConfirm_LineYes">是：退出軟體</sys:String>
+  <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系統托盤</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">回放設定</sys:String>
   <sys:String x:Key="UI_EnablePlayback">啟用回放</sys:String>

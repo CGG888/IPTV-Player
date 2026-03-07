@@ -136,6 +136,23 @@ namespace LibmpvIptvClient.Helpers
             miList.Items.Add(miM3uList);
             cm.Items.Add(miList);
 
+            var miReminder = new MenuItem { Header = Localizer.S("Menu_Reminders", "预约") };
+            var miNotify = new MenuItem { Header = Localizer.S("Menu_ReminderNotify", "通知") };
+            miNotify.Click += (s, a) =>
+            {
+                try
+                {
+                    LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate();
+                }
+                catch { }
+            };
+            var miAutoplay = new MenuItem { Header = Localizer.S("Menu_ReminderAutoplay", "播放"), IsEnabled = false };
+            var miRecord = new MenuItem { Header = Localizer.S("Menu_ReminderRecord", "录播"), IsEnabled = false };
+            miReminder.Items.Add(miNotify);
+            miReminder.Items.Add(miAutoplay);
+            miReminder.Items.Add(miRecord);
+            cm.Items.Add(miReminder);
+
             var miSettings = new MenuItem { Header = Localizer.S("Menu_Settings", "设置") };
             miSettings.Click += (s, args) => openSettings?.Invoke();
             cm.Items.Add(new Separator());

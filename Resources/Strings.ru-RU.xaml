@@ -219,6 +219,20 @@
   <sys:String x:Key="UI_Logo_CacheTtl">Время жизни кэша (часы)</sys:String>
   <sys:String x:Key="UI_Logo_CacheMax">Лимит кэша (MiB)</sys:String>
   <sys:String x:Key="UI_Logo_CacheClear">Очистить кэш</sys:String>
+  <sys:String x:Key="EPG_Remind">Напомнить</sys:String>
+  <sys:String x:Key="Reminder_Title">Напоминание</sys:String>
+  <sys:String x:Key="Reminder_PreAlert">Заранее (сек)</sys:String>
+  <sys:String x:Key="Reminder_Notify">Только уведомление</sys:String>
+  <sys:String x:Key="Reminder_Autoplay">Автовоспроизведение</sys:String>
+  <sys:String x:Key="Reminder_Record">Запись</sys:String>
+  <sys:String x:Key="Reminder_Added">Напоминание добавлено</sys:String>
+  <sys:String x:Key="EPG_Status_Booked">Запланировано</sys:String>
+  <sys:String x:Key="Tray_OpenMain">Открыть главное окно</sys:String>
+  <sys:String x:Key="CloseConfirm_Title">Подтверждение закрытия</sys:String>
+  <sys:String x:Key="CloseConfirm_Message">Выберите действие:\n\nДа: выйти из приложения\nНет: свернуть в трей</sys:String>
+  <sys:String x:Key="CloseConfirm_Label">Выберите действие:</sys:String>
+  <sys:String x:Key="CloseConfirm_LineYes">Да: выйти из приложения</sys:String>
+  <sys:String x:Key="CloseConfirm_LineNo">Нет: свернуть в трей</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Настройки записи</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Включить запись</sys:String>

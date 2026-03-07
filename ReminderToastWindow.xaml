@@ -1,0 +1,36 @@
+<Window x:Class="LibmpvIptvClient.ReminderToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ShowActivated="False"
+        Width="320" Height="120" Topmost="True" ShowInTaskbar="False">
+  <Border CornerRadius="10" Padding="12" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="52"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource ChipButtonBackgroundBrush}" VerticalAlignment="Top">
+        <Image x:Name="ImgLogo" Stretch="Uniform" ClipToBounds="True" Margin="4"/>
+      </Border>
+      <StackPanel Grid.Column="1" Margin="12,0,0,0">
+        <TextBlock x:Name="TxtChannel" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
+        <TextBlock x:Name="TxtProgram" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+        <TextBlock x:Name="TxtTime" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,8"/>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+            <TextBlock x:Name="TxtStatus" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="TxtCountdown" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center">
+            <Button x:Name="BtnPlay" Content="立即播放" Width="88" Height="28" Margin="0,0,8,0" Click="BtnPlay_Click" Style="{StaticResource AccentButtonStyle}" Visibility="Collapsed" VerticalAlignment="Center"/>
+            <Button x:Name="BtnDismiss" Content="知道了" Width="72" Height="28" Click="BtnDismiss_Click" Style="{StaticResource ChipButton}" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

@@ -1,12 +1,15 @@
 using System;
 using System.Windows;
 using System.Diagnostics;
+using System.Windows.Input;
 
 namespace LibmpvIptvClient
 {
     public partial class ModernMessageBox : Window
     {
         public bool Result { get; private set; } = false;
+        enum Choice { Dismiss, Yes, No, Ok }
+        private Choice _choice = Choice.Dismiss;
 
         public ModernMessageBox(string title, string message, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null)
         {
@@ -56,9 +59,25 @@ namespace LibmpvIptvClient
             }
         }
 
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            _choice = Choice.Dismiss;
+            Close();
+        }
+
+        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                _choice = Choice.Dismiss;
+                Close();
+            }
+        }
+
         private void BtnYes_Click(object sender, RoutedEventArgs e)
         {
             Result = true;
+            _choice = Choice.Yes;
             DialogResult = true;
             Close();
         }
@@ -66,6 +85,7 @@ namespace LibmpvIptvClient
         private void BtnNo_Click(object sender, RoutedEventArgs e)
         {
             Result = false;
+            _choice = Choice.No;
             DialogResult = false;
             Close();
         }
@@ -73,6 +93,7 @@ namespace LibmpvIptvClient
         private void BtnOk_Click(object sender, RoutedEventArgs e)
         {
             Result = true;
+            _choice = Choice.Ok;
             DialogResult = true;
             Close();
         }
@@ -101,8 +122,13 @@ namespace LibmpvIptvClient
                 dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 dlg.Topmost = true; // Default to topmost if no owner
             }
-            
-            return dlg.ShowDialog();
+            dlg.ShowDialog();
+            return dlg._choice switch
+            {
+                Choice.Yes => true,
+                Choice.No => false,
+                _ => (bool?)null
+            };
         }
     }
 }

@@ -89,6 +89,8 @@ namespace LibmpvIptvClient
         public string ThemeMode { get; set; } = "System";
         public string LastLocalM3uPath { get; set; } = "";
         public bool AutoLoadLastSource { get; set; } = true;
+        public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
+        public bool ConfirmOnClose { get; set; } = true;
 
         public static PlaybackSettings Load()
         {
@@ -135,5 +137,19 @@ namespace LibmpvIptvClient
         public string DurationKey { get; set; } = "duration";
         public string PlayseekKey { get; set; } = "playseek";
         public bool UrlEncode { get; set; } = true;
+    }
+    
+    public class ScheduledReminder
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string ChannelId { get; set; } = "";
+        public string ChannelName { get; set; } = "";
+        public string ChannelLogo { get; set; } = "";
+        public DateTime StartAtUtc { get; set; } = DateTime.UtcNow;
+        public int PreAlertSeconds { get; set; } = 0;
+        public string Action { get; set; } = "notify";
+        public bool Enabled { get; set; } = true;
+        public bool Completed { get; set; } = false;
+        public string Note { get; set; } = "";
     }
 }

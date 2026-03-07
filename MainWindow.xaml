@@ -566,6 +566,7 @@
                                 <ColumnDefinition Width="60"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Start, StringFormat=HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
@@ -575,37 +576,56 @@
                                 <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" TextWrapping="Wrap"/>
                                 <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource StringToVis}}"/>
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{Binding Status}" VerticalAlignment="Center" FontSize="12" HorizontalAlignment="Right">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                                <Setter Property="Text" Value="{DynamicResource EPG_Status_PlaybackWithIcon}"/>
-                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
-                                                <Setter Property="FontWeight" Value="Bold"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status}" Value="直播">
-                                                <Setter Property="Foreground" Value="{DynamicResource StatusLiveBrush}"/> <!-- Red -->
-                                                <Setter Property="FontWeight" Value="Bold"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status}" Value="回放">
-                                                <Setter Property="Foreground" Value="{DynamicResource StatusReplayBrush}"/> <!-- Green -->
-                                                <Setter Property="Cursor" Value="Hand"/>
-                                            </DataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding Status}" Value="回放"/>
-                                                    <Condition Binding="{Binding IsPlaying}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
-                                            </MultiDataTrigger>
-                                            <DataTrigger Binding="{Binding Status}" Value="预约">
-                                                <Setter Property="Foreground" Value="{DynamicResource StatusBookBrush}"/> <!-- Blue -->
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <Grid Grid.Column="2">
+                                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" FontSize="12" HorizontalAlignment="Right">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                    <Setter Property="Text" Value="{DynamicResource EPG_Status_PlaybackWithIcon}"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Status}" Value="直播">
+                                                    <Setter Property="Foreground" Value="{DynamicResource StatusLiveBrush}"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </DataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Status}" Value="回放"/>
+                                                        <Condition Binding="{Binding IsPlaying}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                </MultiDataTrigger>
+                                                <!-- 当状态为预约时隐藏文本，交给按钮呈现 -->
+                                                <DataTrigger Binding="{Binding Status}" Value="预约">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <!-- 预约按钮（同位置），仅未来节目显示；已预约则禁用并显示“已预约” -->
+                                <Button Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Height="26" MinWidth="60"
+                                        Click="EpgRemindButton_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Content" Value="{DynamicResource EPG_Remind}"/>
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="预约">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsBooked}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Content" Value="{DynamicResource EPG_Status_Booked}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

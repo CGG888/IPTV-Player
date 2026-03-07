@@ -228,6 +228,21 @@
   <sys:String x:Key="UI_Logo_CacheMax">Cache limit (MiB)</sys:String>
   <sys:String x:Key="UI_Logo_CacheClear">Clear cache</sys:String>
   
+  <sys:String x:Key="EPG_Remind">Remind</sys:String>
+  <sys:String x:Key="Reminder_Title">Reminder</sys:String>
+  <sys:String x:Key="Reminder_PreAlert">Pre-alert (seconds)</sys:String>
+  <sys:String x:Key="Reminder_Notify">Notify Only</sys:String>
+  <sys:String x:Key="Reminder_Autoplay">Auto Play</sys:String>
+  <sys:String x:Key="Reminder_Record">Record</sys:String>
+  <sys:String x:Key="Reminder_Added">Reminder added</sys:String>
+  <sys:String x:Key="EPG_Status_Booked">Booked</sys:String>
+  <sys:String x:Key="Tray_OpenMain">Open Main Window</sys:String>
+  <sys:String x:Key="CloseConfirm_Title">Close Confirmation</sys:String>
+  <sys:String x:Key="CloseConfirm_Message">Choose an action:\n\nYes: Exit app\nNo: Minimize to system tray</sys:String>
+  <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>
+  <sys:String x:Key="CloseConfirm_LineYes">Yes: Exit app</sys:String>
+  <sys:String x:Key="CloseConfirm_LineNo">No: Minimize to system tray</sys:String>
+  
   <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Enable Replay</sys:String>
   <sys:String x:Key="UI_Playback_Desc">Configure replay functionality</sys:String>

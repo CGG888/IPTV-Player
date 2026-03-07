@@ -10,6 +10,7 @@ namespace LibmpvIptvClient.Models
         public string Description { get; set; } = "";
         
         public bool IsPlaying { get; set; } // New property
+        public bool IsBooked { get; set; } // Already scheduled reminder
 
         public string Status 
         { 
