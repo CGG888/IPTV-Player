@@ -47,3 +47,25 @@ Fast Channel Change and UDP multicast optimization.
 - **Double-click Fullscreen**: Toggle fullscreen by double-clicking the video area.
 - **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
 - **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
+
+## Updates since v1.1.2
+
+- **EPG Status Chips**: Chip-style badges on the right side of each program row
+  - Live = red-filled chip; Replay = green-filled chip (auto adapts to dark/light themes)
+  - Clicking the Live chip plays the current channel immediately
+  - The current playing row is highlighted; when replaying, a green left stripe is shown for better visibility (especially in dark mode)
+- **Reminders & Notifications**
+  - Single-instance reminder list; centers to the player on first open; user-dragged position is respected afterward
+  - Checkbox + Select All/Invert for batch deletion
+  - Accessible from Tray / Dropdown / Right-click with consistent behavior
+  - Due/success toasts don’t steal focus (bottom-right vs. centered strategies are clearly separated)
+- **M3U Management**
+  - New “Manage M3U List” window (same style as reminders) with checkbox batch deletion and single edit
+  - Tray entry; consistent entries from dropdown/right-click; visible in fullscreen above the player
+- **System Tray**
+  - Always-on icon; double-click to restore; menu includes Open/Reminders/Manage M3U/Settings/Exit
+- **Close Confirmation**
+  - Close “×/ESC” only dismisses dialog; “Yes” exits, “No” minimizes to tray (leave fullscreen first)
+  - Three-line i18n text synchronized (ZH/EN/ZH-TW/RU)
+- **Theme Sync**
+  - Title bars for Reminders, M3U Manager, Reminder Dialog, and Exit Dialog apply theme at OnSourceInitialized for instant dark/light consistency

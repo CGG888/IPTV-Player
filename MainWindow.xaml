@@ -542,8 +542,8 @@
                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListEpg_PreviewMouseLeftButtonDown"/>
                         <Setter Property="Template">
                             <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <Border Background="{TemplateBinding Background}" Padding="8,6" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerBrush}">
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="RowBd" Background="{TemplateBinding Background}" Padding="8,6" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerBrush}">
                                         <ContentPresenter/>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -553,6 +553,19 @@
                                         <Trigger Property="IsSelected" Value="True">
                                             <Setter Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
                                         </Trigger>
+                                        <!-- 当前播放节目高亮 -->
+                                        <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                            <Setter TargetName="RowBd" Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
+                                        </DataTrigger>
+                                        <!-- 回放播放中：增加左侧彩色标识（深浅色均明显） -->
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsPlaying}" Value="True"/>
+                                                <Condition Binding="{Binding Status}" Value="回放"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource StatusReplayBrush}"/>
+                                            <Setter TargetName="RowBd" Property="BorderThickness" Value="4,0,0,1"/>
+                                        </MultiDataTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -561,11 +574,11 @@
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid>
+                            <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="60"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
@@ -577,42 +590,79 @@
                                 <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource StringToVis}}"/>
                             </StackPanel>
                             <Grid Grid.Column="2">
-                                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" FontSize="12" HorizontalAlignment="Right">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                                    <Setter Property="Text" Value="{DynamicResource EPG_Status_PlaybackWithIcon}"/>
-                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
-                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Status}" Value="直播">
-                                                    <Setter Property="Foreground" Value="{DynamicResource StatusLiveBrush}"/>
-                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                </DataTrigger>
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding Status}" Value="回放"/>
-                                                        <Condition Binding="{Binding IsPlaying}" Value="True"/>
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
-                                                </MultiDataTrigger>
-                                                <!-- 当状态为预约时隐藏文本，交给按钮呈现 -->
+                                <!-- 状态芯片做成可点击按钮（仅直播可点击），带阴影更立体 -->
+                                <Button x:Name="BtnStatusChip" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Padding="10,2" MinWidth="60" Height="26" Click="EpgLiveChip_Click" Cursor="Arrow">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Chip" CornerRadius="6" Background="{DynamicResource ChipButtonBackgroundBrush}" BorderBrush="{DynamicResource ChipButtonBorderBrush}" BorderThickness="1">
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Opacity="0.25"/>
+                                                </Border.Effect>
+                                                <Grid>
+                                                    <TextBlock x:Name="TxtStatusChip" Text="{Binding Status}" Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                               FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <!-- 预约状态隐藏（由预约按钮接管） -->
                                                 <DataTrigger Binding="{Binding Status}" Value="预约">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Setter Property="UIElement.Visibility" Value="Collapsed"/>
                                                 </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                                <!-- 回放：绿色填充，禁用点击，指针正常 -->
+                                                <DataTrigger Binding="{Binding Status}" Value="回放">
+                                                    <Setter TargetName="Chip" Property="Background" Value="{DynamicResource StatusReplayFillBrush}"/>
+                                                    <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource StatusReplayFillBrush}"/>
+                                                    <Setter TargetName="TxtStatusChip" Property="Foreground" Value="#FFFFFFFF"/>
+                                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                                    <Setter Property="Cursor" Value="Arrow"/>
+                                                </DataTrigger>
+                                                <!-- 直播：红色填充，可点击播放，指针为手形 -->
+                                                <DataTrigger Binding="{Binding Status}" Value="直播">
+                                                    <Setter TargetName="Chip" Property="Background" Value="{DynamicResource StatusLiveFillBrush}"/>
+                                                    <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource StatusLiveFillBrush}"/>
+                                                    <Setter TargetName="TxtStatusChip" Property="Foreground" Value="#FFFFFFFF"/>
+                                                    <Setter Property="IsHitTestVisible" Value="True"/>
+                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                </DataTrigger>
+                                                <!-- 悬停/按下立体感 -->
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Chip" Property="Effect">
+                                                        <Setter.Value>
+                                                            <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.35"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="Chip" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <ScaleTransform ScaleX="0.98" ScaleY="0.98"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
                                 <!-- 预约按钮（同位置），仅未来节目显示；已预约则禁用并显示“已预约” -->
                                 <Button Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                         Height="26" MinWidth="60"
                                         Click="EpgRemindButton_Click">
                                     <Button.Style>
                                         <Style TargetType="Button">
+                                            <Setter Property="Padding" Value="10,2"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                             <Setter Property="Content" Value="{DynamicResource EPG_Remind}"/>
                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border CornerRadius="6" Background="{DynamicResource ChipButtonBackgroundBrush}" BorderBrush="{DynamicResource ChipButtonBorderBrush}" BorderThickness="1">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Status}" Value="预约">
                                                     <Setter Property="Visibility" Value="Visible"/>

@@ -35,7 +35,11 @@ Recommendations:
 1. Play a channel.
 2. Open the EPG panel (program list).
 3. Switch the date to view schedules for different days.
-4. The list shows program status based on current time.
+4. The list shows program status based on current time; the right side uses chip-style badges:
+   - Live: red-filled chip; clickable to play the current channel live
+   - Replay: green-filled chip; click the program title to generate a replay URL via template and play
+   - Reminder: shows a “Reminder” button (same size/rounded corners as chips); appears only for future programs
+   - Currently Playing: the entire row is highlighted; when replaying, a green left stripe is shown for better visibility
 
 ## Relationship with Catchup / Timeshift
 

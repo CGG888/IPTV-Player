@@ -437,6 +437,23 @@ namespace LibmpvIptvClient
         {
             try { ListChannels.Focus(); } catch { }
         }
+        void EpgLiveChip_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_currentChannel == null) return;
+                // 仅当该行节目状态为“直播”时触发播放
+                if (sender is FrameworkElement fe && fe.DataContext is EpgProgram p)
+                {
+                    var liveLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Live", "直播");
+                    if (string.Equals(p.Status, liveLabel, StringComparison.OrdinalIgnoreCase) || p.Status == "直播")
+                    {
+                        PlayChannel(_currentChannel);
+                    }
+                }
+            }
+            catch { }
+        }
         void OnLoaded(object sender, RoutedEventArgs e)
         {
             try
