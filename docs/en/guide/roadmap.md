@@ -30,6 +30,7 @@ We are dedicated to continuously improving the IPTV viewing experience.
   - Persistent System Tray: Open/Reminders/Manage M3U/Settings/Exit
   - Close Confirmation: ×/ESC only dismisses dialog; “No” minimizes to tray (exit fullscreen first)
   - Dark/Light title bars: Reminders, M3U Manager, Reminder Dialog, and Exit Dialog apply theme immediately after window creation
+  - Playback speed: speed control for Timeshift/Replay (incl. 3×/5×) with automatic audio pitch correction; Live not supported
 
 ## Preview / Experimental Features
 

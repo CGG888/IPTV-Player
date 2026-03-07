@@ -32,9 +32,19 @@ Seek back in live stream history (depends on `catchup-source`).
   Your browser does not support the video tag.
 </video>
 
+### Playback Speed
+- Supported for Timeshift and Replay only; Live does not support speed
+- Available speeds: 0.5×, 0.75×, 1.0×, 1.25×, 1.5×, 1.75×, 2.0×, 3.0×, 5.0×
+- Audio pitch correction is enabled automatically to keep voices natural
+- Consistent UI in fullscreen and window; adapts to dark/light themes
+
 ### Channel Management
 Grouping, Search, and Favorites (runtime-only).
 
+### Channel List Badges (R/T)
+- R: Catchup available; T: Timeshift available
+- Hover tooltips localized (ZH/EN/ZH-TW/RU)
+- Consistent style and layout in fullscreen and window
 ### Optimization (FCC)
 Fast Channel Change and UDP multicast optimization.
 

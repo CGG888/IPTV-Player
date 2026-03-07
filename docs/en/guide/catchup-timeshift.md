@@ -8,6 +8,11 @@ This page explains how to use Catchup/Replay and Timeshift in the player, and ho
 - **Timeshift**: while watching live, drag the seek bar back to a past time; the player generates a replay URL using the timeshift cursor time and plays it.
 - **Key point**: the player does not interpret ISP/private protocol semantics. It only replaces time placeholders inside a URL template, then plays the final URL.
 
+### Playback Speed
+- Speed selection is available for Timeshift and Replay; Live does not support speed
+- Speed list: 0.5×, 0.75×, 1.0×, 1.25×, 1.5×, 1.75×, 2.0×, 3.0×, 5.0×
+- Audio pitch correction is enabled automatically when changing speed
+
 ## Prerequisites
 
 A channel can support Catchup/Timeshift if at least one is true:
