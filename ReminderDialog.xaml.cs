@@ -14,6 +14,11 @@ namespace LibmpvIptvClient
             TxtTitle.Text = channel + " - " + title;
             TxtTime.Text = startLocal.ToString("yyyy-MM-dd HH:mm:ss");
         }
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { }
+        }
         void BtnNotify_Click(object sender, RoutedEventArgs e)
         {
             Action = "notify";

@@ -448,7 +448,8 @@ namespace LibmpvIptvClient
                         openMain: () => { try { this.Dispatcher.Invoke(() => { this.Show(); this.WindowState = WindowState.Normal; this.Activate(); }); } catch { } },
                         openSettings: () => { try { this.Dispatcher.Invoke(OpenSettings); } catch { } },
                         exitApp: () => { try { System.Windows.Application.Current.Shutdown(); } catch { } },
-                        openReminderNotify: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate); } catch { } }
+                        openReminderNotify: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate); } catch { } },
+                        openM3uManage: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.M3uWindowManager.OpenOrActivate); } catch { } }
                     );
                 }
                 catch { }
@@ -2312,7 +2313,8 @@ namespace LibmpvIptvClient
                 if (ctx == null) return;
                 var now = DateTime.Now;
                 if (ctx.Start <= now) return;
-                var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                        var ownerWin2 = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+                        var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin2, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _isFullscreen };
                 if (dlg.ShowDialog() == true)
                 {
                     var r = new ScheduledReminder
@@ -2358,7 +2360,8 @@ namespace LibmpvIptvClient
                     var oldBooked = ctx.IsBooked;
                     ctx.IsBooked = true;
                     try { ListEpg.Items.Refresh(); } catch { }
-                    var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    var ownerWin = (_isFullscreen && _fs != null) ? (Window)_fs : this;
+                    var dlg = new ReminderDialog(_currentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _isFullscreen };
                     if (dlg.ShowDialog() == true)
                     {
                         var r = new ScheduledReminder

@@ -242,6 +242,7 @@
   <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">Yes: Exit app</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">No: Minimize to system tray</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">Manage M3U List</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Enable Replay</sys:String>

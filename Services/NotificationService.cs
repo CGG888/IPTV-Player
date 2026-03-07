@@ -18,6 +18,7 @@ namespace LibmpvIptvClient.Services
         private Action? _openReminderNotify;
         private Action? _openReminderAutoplay;
         private Action? _openReminderRecord;
+        private Action? _openM3uManage;
 
         private NotificationService()
         {
@@ -68,19 +69,23 @@ namespace LibmpvIptvClient.Services
             miReminder.DropDownItems.Add(miReminderNotify);
             miReminder.DropDownItems.Add(miReminderAutoplay);
             miReminder.DropDownItems.Add(miReminderRecord);
+            var miM3uManage = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ManageM3u", "管理 M3U 列表"));
+            miM3uManage.Click += (s, e) => { try { _openM3uManage?.Invoke(); } catch { } };
             var miSettings = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Settings", "设置"));
             miSettings.Click += (s, e) => { try { _openSettings?.Invoke(); } catch { } };
             var miExit = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Exit", "退出"));
             miExit.Click += (s, e) => { try { _exitApp?.Invoke(); } catch { } };
             _menu.Items.Add(miOpen);
             _menu.Items.Add(miReminder);
+            _menu.Items.Add(miM3uManage);
             _menu.Items.Add(miSettings);
             _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add(miExit);
             _icon.ContextMenuStrip = _menu;
         }
         public void SetMenuCallbacks(Action openMain, Action openSettings, Action exitApp,
-                                     Action? openReminderNotify = null, Action? openReminderAutoplay = null, Action? openReminderRecord = null)
+                                     Action? openReminderNotify = null, Action? openReminderAutoplay = null, Action? openReminderRecord = null,
+                                     Action? openM3uManage = null)
         {
             _openMain = openMain;
             _openSettings = openSettings;
@@ -88,6 +93,7 @@ namespace LibmpvIptvClient.Services
             _openReminderNotify = openReminderNotify;
             _openReminderAutoplay = openReminderAutoplay;
             _openReminderRecord = openReminderRecord;
+            _openM3uManage = openM3uManage;
         }
         public void ShowWithLogo(string channel, string program, DateTime startLocal, string? logoPath, int timeoutMs = 8000)
         {

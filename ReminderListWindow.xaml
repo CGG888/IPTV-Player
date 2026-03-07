@@ -11,15 +11,16 @@
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
       <Button Content="编辑" Width="80" Margin="0,0,8,0" Click="BtnEdit_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="删除" Width="80" Margin="0,0,8,0" Click="BtnDelete_Click" Style="{StaticResource ChipButton}"/>
-      <Button Content="测试预约成功" Width="110" Margin="0,0,8,0" Click="BtnTestSuccess_Click" Style="{StaticResource ChipButton}"/>
-      <Button Content="测试节目开播" Width="110" Margin="0,0,8,0" Click="BtnTestDue_Click" Style="{StaticResource ChipButton}"/>
+      <Button Content="全选" Width="72" Margin="12,0,4,0" Click="BtnSelectAll_Click" Style="{StaticResource ChipButton}"/>
+      <Button Content="反选" Width="72" Margin="4,0,8,0" Click="BtnInvert_Click" Style="{StaticResource ChipButton}"/>
       <CheckBox x:Name="CbOnlyFuture" Content="仅未来" IsChecked="True" Margin="12,0,0,0" Checked="FilterChanged" Unchecked="FilterChanged"/>
     </StackPanel>
-    <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
+    <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" RowHeaderWidth="0"
               Background="{DynamicResource CardBackgroundBrush}"
               Foreground="{DynamicResource TextPrimaryBrush}"
               GridLinesVisibility="Horizontal">
       <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="" Binding="{Binding Selected}" Width="48"/>
         <DataGridTextColumn Header="频道" Binding="{Binding ChannelName}" Width="2*"/>
         <DataGridTextColumn Header="节目" Binding="{Binding Note}" Width="3*"/>
         <DataGridTextColumn Header="开始时间(本地)" Width="2*">

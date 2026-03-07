@@ -233,6 +233,7 @@
   <sys:String x:Key="CloseConfirm_Label">選擇操作：</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">是：退出軟體</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系統托盤</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">管理 M3U 清單</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">回放設定</sys:String>
   <sys:String x:Key="UI_EnablePlayback">啟用回放</sys:String>

@@ -151,6 +151,7 @@
   <sys:String x:Key="CloseConfirm_Label">选择操作：</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">是：退出软件</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系统托盘</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">管理 M3U 列表</sys:String>
 
   <!-- Drawer -->
   <sys:String x:Key="Drawer_Title">频道列表</sys:String>

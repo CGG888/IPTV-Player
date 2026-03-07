@@ -8,6 +8,7 @@ namespace LibmpvIptvClient.Helpers
     {
         private static ReminderListWindow? _instance;
         private static DispatcherTimer? _timer;
+        private static bool _autoFollow = true;
         private static void CenterOverMain()
         {
             try
@@ -41,13 +42,58 @@ namespace LibmpvIptvClient.Helpers
                 _instance = new ReminderListWindow();
                 _instance.Closed += (s, e) => { _instance = null; try { _timer?.Stop(); } catch { } };
                 _instance.Loaded += (s, e) => CenterOverMain();
-                _instance.SizeChanged += (s, e) => CenterOverMain();
+                _instance.SizeChanged += (s, e) => { if (_autoFollow) CenterOverMain(); };
+                _instance.LocationChanged += (s, e) => { _autoFollow = false; };
                 CenterOverMain();
+                bool isFs = false;
+                try
+                {
+                    var fs = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
+                    if (fs != null && fs.IsVisible)
+                    {
+                        _instance.Owner = fs; isFs = true;
+                    }
+                    else
+                    {
+                        var mw = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                        if (mw != null) _instance.Owner = mw;
+                    }
+                }
+                catch { }
                 _instance.Show();
-                _instance.Topmost = true;
+                // 全屏时保证置顶，其它情况下不强制 Topmost，避免盖住设置窗口
+                _instance.Topmost = isFs || _instance.Owner == null;
+                try
+                {
+                    var settings = System.Windows.Application.Current?.Windows.OfType<SettingsWindow>().FirstOrDefault();
+                    if (settings != null && settings.IsVisible) settings.Activate();
+                }
+                catch { }
+                try
+                {
+                    _instance.Closed += (s2, e2) =>
+                    {
+                        try
+                        {
+                            if (isFs)
+                            {
+                                var fs2 = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
+                                fs2?.Activate();
+                            }
+                            else
+                            {
+                                var mw2 = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                                mw2?.Activate();
+                            }
+                        }
+                        catch { }
+                    };
+                }
+                catch { }
                 _timer = _timer ?? new DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(250) };
                 _timer.Tick -= Timer_Tick;
                 _timer.Tick += Timer_Tick;
+                _autoFollow = true;
                 _timer.Start();
             }
             catch { }
@@ -57,8 +103,9 @@ namespace LibmpvIptvClient.Helpers
             try
             {
                 if (_instance == null || !_instance.IsVisible) return;
-                CenterOverMain();
-                _instance.Topmost = true;
+                if (_autoFollow) CenterOverMain();
+                var fs = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
+                _instance.Topmost = (fs != null && fs.IsVisible) || _instance.Owner == null;
             }
             catch { }
         }

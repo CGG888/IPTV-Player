@@ -14,6 +14,11 @@ namespace LibmpvIptvClient
             Loaded += (s, e) => { try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { } };
             LoadData();
         }
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { }
+        }
         void LoadData()
         {
             try
@@ -38,7 +43,7 @@ namespace LibmpvIptvClient
             {
                 if (Grid.SelectedItem is ScheduledReminder r)
                 {
-                    var dlg = new ReminderDialog(r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime()) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    var dlg = new ReminderDialog(r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime()) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = this.Topmost };
                     if (dlg.ShowDialog() == true)
                     {
                         r.PreAlertSeconds = dlg.PreAlertSeconds;
@@ -55,7 +60,20 @@ namespace LibmpvIptvClient
         {
             try
             {
-                if (Grid.SelectedItems != null && Grid.SelectedItems.Count > 0)
+                // 优先按复选框 Selected 批量删除
+                var checkedItems = _items.Where(x => x.Selected).ToList();
+                if (checkedItems.Count > 0)
+                {
+                    foreach (var r in checkedItems)
+                    {
+                        _items.Remove(r);
+                        AppSettings.Current.ScheduledReminders.RemoveAll(x => x.Id == r.Id);
+                    }
+                    AppSettings.Current.Save();
+                    LibmpvIptvClient.Services.ReminderService.Instance.Start();
+                    LoadData();
+                }
+                else if (Grid.SelectedItems != null && Grid.SelectedItems.Count > 0)
                 {
                     var sel = Grid.SelectedItems.Cast<ScheduledReminder>().ToList();
                     foreach (var r in sel)
@@ -95,6 +113,14 @@ namespace LibmpvIptvClient
                 }
             }
             catch { }
+        }
+        void BtnSelectAll_Click(object sender, RoutedEventArgs e)
+        {
+            try { foreach (var i in _items) i.Selected = true; Grid.Items.Refresh(); } catch { }
+        }
+        void BtnInvert_Click(object sender, RoutedEventArgs e)
+        {
+            try { foreach (var i in _items) i.Selected = !i.Selected; Grid.Items.Refresh(); } catch { }
         }
     }
 }

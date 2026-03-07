@@ -49,26 +49,18 @@ namespace LibmpvIptvClient.Helpers
 
             miM3u.Items.Add(new Separator());
 
-            var miEditM3u = new MenuItem { Header = Localizer.S("Menu_EditM3u", "编辑 M3U") };
-            if (AppSettings.Current.SavedSources != null && AppSettings.Current.SavedSources.Count > 0)
+            var miManage = new MenuItem { Header = Localizer.S("Menu_ManageM3u", "管理 M3U 列表") };
+            miManage.Click += (s, a) =>
             {
-                foreach (var src in AppSettings.Current.SavedSources)
+                try
                 {
-                    var miSrc = new MenuItem { Header = src.Name };
-                    miSrc.Tag = src;
-                    miSrc.Click += (s, args) => 
-                    {
-                        if (s is MenuItem m && m.Tag is M3uSource source)
-                            editM3u?.Invoke(source);
-                    };
-                    miEditM3u.Items.Add(miSrc);
+                    LibmpvIptvClient.Helpers.M3uWindowManager.OpenOrActivate();
                 }
-            }
-            else
-            {
-                miEditM3u.IsEnabled = false;
-            }
-            miM3u.Items.Add(miEditM3u);
+                catch { }
+            };
+            miM3u.Items.Add(miManage);
+
+            // 移除“编辑 M3U”子菜单，避免与“管理 M3U 列表”功能重复
             cm.Items.Add(miM3u);
 
             // 3. Performance Settings

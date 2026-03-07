@@ -151,5 +151,7 @@ namespace LibmpvIptvClient
         public bool Enabled { get; set; } = true;
         public bool Completed { get; set; } = false;
         public string Note { get; set; } = "";
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool Selected { get; set; } = false;
     }
 }
