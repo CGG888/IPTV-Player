@@ -232,12 +232,13 @@
                 <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click">
                     <ui:SymbolIcon Symbol="Shuffle"/>
                 </Button>
-                <Button x:Name="BtnPreview" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_PreviewUrl}" Click="BtnPreview_Click">
-                    <ui:SymbolIcon Symbol="Link"/>
-                </Button>
                 <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click">
                     <ui:SymbolIcon Symbol="Crop"/>
                 </Button>
+                <!-- 倍速按钮：采用 OverlayToggle 样式以适配文本宽度，保持与现有按钮配色一致 -->
+                <ToggleButton x:Name="BtnSpeed" Style="{StaticResource OverlayToggle}" ToolTip="Speed" Click="BtnSpeed_Click">
+                    <TextBlock x:Name="LblSpeed" Text="1.0x" />
+                </ToggleButton>
                 <ToggleButton x:Name="CbTimeshift" Style="{StaticResource OverlayToggle}" ToolTip="{DynamicResource Overlay_Timeshift}">
                     <ui:SymbolIcon Symbol="Clock"/>
                 </ToggleButton>

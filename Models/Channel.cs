@@ -37,6 +37,9 @@ namespace LibmpvIptvClient.Models
             set { if (_currentProgramTitle != value) { _currentProgramTitle = value; OnPropertyChanged(); } }
         }
         public bool HasCatchup => !string.IsNullOrEmpty(Catchup) || !string.IsNullOrEmpty(CatchupSource); // Helper for UI
+        public bool HasTimeshift => !string.IsNullOrEmpty(CatchupSource) 
+            || (LibmpvIptvClient.AppSettings.Current?.Timeshift?.Enabled == true 
+                && !string.IsNullOrEmpty(LibmpvIptvClient.AppSettings.Current?.Timeshift?.UrlFormat));
         public Source? Tag { get; set; }
         public System.Collections.Generic.List<Source> Sources { get; set; } = new System.Collections.Generic.List<Source>();
         public int DisplayIndex { get; set; }

@@ -167,6 +167,8 @@
   <sys:String x:Key="History_DeleteSelected">删除选中</sys:String>
   <sys:String x:Key="History_ClearAll">清空全部</sys:String>
   <sys:String x:Key="History_Context_DeleteOne">删除这条</sys:String>
+  <sys:String x:Key="Channel_CatchupAvailable">支持回放</sys:String>
+  <sys:String x:Key="Channel_TimeshiftAvailable">支持时移</sys:String>
   
   <!-- 菜单 -->
   <sys:String x:Key="Menu_File">打开</sys:String>

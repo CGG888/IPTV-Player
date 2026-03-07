@@ -652,12 +652,13 @@
                                         <Style TargetType="Button">
                                             <Setter Property="Padding" Value="10,2"/>
                                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                            <Setter Property="FontSize" Value="12"/>
                                             <Setter Property="Content" Value="{DynamicResource EPG_Remind}"/>
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border CornerRadius="6" Background="{DynamicResource ChipButtonBackgroundBrush}" BorderBrush="{DynamicResource ChipButtonBorderBrush}" BorderThickness="1">
+                                                        <Border CornerRadius="6" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
                                                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                     </ControlTemplate>
@@ -666,6 +667,9 @@
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Status}" Value="预约">
                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                                                    <Setter Property="Background" Value="{DynamicResource StatusBookBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource StatusBookBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding IsBooked}" Value="True">
                                                     <Setter Property="IsEnabled" Value="False"/>
@@ -847,9 +851,14 @@
                                                                     </Style>
                                                                 </TextBlock.Style>
                                                             </TextBlock>
-                                                            <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
-                                                                       VerticalAlignment="Top" Margin="4,2,0,0"
-                                                                       Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
+                                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="4,0,0,0">
+                                                                <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                           Margin="0,2,0,0"
+                                                                           Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_CatchupAvailable}"/>
+                                                                <TextBlock Text="T" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                           Margin="4,2,0,0"
+                                                                           Visibility="{Binding HasTimeshift, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_TimeshiftAvailable}"/>
+                                                            </StackPanel>
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
@@ -912,9 +921,14 @@
                                                                                 </Style>
                                                                             </TextBlock.Style>
                                                                         </TextBlock>
-                                                                        <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
-                                                                                   VerticalAlignment="Top" Margin="4,2,0,0"
-                                                                                   Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
+                                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="4,0,0,0">
+                                                                            <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                                       Margin="0,2,0,0"
+                                                                                       Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_CatchupAvailable}"/>
+                                                                            <TextBlock Text="T" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                                                       Margin="4,2,0,0"
+                                                                                       Visibility="{Binding HasTimeshift, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_TimeshiftAvailable}"/>
+                                                                        </StackPanel>
                                                                     </StackPanel>
                                                                     <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                                                     <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
@@ -1143,6 +1157,10 @@
                         <Button x:Name="BtnRatio" Style="{StaticResource BarButton}" Click="BtnRatio_Click" ToolTip="{DynamicResource Overlay_AspectRatio}">
                             <ui:SymbolIcon Symbol="Crop"/>
                         </Button>
+                        <!-- 倍速按钮（窗口模式） -->
+                        <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}">
+                            <TextBlock x:Name="LblSpeedBar" Text="1.0x"/>
+                        </ToggleButton>
                         <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" Click="CbTimeshift_Click" ToolTip="{DynamicResource Overlay_Timeshift}">
                             <ui:SymbolIcon Symbol="Clock"/>
                         </ToggleButton>

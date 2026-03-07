@@ -149,6 +149,8 @@
   <sys:String x:Key="History_DeleteSelected">Удалить выбранные</sys:String>
   <sys:String x:Key="History_ClearAll">Очистить всё</sys:String>
   <sys:String x:Key="History_Context_DeleteOne">Удалить это</sys:String>
+  <sys:String x:Key="Channel_CatchupAvailable">Доступен архив</sys:String>
+  <sys:String x:Key="Channel_TimeshiftAvailable">Доступен таймшифт</sys:String>
 
   <!-- Menu -->
   <sys:String x:Key="Menu_File">Открыть</sys:String>

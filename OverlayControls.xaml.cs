@@ -217,6 +217,7 @@ namespace LibmpvIptvClient
         void BtnSourceMenu_Click(object sender, RoutedEventArgs e) => SourceMenuRequested?.Invoke();
         public event Action<bool>? MuteChanged;
         public event Action? PreviewRequested;
+        public event Action<double>? SpeedSelected;
         public void OpenSourceContextMenu(ContextMenu menu)
         {
             try
@@ -240,6 +241,49 @@ namespace LibmpvIptvClient
             BtnSources.ContextMenu.IsOpen = true;
         }
         void BtnPreview_Click(object sender, RoutedEventArgs e) => PreviewRequested?.Invoke();
+        public void SetSpeed(double v)
+        {
+            try { LblSpeed.Text = $"{v:0.##}x"; } catch { }
+        }
+        public void SetSpeedEnabled(bool enabled)
+        {
+            try { BtnSpeed.IsEnabled = enabled; } catch { }
+        }
+        void BtnSpeed_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu();
+            double[] speeds = new double[] { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 5.0 };
+            foreach (var sp in speeds)
+            {
+                var mi = new MenuItem();
+                mi.Header = $"{sp:0.##}x";
+                mi.IsCheckable = true;
+                try { mi.IsChecked = LblSpeed.Text == $"{sp:0.##}x"; } catch { }
+                mi.Click += (s, ev) =>
+                {
+                    SetSpeed(sp);
+                    SpeedSelected?.Invoke(sp);
+                };
+                menu.Items.Add(mi);
+            }
+            try
+            {
+                var cmStyle = (Style)FindResource(typeof(ContextMenu));
+                if (cmStyle != null) menu.Style = cmStyle;
+                var miStyle = (Style)FindResource(typeof(MenuItem));
+                foreach (var obj in menu.Items)
+                {
+                    if (obj is MenuItem mi && miStyle != null) mi.Style = miStyle;
+                }
+            }
+            catch { }
+            BtnSpeed.ContextMenu = menu;
+            BtnSpeed.ContextMenu.PlacementTarget = BtnSpeed;
+            BtnSpeed.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            BtnSpeed.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
+            BtnSpeed.ContextMenu.IsOpen = true;
+        }
         public void SetTags(System.Collections.Generic.List<string> tags)
         {
             try

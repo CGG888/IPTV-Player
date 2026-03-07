@@ -32,6 +32,7 @@ namespace LibmpvIptvClient
             SetString("ad-lavc-threads", "2");
             SetString("audio-channels", "stereo");
             SetString("ad-lavc-downmix", "yes");
+            SetString("audio-pitch-correction", "yes");
             
             // 设置全局通用 User-Agent，解决部分源因空 UA 拒绝访问的问题
             SetString("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -42,6 +43,10 @@ namespace LibmpvIptvClient
             if (!string.IsNullOrWhiteSpace(_settings.Slang)) SetString("slang", _settings.Slang);
             if (_settings.MpvNetworkTimeoutSec > 0) SetString("network-timeout", _settings.MpvNetworkTimeoutSec.ToString(System.Globalization.CultureInfo.InvariantCulture));
             Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} net_to={_settings.MpvNetworkTimeoutSec}");
+        }
+        public void SetSpeed(double speed)
+        {
+            SetDouble("speed", speed);
         }
         public void SetWid(IntPtr hwnd)
         {

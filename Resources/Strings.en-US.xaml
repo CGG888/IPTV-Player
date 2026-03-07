@@ -159,6 +159,8 @@
   <sys:String x:Key="History_DeleteSelected">Delete selected</sys:String>
   <sys:String x:Key="History_ClearAll">Clear all</sys:String>
   <sys:String x:Key="History_Context_DeleteOne">Delete this</sys:String>
+  <sys:String x:Key="Channel_CatchupAvailable">Catchup Available</sys:String>
+  <sys:String x:Key="Channel_TimeshiftAvailable">Timeshift Available</sys:String>
   <!-- Menu -->
   <sys:String x:Key="Menu_File">Open</sys:String>
   <sys:String x:Key="Menu_OpenFile">Open file...</sys:String>

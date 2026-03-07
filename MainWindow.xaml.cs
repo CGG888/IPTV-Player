@@ -48,6 +48,7 @@ namespace LibmpvIptvClient
         private bool _updatingVolume = false;
         private string _playbackStatusText = "";
         private System.Windows.Media.Brush _playbackStatusBrush = System.Windows.Media.Brushes.White;
+        private double _playbackSpeed = 1.0;
         private bool _firstFrameLogged = false;
         private DateTime _lastOverlayEval = DateTime.MinValue;
         private bool _lastBottomVisible = false;
@@ -625,6 +626,15 @@ namespace LibmpvIptvClient
             _overlayWpf.Rew += () => BtnRew_Click(this, new RoutedEventArgs());
             _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
             _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
+            _overlayWpf.SpeedSelected += (sp) => 
+            {
+                try
+                {
+                    _playbackSpeed = sp;
+                    _mpv?.SetSpeed(sp);
+                }
+                catch { }
+            };
             _overlayWpf.PreviewRequested += () =>
             {
                 try
@@ -725,6 +735,8 @@ namespace LibmpvIptvClient
             }
             catch { }
             _overlayWpf.SetVolume(_volume);
+            try { _overlayWpf.SetSpeed(1.0); _overlayWpf.SetSpeedEnabled(false); } catch { }
+            try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = false; LblSpeedBar.Text = "1.0x"; } } catch { }
             _overlayWpf.Show();
             PositionOverlay();
             _overlayWpf.Hide();
@@ -852,6 +864,8 @@ namespace LibmpvIptvClient
                 try { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 ApplyTimeshiftUi();
+                try { _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed); } catch { }
+                try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; } } catch { }
             }
             else
             {
@@ -871,6 +885,8 @@ namespace LibmpvIptvClient
                     }
                 }
                 catch { }
+                try { _playbackSpeed = 1.0; _mpv?.SetSpeed(1.0); _overlayWpf?.SetSpeed(1.0); _overlayWpf?.SetSpeedEnabled(false); } catch { }
+                try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = false; LblSpeedBar.Text = "1.0x"; } } catch { }
             }
         }
         void CbTimeshift_Click(object sender, RoutedEventArgs e)
@@ -934,6 +950,8 @@ namespace LibmpvIptvClient
                 try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                 try { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                 try { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
+                try { _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed); } catch { }
+                try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; } } catch { }
                 
                 // 写入播放记录（时移）
                 try
@@ -972,6 +990,9 @@ namespace LibmpvIptvClient
                             try { TxtPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; } catch { }
                             try { _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush); } catch { }
                             _timeshiftActive = false; try { CbTimeshift.IsChecked = false; } catch { }
+                            // 启用倍速（历史记录回放）
+                            try { _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed); } catch { }
+                            try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; } } catch { }
                         }
                         else if (hi.PlayTypeLabel == "时移" || hi.PlayTypeLabel == LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移"))
                         {
@@ -1100,6 +1121,15 @@ namespace LibmpvIptvClient
             _overlayWpf.Rew += () => BtnRew_Click(this, new RoutedEventArgs());
             _overlayWpf.Fwd += () => BtnFwd_Click(this, new RoutedEventArgs());
             _overlayWpf.AspectRatioChanged += (ratio) => _mpv?.SetAspectRatio(ratio);
+            _overlayWpf.SpeedSelected += (sp) =>
+            {
+                try
+                {
+                    _playbackSpeed = sp;
+                    _mpv?.SetSpeed(sp);
+                }
+                catch { }
+            };
             _overlayWpf.DrawerToggled += (visible) => SetDrawerCollapsed(!visible);
             _overlayWpf.EpgToggled += (visible) => 
             { 
@@ -1137,6 +1167,8 @@ namespace LibmpvIptvClient
             try { _overlayWpf.SetPaused(_paused); } catch { }
             try { _overlayWpf.CurrentAspect = _currentAspect; } catch { }
             _overlayWpf.SetVolume(_volume);
+            try { _overlayWpf.SetSpeed(_playbackSpeed); _overlayWpf.SetSpeedEnabled(_timeshiftActive || (_currentPlayingProgram != null)); } catch { }
+            try { if (BtnSpeed != null) { BtnSpeed.IsEnabled = _timeshiftActive || (_currentPlayingProgram != null); LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; } } catch { }
             // 初始化时移状态到新创建的悬浮条（窗口/全屏一致）
             try
             {
@@ -1193,6 +1225,43 @@ namespace LibmpvIptvClient
                 _timeshiftResyncTimer.Start();
             }
             catch { }
+        }
+        void BtnSpeed_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu();
+            double[] speeds = new double[] { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 5.0 };
+            foreach (var sp in speeds)
+            {
+                var mi = new MenuItem();
+                mi.Header = $"{sp:0.##}x";
+                mi.IsCheckable = true;
+                mi.IsChecked = Math.Abs(_playbackSpeed - sp) < 0.001;
+                mi.Click += (s, ev) =>
+                {
+                    _playbackSpeed = sp;
+                    try { _mpv?.SetSpeed(sp); } catch { }
+                    try { _overlayWpf?.SetSpeed(sp); } catch { }
+                    try { LblSpeedBar.Text = $"{sp:0.##}x"; } catch { }
+                };
+                menu.Items.Add(mi);
+            }
+            try
+            {
+                var cmStyle = (Style)FindResource(typeof(ContextMenu));
+                if (cmStyle != null) menu.Style = cmStyle;
+                var miStyle = (Style)FindResource(typeof(MenuItem));
+                foreach (var obj in menu.Items)
+                {
+                    if (obj is MenuItem mi && miStyle != null) mi.Style = miStyle;
+                }
+            }
+            catch { }
+            BtnSpeed.ContextMenu = menu;
+            BtnSpeed.ContextMenu.PlacementTarget = BtnSpeed;
+            BtnSpeed.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+            BtnSpeed.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+                new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
+            BtnSpeed.ContextMenu.IsOpen = true;
         }
         void SyncTimeshiftUi()
         {
@@ -2542,6 +2611,24 @@ namespace LibmpvIptvClient
                     _playbackStatusBrush = System.Windows.Media.Brushes.Orange;
                     _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
                 }
+                catch { }
+                
+                // 启用倍速（回放模式）
+                try 
+                { 
+                    _overlayWpf?.SetSpeedEnabled(true); 
+                    _mpv?.SetSpeed(_playbackSpeed); 
+                    _overlayWpf?.SetSpeed(_playbackSpeed); 
+                } 
+                catch { }
+                try 
+                { 
+                    if (BtnSpeed != null) 
+                    { 
+                        BtnSpeed.IsEnabled = true; 
+                        LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; 
+                    } 
+                } 
                 catch { }
                 
                 // 写入播放记录（回放）
