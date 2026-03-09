@@ -11,6 +11,8 @@ using LibmpvIptvClient.Diagnostics;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.IO;
+using System.Text.Json;
 
 namespace LibmpvIptvClient
 {
@@ -118,6 +120,26 @@ namespace LibmpvIptvClient
             this.MouseRightButtonUp += MainWindow_MouseRightButtonUp;
             _sourceTimeoutTimer.Tick += OnSourceTimeout;
             App.LanguageChanged += OnLanguageChanged;
+            try
+            {
+                LibmpvIptvClient.Services.UploadQueueService.OnUploaded += (remoteDir) =>
+                {
+                    try
+                    {
+                        // 从远端路径解析频道键
+                        var key = "unknown";
+                        try
+                        {
+                            var parts = (remoteDir ?? "").Trim('/').Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                            key = parts.Length > 0 ? parts.Last() : "unknown";
+                        }
+                        catch { }
+                        Dispatcher.BeginInvoke(new Action(() => { try { ScheduleRecordingsRefresh(key); } catch { } }));
+                    }
+                    catch { }
+                };
+            }
+            catch { }
         }
         void OnLanguageChanged()
         {
@@ -315,11 +337,44 @@ namespace LibmpvIptvClient
 
         void MainWindow_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            // Avoid showing menu if right-clicking on specific controls that might handle it
-            // But for now, global right click is requested
-            var cm = CreateAppMenu();
-            cm.IsOpen = true;
-            e.Handled = true;
+            try
+            {
+                if (IsInsideRecordingsArea(e.OriginalSource as System.Windows.DependencyObject))
+                {
+                    e.Handled = true;
+                    return;
+                }
+                var cm = CreateAppMenu();
+                cm.IsOpen = true;
+                e.Handled = true;
+            }
+            catch
+            {
+                e.Handled = true;
+            }
+        }
+        bool IsInsideRecordingsArea(System.Windows.DependencyObject? d)
+        {
+            try
+            {
+                while (d != null)
+                {
+                    if (d is System.Windows.FrameworkElement fe)
+                    {
+                        var name = fe.Name ?? "";
+                        if (string.Equals(name, "ListRecordings", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "ListRecordingsGrouped", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "TxtRecordingsSearch", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(name, "BtnRecordingsRefresh", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                    d = System.Windows.Media.VisualTreeHelper.GetParent(d);
+                }
+            }
+            catch { }
+            return false;
         }
 
         async void PromptOpenUrl()
@@ -467,6 +522,7 @@ namespace LibmpvIptvClient
                         openSettings: () => { try { this.Dispatcher.Invoke(OpenSettings); } catch { } },
                         exitApp: () => { try { System.Windows.Application.Current.Shutdown(); } catch { } },
                         openReminderNotify: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate); } catch { } },
+                        openReminderAutoplay: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate); } catch { } },
                         openM3uManage: () => { try { this.Dispatcher.Invoke(LibmpvIptvClient.Helpers.M3uWindowManager.OpenOrActivate); } catch { } }
                     );
                 }
@@ -516,6 +572,7 @@ namespace LibmpvIptvClient
                 
                 // Initially hide VideoHost to show placeholder
                 try { VideoHost.Visibility = Visibility.Collapsed; } catch { }
+                try { _ = LoadRecordingsLocalGrouped(); } catch { }
             }
             catch (Exception ex)
             {
@@ -535,6 +592,7 @@ namespace LibmpvIptvClient
             
             // 初始化用户数据（收藏/历史）
             try { _userDataStore.Load(); } catch { }
+            try { StartRecordingsWatcher(); } catch { }
             
             // Auto-load last selected source if available
             if (AppSettings.Current.AutoLoadLastSource && !string.IsNullOrWhiteSpace(AppSettings.Current.LastLocalM3uPath) && System.IO.File.Exists(AppSettings.Current.LastLocalM3uPath))
@@ -822,10 +880,12 @@ namespace LibmpvIptvClient
         }
         void ToggleTimeshift(bool on)
         {
+            StopRecordReplayMonitor();
             // 防止重复调用导致的状态重置（特别是切换全屏/窗口时的事件回环）
             if (_timeshiftActive == on) return;
 
             try { Logger.Log(on ? "[Timeshift] 开启时移" : "[Timeshift] 关闭时移"); } catch { }
+            ClearRecordingPlayingIndicator();
             bool hasSource = _currentChannel != null && !string.IsNullOrEmpty(_currentChannel.CatchupSource);
             bool hasFallback = AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat);
 
@@ -936,6 +996,7 @@ namespace LibmpvIptvClient
                 Logger.Log($"[Timeshift] 开始时移/回看 - 频道: {ch.Name}, 时间点: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
+                try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
                 try { _firstFrameLogged = false; } catch { }
                 if (_timeshiftActive)
                 {
@@ -1349,6 +1410,32 @@ namespace LibmpvIptvClient
             
             dlg.ApplySettingsRequested += (settings) =>
             {
+                // 记录当前播放位置与URL，用于样式/主题变更后的恢复（尤其是回放/时移）
+                double? resumePos = null;
+                string? resumeUrl = null;
+                bool wasTimeshift = _timeshiftActive;
+                bool wasReplay = _currentPlayingProgram != null;
+                var old = AppSettings.Current;
+                bool mpvWillChange =
+                    old.Hwdec != settings.Hwdec
+                    || old.CacheSecs != settings.CacheSecs
+                    || old.DemuxerMaxBytesMiB != settings.DemuxerMaxBytesMiB
+                    || old.DemuxerMaxBackBytesMiB != settings.DemuxerMaxBackBytesMiB
+                    || old.EnableProtocolAdaptive != settings.EnableProtocolAdaptive
+                    || old.HlsStartAtLiveEdge != settings.HlsStartAtLiveEdge
+                    || old.HlsReadaheadSecs != settings.HlsReadaheadSecs
+                    || (old.Alang ?? "") != (settings.Alang ?? "")
+                    || (old.Slang ?? "") != (settings.Slang ?? "")
+                    || old.MpvNetworkTimeoutSec != settings.MpvNetworkTimeoutSec;
+                try
+                {
+                    if (_mpv != null)
+                    {
+                        resumePos = _mpv.GetTimePos();
+                        resumeUrl = _currentUrl;
+                    }
+                }
+                catch { }
                 AppSettings.Current.Hwdec = settings.Hwdec;
                 AppSettings.Current.CacheSecs = settings.CacheSecs;
                 AppSettings.Current.DemuxerMaxBytesMiB = settings.DemuxerMaxBytesMiB;
@@ -1395,6 +1482,22 @@ namespace LibmpvIptvClient
                 // 界面设置
                 AppSettings.Current.Language = settings.Language;
                 AppSettings.Current.ThemeMode = settings.ThemeMode;
+                try
+                {
+                    if (settings.WebDav != null)
+                    {
+                        AppSettings.Current.WebDav.Enabled = settings.WebDav.Enabled;
+                        AppSettings.Current.WebDav.BaseUrl = settings.WebDav.BaseUrl ?? "";
+                        AppSettings.Current.WebDav.Username = settings.WebDav.Username ?? "";
+                        AppSettings.Current.WebDav.TokenOrPassword = settings.WebDav.TokenOrPassword ?? "";
+                        AppSettings.Current.WebDav.EncryptedToken = settings.WebDav.EncryptedToken ?? "";
+                        AppSettings.Current.WebDav.AllowSelfSignedCert = settings.WebDav.AllowSelfSignedCert;
+                        AppSettings.Current.WebDav.RootPath = settings.WebDav.RootPath ?? "/srcbox/";
+                        AppSettings.Current.WebDav.RecordingsPath = settings.WebDav.RecordingsPath ?? "/srcbox/recordings/";
+                        AppSettings.Current.WebDav.UserDataPath = settings.WebDav.UserDataPath ?? "/srcbox/user-data/";
+                    }
+                }
+                catch { }
                 // 时间覆盖持久化
                 try
                 {
@@ -1420,7 +1523,7 @@ namespace LibmpvIptvClient
                 }
                 catch { }
                 AppSettings.Current.Save(); // Save to disk
-                if (_mpv != null)
+                if (_mpv != null && mpvWillChange)
                 {
                     _mpv.SetSettings(AppSettings.Current);
                     _mpv.Initialize();
@@ -1429,6 +1532,48 @@ namespace LibmpvIptvClient
                 {
                     App.ApplyLanguage(AppSettings.Current.Language);
                     App.ApplyTheme(AppSettings.Current.ThemeMode);
+                }
+                catch { }
+                // 样式/主题应用后，如当前为回放或时移，恢复到变更前的播放位置
+                try
+                {
+                    if (_mpv != null && mpvWillChange && !string.IsNullOrWhiteSpace(resumeUrl) && (wasTimeshift || wasReplay))
+                    {
+                        _mpv.LoadFile(resumeUrl);
+                        var dt = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                        dt.Tick += (s2, e2) =>
+                        {
+                            dt.Stop();
+                            try
+                            {
+                                if (resumePos.HasValue) _mpv.SeekAbsolute(Math.Max(0, resumePos.Value));
+                            }
+                            catch { }
+                        };
+                        dt.Start();
+                        // 同步倍速与状态文案
+                        try
+                        {
+                            if (wasTimeshift)
+                            {
+                                _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Timeshift", "时移");
+                                _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusTimeshiftBrush");
+                            }
+                            else
+                            {
+                                _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Playback", "回放");
+                                _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                            }
+                            if (TxtPlaybackStatus != null) { TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush; }
+                            if (TxtBottomPlaybackStatus != null) { TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush; }
+                            _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                            _overlayWpf?.SetSpeedEnabled(true);
+                            _mpv.SetSpeed(_playbackSpeed);
+                            _overlayWpf?.SetSpeed(_playbackSpeed);
+                            if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; }
+                        }
+                        catch { }
+                    }
                 }
                 catch { }
             };
@@ -1803,6 +1948,8 @@ namespace LibmpvIptvClient
                         {
                             await _epgService.LoadEpgAsync(epgUrl);
                             Dispatcher.Invoke(() => UpdateEpgDisplay());
+                            // EPG 加载完后，刷新录播分组以匹配节目标题
+                            Dispatcher.Invoke(async () => { try { await LoadRecordingsLocalGrouped(); } catch { } });
                         }
                         catch (Exception ex) { Logger.Log("EPG 加载失败: " + ex.Message); }
                     });
@@ -1830,6 +1977,10 @@ namespace LibmpvIptvClient
                     ListHistory.ItemsSource = _userDataStore.GetHistory();
                 }
                 catch { }
+
+                // 录播：填充频道下拉，默认选第一个；加载本地分组以显示录播目录
+                try { _ = LoadRecordingsLocalGrouped(); } catch { }
+                try { await LoadRecordingsLocalGrouped(); } catch { }
             }
             catch (Exception ex)
             {
@@ -1984,6 +2135,9 @@ namespace LibmpvIptvClient
             if (_mpv == null || ch == null) return;
             try
             {
+                EnsureMpvReadyForLoad();
+                StopRecordReplayMonitor();
+                ClearRecordingPlayingIndicator();
                 if (_timeshiftActive) ToggleTimeshift(false);
                 // Clear EPG playing status
                 if (_currentPlayingProgram != null)
@@ -2046,6 +2200,20 @@ namespace LibmpvIptvClient
                 else if (src.Name.Contains("单播")) streamType = "Unicast(Proxy)";
 
                 Logger.Log($"[Live] 开始直播播放 - 频道: {ch.Name}, 类型: {streamType}, URL: {url}");
+
+                // 强制开启缓存以支持录制复用
+                try
+                {
+                    // 使用更激进的缓存策略
+                    _mpv.SetPropertyString("cache", "yes");
+                    // 增大前向和后向缓存
+                    _mpv.SetPropertyString("demuxer-max-bytes", "512MiB"); 
+                    _mpv.SetPropertyString("demuxer-max-back-bytes", "256MiB");
+                    // 强制缓存甚至对实时流生效（关键参数）
+                    _mpv.SetPropertyString("cache-pause", "no"); 
+                    _mpv.SetPropertyString("force-seekable", "yes");
+                }
+                catch { }
                 
                 _currentChannel = ch;
                 _currentSources = BuildSourcesForChannel(ch);
@@ -2159,8 +2327,32 @@ namespace LibmpvIptvClient
 
             if (EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
             {
+                if (AppSettings.Current.Epg.StrictMatchByPlaybackTime && (_timeshiftActive || _currentPlayingProgram != null))
+                {
+                    var t = GetPlaybackLocalTime();
+                    if (t.HasValue) { RefreshEpgList(_currentChannel, t.Value); return; }
+                }
                 RefreshEpgList(_currentChannel);
             }
+        }
+        DateTime? GetPlaybackLocalTime()
+        {
+            try
+            {
+                if (_timeshiftActive)
+                {
+                    var total = Math.Max(1, (_timeshiftMax - _timeshiftMin).TotalSeconds);
+                    var sec = Math.Max(0, Math.Min(total, _timeshiftCursorSec));
+                    return _timeshiftMin.AddSeconds(sec);
+                }
+                if (_currentPlayingProgram != null && _mpv != null)
+                {
+                    var pos = _mpv.GetTimePos() ?? 0;
+                    return _currentPlayingProgram.Start.AddSeconds(Math.Max(0, pos));
+                }
+            }
+            catch { }
+            return null;
         }
         void CbEpg_Click(object sender, RoutedEventArgs e)
         {
@@ -2179,7 +2371,16 @@ namespace LibmpvIptvClient
             try { _overlayWpf?.SetEpgVisible(show); } catch { }
             if (show && _currentChannel != null)
             {
-                RefreshEpgList(_currentChannel);
+                if (AppSettings.Current.Epg.StrictMatchByPlaybackTime && (_timeshiftActive || _currentPlayingProgram != null))
+                {
+                    var t = GetPlaybackLocalTime();
+                    if (t.HasValue) RefreshEpgList(_currentChannel, t.Value);
+                    else RefreshEpgList(_currentChannel);
+                }
+                else
+                {
+                    RefreshEpgList(_currentChannel);
+                }
             }
         }
         void BtnEpgCollapse_Click(object sender, RoutedEventArgs e)
@@ -2262,6 +2463,28 @@ namespace LibmpvIptvClient
             {
                 if (ListEpg.Items.Count > 0) ListEpg.ScrollIntoView(ListEpg.Items[0]);
             }
+        }
+        void RefreshEpgList(Channel ch, DateTime focusTime)
+        {
+            if (ch == null) return;
+            _currentEpgDate = focusTime.Date;
+            RefreshEpgList(ch);
+            try
+            {
+                var items = ListEpg.ItemsSource as System.Collections.IEnumerable;
+                if (items != null)
+                {
+                    foreach (var it in items)
+                    {
+                        if (it is EpgProgram p && p.Start <= focusTime && p.End > focusTime)
+                        {
+                            ListEpg.ScrollIntoView(it);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         List<EpgProgram> GeneratePlaceholderEpg()
@@ -2423,12 +2646,11 @@ namespace LibmpvIptvClient
                     try { LibmpvIptvClient.Services.ReminderService.Instance.Start(); } catch { }
                     try 
                     { 
-                        var toast = new ReminderToastWindow(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false);
-                        toast.Show();
+                        LibmpvIptvClient.Services.ToastService.ShowReminder(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false);
                     } 
                     catch 
                     { 
-                        try { LibmpvIptvClient.Services.NotificationService.Instance.Show(r.ChannelName, $"{r.Note}  {r.StartAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}", 8000); } catch { } 
+                        try { LibmpvIptvClient.Services.ToastService.ShowReminder(r.ChannelName ?? "", r.ChannelName ?? "", r.Note ?? "", r.StartAtUtc.ToLocalTime(), _currentChannel?.Logo, false); } catch { } 
                     }
                 }
             }
@@ -2459,6 +2681,7 @@ namespace LibmpvIptvClient
                             StartAtUtc = ctx.Start.ToUniversalTime(),
                             PreAlertSeconds = dlg.PreAlertSeconds,
                             Action = dlg.Action,
+                            PlayMode = dlg.PlayMode,
                             Enabled = true,
                             Note = ctx.Title ?? ""
                         };
@@ -2470,12 +2693,11 @@ namespace LibmpvIptvClient
                         try { LibmpvIptvClient.Services.ReminderService.Instance.Start(); } catch { }
                         try 
                         { 
-                        var toast = new ReminderToastWindow(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false, null);
-                            toast.Show();
+                        LibmpvIptvClient.Services.ToastService.ShowReminder(r.ChannelId, r.ChannelName, r.Note, r.StartAtUtc.ToLocalTime(), r.ChannelLogo, false);
                         } 
                         catch 
                         { 
-                            try { LibmpvIptvClient.Services.NotificationService.Instance.Show(r.ChannelName, $"{r.Note}  {r.StartAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}", 8000); } catch { } 
+                            try { LibmpvIptvClient.Services.ToastService.ShowReminder(r.ChannelName ?? "", r.ChannelName ?? "", r.Note ?? "", r.StartAtUtc.ToLocalTime(), _currentChannel?.Logo, false); } catch { } 
                         }
                     }
                     else
@@ -2552,6 +2774,9 @@ namespace LibmpvIptvClient
 
         void PlayCatchup(Channel ch, EpgProgram prog)
         {
+            StopRecordReplayMonitor();
+            EnsureMpvReadyForLoad();
+            ClearRecordingPlayingIndicator();
             var url = ch.CatchupSource;
             if (string.IsNullOrEmpty(url))
             {
@@ -2585,6 +2810,7 @@ namespace LibmpvIptvClient
                 Logger.Log($"[Replay] 开始回放 - 节目: {prog.Title}, 频道: {ch.Name}, 时间: {prog.Start:HH:mm}-{prog.End:HH:mm}, URL: {url}");
                 _mpv?.LoadFile(url);
                 _currentUrl = url;
+                try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
                 
                 // Update playing status
                 if (_currentPlayingProgram != null) _currentPlayingProgram.IsPlaying = false;
@@ -2592,6 +2818,14 @@ namespace LibmpvIptvClient
                 _currentPlayingProgram.IsPlaying = true;
                 
                 UpdatePlayPauseIcon();
+                try
+                {
+                    if (EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
+                    {
+                        RefreshEpgList(_currentChannel, prog.Start);
+                    }
+                }
+                catch { }
                 // Force UI refresh to update "Playing" status in EPG list
                 if (ListEpg.ItemsSource is List<EpgProgram> list)
                 {
@@ -2703,7 +2937,14 @@ namespace LibmpvIptvClient
             // 4. Fixed Local Time Placeholders
             url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
             url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
-            
+            // 5. Append EPG tracking parameters (minute-level) for replay/timeshift correlation
+            try
+            {
+                var minTs = start.ToString("yyyy-MM-ddTHH:mm");
+                var sep = url.Contains("?") ? "&" : "?";
+                url = url + sep + "epg_time=" + Uri.EscapeDataString(minTs);
+            }
+            catch { }
             return url;
         }
 
@@ -3540,22 +3781,45 @@ namespace LibmpvIptvClient
         void OnTick(object? sender, EventArgs e)
         {
             // 在时移模式下，不允许此超时监控例程改动进度条和标签，避免与时移逻辑竞态导致不同步
-            if (_timeshiftActive) return;
+            if (_timeshiftActive)
+            {
+                // 仅做 EPG 同步（按播放时刻），不改动底部进度条
+                try
+                {
+                    if (AppSettings.Current.Epg.StrictMatchByPlaybackTime && EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
+                    {
+                        var t = GetPlaybackLocalTime();
+                        if (t.HasValue) RefreshEpgList(_currentChannel, t.Value);
+                    }
+                }
+                catch { }
+                return;
+            }
             if (_mpv == null) return;
-            var t = _mpv.GetTimePos();
-            if (t.HasValue && t.Value > 0) _sourceTimeoutTimer.Stop(); // 有进度，说明播放成功
+            var tpos = _mpv.GetTimePos();
+            if (tpos.HasValue && tpos.Value > 0) _sourceTimeoutTimer.Stop(); // 有进度，说明播放成功
             var d = _mpv.GetDuration();
             if (d.HasValue && d.Value > 0)
             {
                 if (!_seeking)
                 {
                     SliderSeek.Maximum = d.Value;
-                    SliderSeek.Value = t ?? 0;
+                    SliderSeek.Value = tpos ?? 0;
                 }
-                LblElapsed.Text = FormatTime(t ?? 0);
+                LblElapsed.Text = FormatTime(tpos ?? 0);
                 LblDuration.Text = FormatTime(d.Value);
-                _overlayWpf?.SetTime(t ?? 0, d.Value);
+                _overlayWpf?.SetTime(tpos ?? 0, d.Value);
             }
+            // 回放模式：按播放时刻同步 EPG（跨节目边界时更新）
+            try
+            {
+                if (_currentPlayingProgram != null && AppSettings.Current.Epg.StrictMatchByPlaybackTime && EpgPanel.Visibility == Visibility.Visible && _currentChannel != null)
+                {
+                    var tt = GetPlaybackLocalTime();
+                    if (tt.HasValue) RefreshEpgList(_currentChannel, tt.Value);
+                }
+            }
+            catch { }
             // 更新播放信息状态行（英文标签芯片）
             try
             {
@@ -3756,6 +4020,35 @@ namespace LibmpvIptvClient
         {
             try { SliderSeek.ClearValue(ToolTipProperty); } catch { }
         }
+        void ClearIndicatorsOnStop()
+        {
+            try
+            {
+                ClearLiveAndEpgIndicators();
+            }
+            catch { }
+            try
+            {
+                ClearRecordingPlayingIndicator();
+            }
+            catch { }
+            try
+            {
+                _timeshiftActive = false;
+                try { _overlayWpf?.SetTimeshift(false); } catch { }
+                try { if (CbTimeshift != null) CbTimeshift.IsChecked = false; } catch { }
+                try
+                {
+                    _playbackSpeed = 1.0;
+                    _mpv?.SetSpeed(1.0);
+                    _overlayWpf?.SetSpeed(1.0);
+                    _overlayWpf?.SetSpeedEnabled(false);
+                    if (BtnSpeed != null) { BtnSpeed.IsEnabled = false; LblSpeedBar.Text = "1.0x"; }
+                }
+                catch { }
+            }
+            catch { }
+        }
         void BtnPlayPause_Click(object sender, RoutedEventArgs e)
         {
             if (_mpv == null) return;
@@ -3769,6 +4062,7 @@ namespace LibmpvIptvClient
             _mpv.Stop();
             _paused = false;
             UpdatePlayPauseIcon();
+            ClearIndicatorsOnStop();
             
             // Show placeholder and Hide VideoHost (Airspace workaround)
             try 
@@ -3805,6 +4099,1711 @@ namespace LibmpvIptvClient
         {
             var visible = CbDrawer.IsChecked == true;
             SetDrawerCollapsed(!visible);
+        }
+        bool _recordingNow = false;
+        string _recordFilePath = "";
+        DateTime? _recordStartUtc = null;
+        DateTime? _recordFirstWriteUtc = null;
+        System.Threading.CancellationTokenSource? _recordCts;
+        System.Threading.Tasks.Task? _recordTask;
+        FileSystemWatcher? _recordingsWatcher;
+        bool _recordingsRefreshPending = false;
+        System.Windows.Threading.DispatcherTimer? _recordingsRefreshTimer;
+        bool _recordViaHttp = false;
+        List<LibmpvIptvClient.Services.RecordingGroup> _recordingsGroupsAll = new List<LibmpvIptvClient.Services.RecordingGroup>();
+        List<LibmpvIptvClient.Services.RecordingEntry> _recordingsFlatAll = new List<LibmpvIptvClient.Services.RecordingEntry>();
+        System.Windows.Threading.DispatcherTimer? _recordReplayEofTimer;
+        LibmpvIptvClient.Services.RecordingEntry? _currentRecordingPlaying;
+        void EnsureMpvReadyForLoad()
+        {
+            try
+            {
+                _mpv?.Pause(false);
+                var eof = _mpv?.GetString("eof-reached");
+                if (string.Equals(eof ?? "", "yes", StringComparison.OrdinalIgnoreCase))
+                {
+                    _mpv?.Stop();
+                    System.Threading.Thread.Sleep(80);
+                }
+            }
+            catch { }
+        }
+        void ClearRecordingPlayingIndicator()
+        {
+            try
+            {
+                if (_currentRecordingPlaying != null)
+                {
+                    _currentRecordingPlaying.IsPlaying = false;
+                    _currentRecordingPlaying = null;
+                }
+            }
+            catch { }
+        }
+        void StopRecordReplayMonitor()
+        {
+            try { _recordReplayEofTimer?.Stop(); _recordReplayEofTimer = null; } catch { }
+        }
+        void StartRecordReplayMonitor()
+        {
+            try
+            {
+                StopRecordReplayMonitor();
+                _recordReplayEofTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+                _recordReplayEofTimer.Tick += (s, e) =>
+                {
+                    try
+                    {
+                        var eof = _mpv?.GetString("eof-reached");
+                        if (string.Equals(eof ?? "", "yes", StringComparison.OrdinalIgnoreCase))
+                        {
+                            StopRecordReplayMonitor();
+                            // 仅复位播放器，不切回直播，保持录播项的播放标记
+                            EnsureMpvReadyForLoad();
+                        }
+                    }
+                    catch { }
+                };
+                _recordReplayEofTimer.Start();
+            }
+            catch { }
+        }
+        void ClearLiveAndEpgIndicators()
+        {
+            try
+            {
+                if (_channels != null)
+                {
+                    foreach (var c in _channels) if (c != null) c.Playing = false;
+                }
+                if (_currentPlayingProgram != null)
+                {
+                    _currentPlayingProgram.IsPlaying = false;
+                    _currentPlayingProgram = null;
+                    try { if (ListEpg?.Items != null) ListEpg.Items.Refresh(); } catch { }
+                }
+            }
+            catch { }
+        }
+        string ResolveProgramTitleNow()
+        {
+            try
+            {
+                var now = DateTime.Now;
+                if (_currentChannel != null)
+                {
+                    var progs = _epgService?.GetPrograms(_currentChannel.TvgId, _currentChannel.Name);
+                    var p = progs?.FirstOrDefault(x => x.Start <= now && x.End > now);
+                    if (p != null && !string.IsNullOrWhiteSpace(p.Title)) return p.Title!;
+                }
+            }
+            catch { }
+            return "";
+        }
+        async System.Threading.Tasks.Task ResetAfterRecordingStopAsync()
+        {
+            try
+            {
+                try { _mpv.SetOptionString("stream-record", ""); } catch { }
+                try { _mpv.SetPropertyString("stream-record", ""); } catch { }
+                try { _mpv.SetPropertyString("record-file", ""); } catch { }
+                try { _mpv.SetPropertyString("ab-loop-a", "no"); } catch { }
+                try { _mpv.SetPropertyString("ab-loop-b", "no"); } catch { }
+                try { _mpv.Pause(false); } catch { }
+                try { await System.Threading.Tasks.Task.Delay(120); } catch { }
+                try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
+            }
+            catch { }
+        }
+        void TxtRecordingsSearch_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            try { ApplyRecordingsFilter(); } catch { }
+        }
+        void BtnRecordingsSearchClear_Click(object sender, RoutedEventArgs e)
+        {
+            try { TxtRecordingsSearch.Text = ""; } catch { }
+        }
+        void BtnChannelsRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            try { ApplyChannelFilter(); } catch { }
+        }
+        void ApplyRecordingsFilter()
+        {
+            try
+            {
+                var q = (TxtRecordingsSearch?.Text ?? "").Trim();
+                bool hasQ = !string.IsNullOrWhiteSpace(q);
+                Func<string, bool> match = s => string.IsNullOrWhiteSpace(q) ? true :
+                    (s?.IndexOf(q, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0;
+                // 过滤分组
+                var groups = new List<LibmpvIptvClient.Services.RecordingGroup>();
+                int total = 0;
+                foreach (var g in _recordingsGroupsAll)
+                {
+                    var items = hasQ ? g.Items.Where(it => match(it.Title) || match(it.PathOrUrl)).ToList() : g.Items.ToList();
+                    if (items.Count > 0 || !hasQ)
+                    {
+                        groups.Add(new LibmpvIptvClient.Services.RecordingGroup { Channel = g.Channel, Items = items });
+                        total += items.Count;
+                    }
+                }
+                ListRecordingsGrouped.ItemsSource = groups;
+                // 扁平列表隐藏，不再使用
+                try { ListRecordings.ItemsSource = null; } catch { }
+                try { TxtRecordingsCount.Text = (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Records_Count", "共")) + $" {total} " + (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Records_Unit", "个录播")); } catch { TxtRecordingsCount.Text = $"共 {total} 个录播"; }
+            }
+            catch { }
+        }
+        readonly System.Collections.Generic.HashSet<string> _recordingsExpanded = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        void RecordingGroup_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Expander ex && ex.DataContext is LibmpvIptvClient.Services.RecordingGroup g)
+                {
+                    ex.IsExpanded = _recordingsExpanded.Contains(g.Channel ?? "");
+                }
+            }
+            catch { }
+        }
+        void RecordingGroup_Expanded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Expander ex && ex.DataContext is LibmpvIptvClient.Services.RecordingGroup g)
+                {
+                    _recordingsExpanded.Add(g.Channel ?? "");
+                }
+            }
+            catch { }
+        }
+        void RecordingGroup_Collapsed(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Expander ex && ex.DataContext is LibmpvIptvClient.Services.RecordingGroup g)
+                {
+                    _recordingsExpanded.Remove(g.Channel ?? "");
+                }
+            }
+            catch { }
+        }
+        async void BtnRecordNow_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_mpv == null || _currentChannel == null) return;
+                if (!_recordingNow)
+                {
+                var recCfgGate = AppSettings.Current?.Recording?.Enabled ?? true;
+                if (!recCfgGate)
+                {
+                    try { BtnRecordNow.IsChecked = false; } catch { }
+                    try { BtnRecordNow.ToolTip = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Overlay_RecordNow", "实时录播"); } catch { }
+                    try { LibmpvIptvClient.Services.NotificationService.Instance.Show(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Overlay_RecordNow", "实时录播"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Record_Disabled", "已关闭录播"), 4000); } catch { }
+                    return;
+                }
+                var key = ResolveChannelKey();
+                    var safe = SanName(string.IsNullOrWhiteSpace(key) ? "unknown" : key);
+                    var dir = ResolveRecordingDir(safe);
+                    var verify = AppSettings.Current?.Recording?.VerifyDirReady ?? true;
+                    var dirReady = verify ? await EnsureRecordingDirReady(dir) : true;
+                    if (!dirReady)
+                    {
+                        try { LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] dir not ready " + dir); } catch { }
+                        return;
+                    }
+                    var name = DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".ts";
+                    _recordFilePath = System.IO.Path.Combine(dir, name).Replace("\\", "/"); // Normalize path
+                    _recordStartUtc = DateTime.UtcNow;
+                    _recordFirstWriteUtc = null;
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info("[Record] start " + _recordFilePath); } catch { }
+                    TryStartStreamRecord(_recordFilePath);
+                    _recordingNow = true;
+                    try { StartRealtimeUploadIfEnabled(_recordFilePath, safe, System.IO.Path.GetFileName(_recordFilePath)); } catch { }
+                    try { BtnRecordNow.IsChecked = true; BtnRecordNow.ToolTip = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Overlay_RecordStop", "停止录播"); } catch { }
+                    try
+                    {
+                        var ch = _currentChannel?.Name ?? "SrcBox";
+                        var prog = _currentPlayingProgram?.Title;
+                        if (string.IsNullOrWhiteSpace(prog)) prog = ResolveProgramTitleNow();
+                        var logoPath = _currentChannel?.Logo;
+                        var status = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Record_Start", "开始录播");
+                        System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                        {
+                            try
+                            {
+                            LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.RecordStart, ch, status, logoPath, 3000);
+                            }
+                            catch
+                            {
+                                LibmpvIptvClient.Services.NotificationService.Instance.ShowWithLogo(ch, status, DateTime.Now, logoPath, 5000);
+                            }
+                        });
+                    }
+                    catch { }
+                }
+                else
+                {
+                    // 停止录播并清理所有副作用，确保播放流程恢复
+                    try { _mpv.SetOptionString("stream-record", ""); } catch { }
+                    try { _mpv.SetPropertyString("stream-record", ""); } catch { }
+                    try { _mpv.SetPropertyString("record-file", ""); } catch { }
+                    try { _mpv.SetPropertyString("ab-loop-a", "no"); } catch { }
+                    try { _mpv.SetPropertyString("ab-loop-b", "no"); } catch { }
+                    try { _mpv.Pause(false); } catch { }
+                    try { _recordCts?.Cancel(); } catch { }
+                    try { await System.Threading.Tasks.Task.Delay(150); } catch { }
+                    _recordingNow = false;
+                    _recordViaHttp = false;
+                    try { BtnRecordNow.IsChecked = false; BtnRecordNow.ToolTip = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Overlay_RecordNow", "实时录播"); } catch { }
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info("[Record] stop " + _recordFilePath); } catch { }
+                    string? logoPathStop = _currentChannel?.Logo;
+                    try
+                    {
+                            var ch = _currentChannel?.Name ?? "SrcBox";
+                            var prog = _currentPlayingProgram?.Title;
+                            if (string.IsNullOrWhiteSpace(prog)) prog = ResolveProgramTitleNow();
+                            var status = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_Record_Stop", "录播已停止");
+                            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                            {
+                                try
+                                {
+                            LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.RecordStop, ch, status, logoPathStop, 3000);
+                                }
+                                catch
+                                {
+                                    LibmpvIptvClient.Services.NotificationService.Instance.ShowWithLogo(ch, status, DateTime.Now, logoPathStop, 5000);
+                                }
+                            });
+                    }
+                    catch { }
+                    try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, DateTime.UtcNow); } catch { }
+                    TryUploadRecording(_recordFilePath, logoPathStop);
+                    try 
+                    { 
+                        var k = ResolveChannelKey() ?? ""; 
+                        ScheduleRecordingsRefresh(k); 
+                    } 
+                    catch { }
+                    // 如仍卡帧，强制刷新当前直播流
+                    try
+                    {
+                        await ResetAfterRecordingStopAsync();
+                    }
+                    catch { }
+                    _recordFilePath = "";
+                    _recordStartUtc = null;
+                }
+            }
+            catch { }
+        }
+        void StartRealtimeUploadIfEnabled(string localPath, string safeChannel, string fileName)
+        {
+            try
+            {
+                var recCfg = AppSettings.Current?.Recording ?? new RecordingConfig();
+                if (!string.Equals(recCfg.SaveMode ?? "", "dual_realtime", StringComparison.OrdinalIgnoreCase)) return;
+                var wd = AppSettings.Current.WebDav;
+                if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                _recordCts = new System.Threading.CancellationTokenSource();
+                var ct = _recordCts.Token;
+                var interval = Math.Max(2, recCfg.RealtimeUploadIntervalSec);
+                var tempSuffix = string.IsNullOrWhiteSpace(recCfg.RemoteTempSuffix) ? ".part" : recCfg.RemoteTempSuffix;
+                var remoteDir = (wd.RecordingsPath ?? "/srcbox/recordings/").TrimEnd('/') + "/" + safeChannel + "/";
+                var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                _recordTask = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        await cli.EnsureCollectionAsync(remoteDir);
+                        var tempUrl = cli.Combine(remoteDir + fileName + tempSuffix);
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[RealtimeUpload] begin url={tempUrl} interval={interval}s"); } catch { }
+                        while (!ct.IsCancellationRequested && _recordingNow)
+                        {
+                            try
+                            {
+                                var ok = await cli.PutFileAsync(tempUrl, localPath, "video/MP2T", Math.Max(0, recCfg.UploadMaxKBps), ct);
+                                try { LibmpvIptvClient.Diagnostics.Logger.Info($"[RealtimeUpload] push {(ok ? "ok" : "fail")} -> {tempUrl}"); } catch { }
+                            }
+                            catch { }
+                            for (int i = 0; i < interval * 10 && !ct.IsCancellationRequested && _recordingNow; i++)
+                            {
+                                await System.Threading.Tasks.Task.Delay(100, ct);
+                            }
+                        }
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info("[RealtimeUpload] end"); } catch { }
+                    }
+                    catch { }
+                }, ct);
+            }
+            catch { }
+        }
+        async void TryStartStreamRecord(string path)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path)) return;
+                path = path.Replace("\\", "/");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] Attempting to start record to: {path}");
+                try
+                {
+                    var pd = System.IO.Path.GetDirectoryName(path) ?? "";
+                    await EnsureRecordingDirReady(pd);
+                }
+                catch { }
+                
+                // 方案A: 尝试 stream-record 属性
+                try 
+                { 
+                    // 确保缓存已开启，这对 stream-record 和 dump-cache 至关重要
+                    // 注意：在播放中途修改 cache 属性可能需要重新加载，这里仅作尝试
+                    _mpv.SetPropertyString("cache", "yes");
+                    _mpv.SetPropertyString("demuxer-max-bytes", "512MiB"); 
+                    _mpv.SetPropertyString("demuxer-max-back-bytes", "256MiB");
+                    _mpv.SetPropertyString("force-seekable", "yes");
+
+                    _mpv.SetPropertyString("stream-record", path);
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Set stream-record property (path)");
+                    
+                    // 诊断：检查缓存状态
+                    try 
+                    {
+                        var cacheSize = 0L;
+                        if (long.TryParse(_mpv.GetString("demuxer-cache-state/total-bytes"), out var s)) cacheSize = s;
+                        var cacheDuration = _mpv.GetString("demuxer-cache-duration");
+                        var cacheTime = _mpv.GetString("demuxer-cache-time");
+                        var cacheState = _mpv.GetString("demuxer-cache-state/fw-bytes");
+                        
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] Cache Diag - Size: {cacheSize} bytes, Duration: {cacheDuration}, Time: {cacheTime}, FwBytes: {cacheState}");
+                        
+                        // 即使 cacheSize 为 0，如果 duration > 0，说明 back-buffer 可能有数据
+                        // 或者数据在内部队列中。如果 stream-record 失败，我们需要尝试 dump-cache。
+                        
+                        // 验证 stream-record 是否生效
+                        var currentRecordPath = _mpv.GetString("stream-record");
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] stream-record property check: '{currentRecordPath}'");
+                        
+                        // 即使 cacheSize 为 0，如果 duration > 0，说明 back-buffer 可能有数据
+                        // 增加更详细的诊断
+                        if (cacheSize == 0)
+                        {
+                            LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] Cache size is 0! Checking stream details...");
+                            // 尝试获取更多流信息
+                            var demuxerStart = _mpv.GetString("demuxer-cache-state/seekable-start");
+                            var demuxerEnd = _mpv.GetString("demuxer-cache-state/seekable-end");
+                            LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] Seekable Range: {demuxerStart} - {demuxerEnd}");
+                        }
+
+                        if (string.IsNullOrEmpty(currentRecordPath) || cacheSize == 0)
+                        {
+                            LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] Cache empty or stream-record rejected. Triggering fallback chain...");
+                            
+                            // 1. 尝试 record-file (如果 stream-record 失败)
+                            if (string.IsNullOrEmpty(currentRecordPath))
+                            {
+                                try 
+                                {
+                                    _mpv.SetPropertyString("record-file", path); 
+                                    LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Set record-file property");
+                                } catch {}
+                            }
+                            
+                            // 2. 如果还是没反应，且缓存为0但有时长，尝试 dump-cache
+                            // 注意：dump-cache 需要具体的范围，如果 start 默认为 0 可能无效
+                            if (cacheSize == 0)
+                            {
+                                // 尝试设置 ab-loop 来辅助 dump-cache
+                                _mpv.SetPropertyString("ab-loop-a", "0");
+                                _mpv.SetPropertyString("ab-loop-b", "no");
+                            }
+                        }
+                    }
+                    catch { }
+                } 
+                catch (Exception ex)
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Error($"[Record] Failed to set stream-record: {ex.Message}");
+                }
+                
+                await System.Threading.Tasks.Task.Delay(1000);
+                
+                // 验证文件是否创建，若未创建则尝试方案B: dump-cache
+                if (!System.IO.File.Exists(path))
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] File not created via stream-record, trying dump-cache...");
+                    try 
+                    {
+                        // 使用 run 命令调用 dump-cache，参数: start, end, path
+                        // 注意：对于直播流，start=0 可能意味着从当前播放点开始，这可能导致之前的缓存被忽略
+                        // 尝试转储所有可用缓存：start=-36000 (10小时前), end=no (直到流结束)
+                        // 注意：Mpv.NET 或底层库可能需要通过 command 数组传递
+                        
+                        // 方法1: 尝试 SetProperty 触发 dump-cache（某些版本不支持直接 command）
+                        // 这里回退到尝试 file URI 
+                        var fileUri = new Uri(path, UriKind.Absolute).AbsoluteUri;
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] Retry with file URI: {fileUri}");
+                        
+                        // 尝试使用 ab-loop 标记缓存范围
+                        _mpv.SetPropertyString("ab-loop-a", "0"); // 从头开始
+                        _mpv.SetPropertyString("ab-loop-b", "no"); // 到尾结束
+                        
+                        // 再次尝试 stream-record (现在有了 ab-loop 范围)
+                        // _mpv.SetPropertyString("stream-record", fileUri);
+                        
+                        // 尝试显式 dump-cache 命令
+                        _mpv.Command("dump-cache", "0", "no", path);
+                        LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Invoked dump-cache command");
+                    } 
+                    catch (Exception ex)
+                    {
+                         LibmpvIptvClient.Diagnostics.Logger.Error($"[Record] Retry failed: {ex.Message}");
+                    }
+                }
+                else
+                {
+                     LibmpvIptvClient.Diagnostics.Logger.Info("[Record] File created successfully via stream-record");
+                }
+
+                var grew = await MonitorRecordingGrowth();
+                if (!grew)
+                {
+                    var retries = Math.Max(0, AppSettings.Current?.Recording?.RetryCount ?? 1);
+                    for (int attempt = 1; attempt <= retries && !_recordingNow; attempt++) { }
+                    for (int attempt = 1; attempt <= retries && _recordingNow; attempt++)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] auto-retry begin");
+                        try { _mpv.SetPropertyString("stream-record", ""); } catch { }
+                        try { _mpv.SetPropertyString("record-file", ""); } catch { }
+                        try { await System.Threading.Tasks.Task.Delay(200); } catch { }
+                        try
+                        {
+                            if (System.IO.File.Exists(_recordFilePath))
+                            {
+                                var fi = new System.IO.FileInfo(_recordFilePath);
+                                if (fi.Length == 0) System.IO.File.Delete(_recordFilePath);
+                            }
+                        }
+                        catch { }
+                        var dir2 = System.IO.Path.GetDirectoryName(path) ?? "";
+                        var verify = AppSettings.Current?.Recording?.VerifyDirReady ?? true;
+                        var ok = verify ? await EnsureRecordingDirReady(dir2) : true;
+                        if (ok)
+                        {
+                            var name2 = DateTime.Now.ToString("yyyyMMdd_HHmmss") + $"_r{attempt}.ts";
+                            _recordFilePath = System.IO.Path.Combine(dir2, name2).Replace("\\", "/");
+                            _recordFirstWriteUtc = null;
+                            try { _mpv.SetPropertyString("stream-record", _recordFilePath); } catch { }
+                            var grew2 = await MonitorRecordingGrowth();
+                            if (grew2) break;
+                            if (attempt == retries) LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] auto-retry failed");
+                        }
+                        else
+                        {
+                            LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] dir not ready on retry");
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                 LibmpvIptvClient.Diagnostics.Logger.Error($"[Record] TryStartStreamRecord Exception: {ex}");
+            }
+        }
+        async System.Threading.Tasks.Task<bool> MonitorRecordingGrowth()
+        {
+            try
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Starting growth monitor...");
+                // 持续检测直到文件开始增长或录制停止
+                var secs = Math.Max(1, AppSettings.Current?.Recording?.GrowthTimeoutSec ?? 20);
+                var loops = Math.Max(1, (int)Math.Ceiling(secs * 1000.0 / 500.0));
+                for (int i = 0; i < loops; i++)
+                {
+                    if (!_recordingNow) 
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Monitor stopped (recording stopped)");
+                        return false;
+                    }
+                    await System.Threading.Tasks.Task.Delay(500);
+                    try
+                    {
+                        if (System.IO.File.Exists(_recordFilePath))
+                        {
+                            var info = new System.IO.FileInfo(_recordFilePath);
+                            if (info.Length > 0)
+                            {
+                                if (!_recordFirstWriteUtc.HasValue) 
+                                {
+                                    _recordFirstWriteUtc = DateTime.UtcNow;
+                                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] File started growing at {_recordFirstWriteUtc}, size: {info.Length}");
+                                }
+                                return true;
+                            }
+                        }
+                        else
+                        {
+                             LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] File not found yet: {_recordFilePath}");
+                        }
+                    }
+                    catch { }
+                }
+                LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] Monitor timeout: File did not grow after 20s");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Error($"[Record] Monitor Exception: {ex}");
+                return false;
+            }
+        }
+        async System.Threading.Tasks.Task<bool> EnsureRecordingDirReady(string dir)
+        {
+            try
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    try { System.IO.Directory.CreateDirectory(dir); } catch { }
+                    var ok = false;
+                    try
+                    {
+                        var tf = System.IO.Path.Combine(dir, ".dircheck.tmp");
+                        try { if (System.IO.File.Exists(tf)) System.IO.File.Delete(tf); } catch { }
+                        System.IO.File.WriteAllText(tf, "ok");
+                        ok = System.IO.File.Exists(tf);
+                        try { System.IO.File.Delete(tf); } catch { }
+                    }
+                    catch { ok = false; }
+                    if (ok) return true;
+                    await System.Threading.Tasks.Task.Delay(200 * (i + 1));
+                }
+            }
+            catch { }
+            return false;
+        }
+        void WriteRecordingMeta(string path, DateTime? startUtc, DateTime? endUtc)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return;
+                var finfo = new System.IO.FileInfo(path);
+                var end = endUtc ?? finfo.LastWriteTimeUtc;
+                var start = _recordFirstWriteUtc ?? startUtc;
+                if (!start.HasValue || end <= DateTime.MinValue) return;
+                var ch = ResolveChannelKey();
+                var source = GetSelectedSourceName();
+                string title = "";
+                try
+                {
+                    var progs = _epgService?.GetPrograms(_currentChannel?.TvgId, _currentChannel?.Name);
+                    var startLocal = start.Value.ToLocalTime();
+                    var p = progs?.FirstOrDefault(x => x.Start <= startLocal && x.End > startLocal);
+                    if (p != null && !string.IsNullOrWhiteSpace(p.Title)) title = p.Title!;
+                }
+                catch { }
+                var meta = new
+                {
+                    channel = ch,
+                    source = source,
+                    start_utc = start.Value.ToString("o"),
+                    end_utc = end.ToString("o"),
+                    duration_secs = (int)Math.Max(0, (end - start.Value).TotalSeconds),
+                    title = title
+                };
+                var json = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
+                var adsPath = path + ":srcbox-meta";
+                try
+                {
+                    using var ads = new System.IO.FileStream(adsPath, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                    using var sw = new System.IO.StreamWriter(ads);
+                    sw.Write(json);
+                }
+                catch
+                {
+                }
+                try { System.IO.File.WriteAllText(System.IO.Path.ChangeExtension(path, ".json"), json); } catch { }
+            }
+            catch { }
+            try
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        _ = LoadRecordingsLocalGrouped();
+                        _ = LoadRecordingsLocalGrouped();
+                    }
+                    catch { }
+                }));
+            }
+            catch { }
+        }
+        string SanName(string s)
+        {
+            s = s ?? "";
+            s = s.Replace(":", "_").Replace("/", "_").Replace("\\", "_");
+            return s.Trim();
+        }
+        string ResolveRecordingDir(string safeChannel)
+        {
+            var baseDir = System.AppDomain.CurrentDomain.BaseDirectory;
+            var cfg = AppSettings.Current?.RecordingLocalDir ?? "";
+            var source = GetSelectedSourceName();
+            var safeSource = SanName(source);
+            var path = (cfg ?? "").Replace("{source}", safeSource).Replace("{channel}", safeChannel);
+            if (string.IsNullOrWhiteSpace(path)) path = System.IO.Path.Combine(baseDir, "recordings", safeChannel);
+            if (!System.IO.Path.IsPathRooted(path)) path = System.IO.Path.Combine(baseDir, path);
+            if (!path.EndsWith(safeChannel, StringComparison.OrdinalIgnoreCase) && !(cfg ?? "").Contains("{channel}")) path = System.IO.Path.Combine(path, safeChannel);
+            return path;
+        }
+        string BuildRemoteUrlForRecording(LibmpvIptvClient.WebDavConfig wd, LibmpvIptvClient.Services.RecordingEntry item, bool json)
+        {
+            try
+            {
+                var recBase = (wd.RecordingsPath ?? "/srcbox/recordings/").TrimEnd('/');
+                string channel = "", fileName = "";
+                var p = item.PathOrUrl ?? "";
+                if (!string.IsNullOrWhiteSpace(p) && p.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    var u = new Uri(p, UriKind.Absolute);
+                    var parts = u.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < parts.Length - 1; i++)
+                    {
+                        if (string.Equals(parts[i], "recordings", StringComparison.OrdinalIgnoreCase) && i + 2 <= parts.Length - 1)
+                        {
+                            channel = Uri.UnescapeDataString(parts[i + 1]);
+                            fileName = Uri.UnescapeDataString(parts[i + 2]);
+                            break;
+                        }
+                    }
+                    if (string.IsNullOrWhiteSpace(fileName)) fileName = System.IO.Path.GetFileName(u.AbsolutePath);
+                }
+                if (string.IsNullOrWhiteSpace(channel) || string.IsNullOrWhiteSpace(fileName))
+                {
+                    var lp = item.PathOrUrl ?? "";
+                    if (!string.IsNullOrWhiteSpace(lp))
+                    {
+                        channel = ChannelFromFullPath(lp);
+                        fileName = System.IO.Path.GetFileName(lp);
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(channel) || string.IsNullOrWhiteSpace(fileName)) return "";
+                if (json) fileName = System.IO.Path.ChangeExtension(fileName, ".json");
+                var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                return cli.Combine(recBase + "/" + SanName(channel) + "/" + fileName);
+            }
+            catch { return ""; }
+        }
+        string GetSelectedSourceName()
+        {
+            try
+            {
+                var sel = AppSettings.Current?.SavedSources?.Find(s => s.IsSelected);
+                if (sel != null && !string.IsNullOrWhiteSpace(sel.Name)) return sel.Name;
+                var p = AppSettings.Current?.LastLocalM3uPath ?? "";
+                if (!string.IsNullOrWhiteSpace(p)) return System.IO.Path.GetFileNameWithoutExtension(p);
+            }
+            catch { }
+            return "default";
+        }
+        string ResolveChannelKey()
+        {
+            try
+            {
+                var name = _currentChannel?.Name;
+                if (!string.IsNullOrWhiteSpace(name)) return name!;
+                var id = _currentChannel?.TvgId ?? _currentChannel?.Id;
+                if (!string.IsNullOrWhiteSpace(id)) return id!;
+                var url = _currentUrl ?? "";
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    try
+                    {
+                        if (Uri.TryCreate(url, UriKind.Absolute, out var u))
+                        {
+                            var last = System.IO.Path.GetFileName(u.AbsolutePath);
+                            if (!string.IsNullOrWhiteSpace(last)) return last;
+                            var host = u.Host;
+                            if (!string.IsNullOrWhiteSpace(host)) return host;
+                        }
+                        else
+                        {
+                            var last = System.IO.Path.GetFileName(url);
+                            if (!string.IsNullOrWhiteSpace(last)) return last;
+                        }
+                    }
+                    catch
+                    {
+                        var last = System.IO.Path.GetFileName(url);
+                        if (!string.IsNullOrWhiteSpace(last)) return last;
+                    }
+                }
+            }
+            catch { }
+            return "unknown";
+        }
+        async void TryUploadRecording(string path, string? logoForToast)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path)) return;
+                if (!System.IO.File.Exists(path)) return;
+                var recCfg = AppSettings.Current?.Recording ?? new RecordingConfig();
+                var mode = recCfg.SaveMode ?? "local_then_upload";
+                if (string.Equals(mode, "local_only", StringComparison.OrdinalIgnoreCase)) return;
+                var wd = AppSettings.Current.WebDav;
+                if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                var key = ResolveChannelKey();
+                var safe = SanName(string.IsNullOrWhiteSpace(key) ? "unknown" : key);
+                var remoteDir = (wd.RecordingsPath ?? "/srcbox/recordings/").TrimEnd('/') + "/" + safe + "/";
+                var fileName = System.IO.Path.GetFileName(path);
+                if (string.Equals(mode, "dual_realtime", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                        if (wd.MoveSupported == null || wd.CopySupported == null)
+                        {
+                            try
+                            {
+                                var caps = await cli.ProbeCapabilitiesAsync(wd.BaseUrl);
+                                wd.MoveSupported = caps.move;
+                                wd.CopySupported = caps.copy;
+                            }
+                            catch { }
+                        }
+                        var tempSuffix = string.IsNullOrWhiteSpace(recCfg.RemoteTempSuffix) ? ".part" : recCfg.RemoteTempSuffix;
+                        var tempUrl = cli.Combine(remoteDir + fileName + tempSuffix);
+                        var finalUrl = cli.Combine(remoteDir + fileName);
+                        // 若最终文件已存在（可能是此前已提升），直接提示并返回
+                        var finalHead = await cli.HeadAsync(finalUrl);
+                        if (finalHead.ok && finalHead.size > 0)
+                        {
+                            try
+                            {
+                                var titleToast = ReadSidecarTitle(path) ?? System.IO.Path.GetFileNameWithoutExtension(fileName);
+                                LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.UploadSuccess, safe, titleToast, logoForToast, 10000);
+                            }
+                            catch { }
+                            // 尝试清理可能遗留的 .part
+                            try { _ = cli.DeleteAsync(tempUrl); } catch { }
+                            return;
+                        }
+                        var head = await cli.HeadAsync(tempUrl);
+                        if (head.ok && head.size > 0)
+                        {
+                            var moved = false;
+                            if (wd.MoveSupported.GetValueOrDefault(true))
+                            {
+                                moved = await cli.MoveAsync(tempUrl, finalUrl, overwrite: true);
+                            }
+                            if (!moved)
+                            {
+                                // MOVE 不被支持时尝试 COPY + DELETE
+                                var copied = wd.CopySupported.GetValueOrDefault(true) ? await cli.CopyAsync(tempUrl, finalUrl, overwrite: true) : false;
+                                if (copied) { try { _ = cli.DeleteAsync(tempUrl); } catch { } }
+                                moved = copied;
+                            }
+                            if (moved)
+                            {
+                                try
+                                {
+                                    var titleToast = ReadSidecarTitle(path) ?? System.IO.Path.GetFileNameWithoutExtension(fileName);
+                                    LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.UploadSuccess, safe, titleToast, logoForToast, 10000);
+                                    // 上传 sidecar.json（若存在）
+                                    try
+                                    {
+                                        var sideLocal = System.IO.Path.ChangeExtension(path, ".json");
+                                        if (System.IO.File.Exists(sideLocal))
+                                        {
+                                            var cliUp = new LibmpvIptvClient.Services.WebDavClient(wd);
+                                            var sideRemote = cliUp.Combine(remoteDir + System.IO.Path.ChangeExtension(fileName, ".json"));
+                                            await cliUp.PutFileAsync(sideRemote, sideLocal, "application/json", Math.Max(0, AppSettings.Current?.Recording?.UploadMaxKBps ?? 0));
+                                        }
+                                    }
+                                    catch { }
+                                }
+                                catch { }
+                                try { ScheduleRecordingsRefresh(safe); } catch { }
+                                return;
+                            }
+                        }
+                    }
+                    catch { }
+                    // 禁用回退全量上传：直接结束，保留 .part（避免可能的并发干扰）
+                    try 
+                    { 
+                        ScheduleRecordingsRefresh(safe); 
+                        if ((AppSettings.Current?.Recording?.RealtimeFinalizeEnabled ?? false))
+                        {
+                            var delaySec = Math.Max(0, AppSettings.Current.Recording.RealtimeFinalizeDelaySec);
+                            var kbps = Math.Max(0, AppSettings.Current.Recording.RealtimeFinalizeMaxKBps);
+                            _ = System.Threading.Tasks.Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await System.Threading.Tasks.Task.Delay(delaySec * 1000);
+                                    var cli3 = new LibmpvIptvClient.Services.WebDavClient(wd);
+                                    var finalUrl3 = cli3.Combine(remoteDir + fileName);
+                                    var swf = System.Diagnostics.Stopwatch.StartNew();
+                                    var ok = await cli3.PutFileAsync(finalUrl3, path, "video/MP2T", kbps);
+                                    swf.Stop();
+                                    if (ok)
+                                    {
+                                        try
+                                        {
+                                            var titleToast = ReadSidecarTitle(path) ?? System.IO.Path.GetFileNameWithoutExtension(fileName);
+                                            LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.UploadSuccess, safe, titleToast, logoForToast, 10000);
+                                            // 上传 sidecar.json（若存在）
+                                            try
+                                            {
+                                                var sideLocal3 = System.IO.Path.ChangeExtension(path, ".json");
+                                                if (System.IO.File.Exists(sideLocal3))
+                                                {
+                                                    var sideRemote3 = cli3.Combine(remoteDir + System.IO.Path.ChangeExtension(fileName, ".json"));
+                                                    await cli3.PutFileAsync(sideRemote3, sideLocal3, "application/json", kbps);
+                                                }
+                                            }
+                                            catch { }
+                                        } catch { }
+                                        try 
+                                        { 
+                                            var tempSuffix3 = string.IsNullOrWhiteSpace(AppSettings.Current.Recording.RemoteTempSuffix) ? ".part" : AppSettings.Current.Recording.RemoteTempSuffix;
+                                            var tempUrl3 = cli3.Combine(remoteDir + fileName + tempSuffix3);
+                                            _ = cli3.DeleteAsync(tempUrl3); 
+                                        } catch { }
+                                        try { ScheduleRecordingsRefresh(safe); } catch { }
+                                    }
+                                }
+                                catch { }
+                            });
+                        }
+                    } 
+                    catch { }
+                    return;
+                }
+                LibmpvIptvClient.Services.UploadQueueService.Instance.Configure(
+                    Math.Max(1, recCfg.UploadMaxConcurrency),
+                    Math.Max(0, recCfg.UploadRetry),
+                    Math.Max(100, recCfg.UploadRetryBackoffMs),
+                    Math.Max(0, recCfg.UploadMaxKBps)
+                );
+                var deleteLocal = string.Equals(mode, "remote_only", StringComparison.OrdinalIgnoreCase);
+                string? tempUrlForCleanup = null;
+                if (string.Equals(mode, "dual_realtime", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var cli2 = new LibmpvIptvClient.Services.WebDavClient(wd);
+                        var tempSuffix2 = string.IsNullOrWhiteSpace(recCfg.RemoteTempSuffix) ? ".part" : recCfg.RemoteTempSuffix;
+                        tempUrlForCleanup = cli2.Combine(remoteDir + fileName + tempSuffix2);
+                    }
+                    catch { tempUrlForCleanup = null; }
+                }
+                LibmpvIptvClient.Services.UploadQueueService.Instance.Enqueue(path, remoteDir, fileName, wd, deleteLocal, tempUrlForCleanup, logoForToast);
+            }
+            catch { }
+        }
+        // 频道下拉与加载按钮已移除
+        async Task LoadRecordingsLocalGrouped()
+        {
+            try
+            {
+                var t0 = DateTime.Now;
+                try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] Refresh begin"); } catch { }
+                string Resolver(string channel, DateTime? start)
+                {
+                    try
+                    {
+                        var progs = _epgService?.GetPrograms(_channels.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase))?.TvgId, channel);
+                        if (progs != null && start.HasValue)
+                        {
+                            var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
+                            if (p != null && !string.IsNullOrWhiteSpace(p.Title)) return p.Title;
+                        }
+                    }
+                    catch { }
+                    return "";
+                }
+                TimeSpan? DurationResolver(string channel, DateTime? start)
+                {
+                    try
+                    {
+                        var progs = _epgService?.GetPrograms(_channels.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase))?.TvgId, channel);
+                        if (progs != null && start.HasValue)
+                        {
+                            var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
+                            if (p != null) return (p.End - start.Value);
+                        }
+                    }
+                    catch { }
+                    return null;
+                }
+                var svc = new LibmpvIptvClient.Services.RecordingIndexService();
+                var groups = await svc.GetAllLocalGroupedAsync((ch, st) => Resolver(ch, st), (ch, st) => DurationResolver(ch, st));
+                _recordingsGroupsAll = groups ?? new List<LibmpvIptvClient.Services.RecordingGroup>();
+                // 合并远端（WebDAV）：按频道逐一拉取远端+本地，保证“网络/本地”标识与远端文件可见
+                try
+                {
+                    var channelNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var g in _recordingsGroupsAll) { if (!string.IsNullOrWhiteSpace(g.Channel)) channelNames.Add(g.Channel); }
+                    try { foreach (var c in _channels ?? new System.Collections.Generic.List<Channel>()) { if (!string.IsNullOrWhiteSpace(c.Name)) channelNames.Add(c.Name!); } } catch { }
+                    int mergedGroups = 0, mergedItems = 0;
+                    foreach (var ch in channelNames)
+                    {
+                        try
+                        {
+                            var flat = await svc.GetForChannelAsync(ch, (st) => 
+                            { 
+                                try 
+                                { 
+                                    var title = Resolver(ch, st); 
+                                    var dur = DurationResolver(ch, st); 
+                                    return (string.IsNullOrWhiteSpace(title) ? null : title, dur); 
+                                } 
+                                catch { return (null, null); } 
+                            });
+                            if (flat != null && flat.Count > 0)
+                            {
+                                var existing = _recordingsGroupsAll.FirstOrDefault(x => string.Equals(x.Channel ?? "", ch ?? "", StringComparison.OrdinalIgnoreCase));
+                                if (existing == null)
+                                {
+                                    existing = new LibmpvIptvClient.Services.RecordingGroup { Channel = ch };
+                                    _recordingsGroupsAll.Add(existing);
+                                }
+                                existing.Items = flat.OrderByDescending(x => x.StartTime ?? DateTime.MinValue).ToList();
+                                mergedGroups++;
+                                mergedItems += existing.Items.Count;
+                            }
+                        }
+                        catch { }
+                    }
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings] Refresh merged groups={mergedGroups} items={mergedItems}"); } catch { }
+                }
+                catch { }
+                // 扁平缓存用于搜索/过滤
+                _recordingsFlatAll = _recordingsGroupsAll.SelectMany(g => g.Items ?? new System.Collections.Generic.List<LibmpvIptvClient.Services.RecordingEntry>()).ToList();
+                ApplyRecordingsFilter();
+                try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings] Refresh done groups={_recordingsGroupsAll.Count} items={_recordingsFlatAll.Count} elapsed={(DateTime.Now - t0).TotalMilliseconds:0}ms"); } catch { }
+            }
+            catch { }
+        }
+        void StartRecordingsWatcher()
+        {
+            try
+            {
+                var root = System.AppDomain.CurrentDomain.BaseDirectory;
+                var recRoot = System.IO.Path.Combine(root, "recordings");
+                if (!System.IO.Directory.Exists(recRoot)) System.IO.Directory.CreateDirectory(recRoot);
+                _recordingsWatcher = new FileSystemWatcher(recRoot, "*.ts");
+                _recordingsWatcher.IncludeSubdirectories = true;
+                _recordingsWatcher.EnableRaisingEvents = true;
+                _recordingsWatcher.Created += (_, e) => { try { var ch = ChannelFromFullPath(e.FullPath); if (!string.IsNullOrWhiteSpace(ch)) ScheduleRecordingsRefresh(ch); else ScheduleRecordingsRefresh(); } catch { ScheduleRecordingsRefresh(); } };
+                _recordingsWatcher.Renamed += (_, e) => { try { var ch = ChannelFromFullPath(e.FullPath); if (!string.IsNullOrWhiteSpace(ch)) ScheduleRecordingsRefresh(ch); else ScheduleRecordingsRefresh(); } catch { ScheduleRecordingsRefresh(); } };
+                _recordingsWatcher.Changed += (_, e) => { try { var ch = ChannelFromFullPath(e.FullPath); if (!string.IsNullOrWhiteSpace(ch)) ScheduleRecordingsRefresh(ch); else ScheduleRecordingsRefresh(); } catch { ScheduleRecordingsRefresh(); } };
+                _recordingsRefreshTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                _recordingsRefreshTimer.Tick += (s, e) =>
+                {
+                    _recordingsRefreshTimer?.Stop();
+                    _recordingsRefreshPending = false;
+                    try
+                    {
+                        var key = _recordingsRefreshChannelKey;
+                        _recordingsRefreshChannelKey = null;
+                        if (!string.IsNullOrWhiteSpace(key))
+                        {
+                            _ = LoadRecordingsForChannel(key);
+                        }
+                        else
+                        {
+                            _ = LoadRecordingsLocalGrouped();
+                        }
+                    }
+                    catch { }
+                };
+            }
+            catch { }
+        }
+        string? _recordingsRefreshChannelKey = null;
+        string ChannelFromFullPath(string fullPath)
+        {
+            try
+            {
+                var p = fullPath.Replace('\\', '/');
+                var idx = p.LastIndexOf("/recordings/", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    var sub = p.Substring(idx + "/recordings/".Length);
+                    var parts = sub.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 0) return parts[0];
+                }
+            }
+            catch { }
+            return "";
+        }
+        void ScheduleRecordingsRefresh()
+        {
+            try
+            {
+                _recordingsRefreshPending = true;
+                _recordingsRefreshTimer?.Stop();
+                _recordingsRefreshTimer?.Start();
+            }
+            catch { }
+        }
+        void ScheduleRecordingsRefresh(string channelKey)
+        {
+            try
+            {
+                _recordingsRefreshChannelKey = channelKey;
+                ScheduleRecordingsRefresh();
+            }
+            catch { }
+        }
+        async Task LoadRecordingsForChannel(string key)
+        {
+            try
+            {
+                if (_channelRefreshLast.TryGetValue(key ?? "", out var last) && (DateTime.UtcNow - last).TotalSeconds < 1.5) return;
+                var svc = new LibmpvIptvClient.Services.RecordingIndexService();
+                (string? title, TimeSpan?) Resolver(DateTime? start)
+                {
+                    try
+                    {
+                        var ch = key ?? "";
+                        var progs = _epgService?.GetPrograms(_channels.FirstOrDefault(c => string.Equals(c.Name ?? "", ch ?? "", StringComparison.OrdinalIgnoreCase))?.TvgId, ch);
+                        if (progs != null && start.HasValue)
+                        {
+                            var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
+                            if (p != null) return (p.Title, (p.End - start.Value));
+                        }
+                    }
+                    catch { }
+                    return (null, null);
+                }
+                var list = await svc.GetForChannelAsync(key ?? "", Resolver) ?? new List<LibmpvIptvClient.Services.RecordingEntry>();
+                // 将该频道的最新数据写回到 _recordingsGroupsAll，并保持排序
+                try
+                {
+                    var grp = _recordingsGroupsAll.FirstOrDefault(g => string.Equals(g.Channel ?? "", key ?? "", StringComparison.OrdinalIgnoreCase));
+                    if (grp == null)
+                    {
+                        grp = new LibmpvIptvClient.Services.RecordingGroup { Channel = key ?? "" };
+                        _recordingsGroupsAll.Add(grp);
+                    }
+                    grp.Items = list.OrderByDescending(x => x.StartTime ?? DateTime.MinValue).ThenByDescending(x => x.SizeBytes).ToList();
+                }
+                catch { }
+                // 重新生成扁平缓存并应用过滤→更新 UI
+                _recordingsFlatAll = _recordingsGroupsAll.SelectMany(g => g.Items ?? new System.Collections.Generic.List<LibmpvIptvClient.Services.RecordingEntry>()).ToList();
+                ApplyRecordingsFilter();
+                _channelRefreshLast[key ?? ""] = DateTime.UtcNow;
+            }
+            catch { }
+        }
+        readonly System.Collections.Generic.Dictionary<string, DateTime> _channelRefreshLast = new System.Collections.Generic.Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        // 频道下拉已移除，无需初始化
+        async void BtnRecordingsRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                try { LibmpvIptvClient.Diagnostics.Logger.Info("[UI] Recordings Refresh clicked"); } catch { }
+                await LoadRecordingsLocalGrouped();
+            }
+            catch { }
+        }
+        async void BtnRecordingPlay_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_mpv == null) return;
+                if (sender is System.Windows.Controls.Button btn && btn.DataContext is LibmpvIptvClient.Services.RecordingEntry item)
+                {
+                    string url = item.PathOrUrl ?? "";
+                    if (string.IsNullOrWhiteSpace(url)) return;
+                    // 播放方式选择：根据可用性控制按钮与文案
+                    bool preferRemote = false;
+                    string? remoteHrefFromLocal = null;
+                    bool canLocal = false, canNetwork = false;
+                    try
+                    {
+                        var wd = AppSettings.Current.WebDav;
+                        if (!string.IsNullOrWhiteSpace(url) && System.IO.File.Exists(url)) canLocal = true;
+                        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) canNetwork = true;
+                        if (wd != null && wd.Enabled && !string.IsNullOrWhiteSpace(wd.BaseUrl) && !string.IsNullOrWhiteSpace(wd.RecordingsPath))
+                        {
+                            var recPath = (wd.RecordingsPath ?? "/srcbox/recordings/").TrimEnd('/');
+                            var localFull = url.Replace('\\', '/');
+                            var anchor = "/recordings/";
+                            var idx = localFull.IndexOf(anchor, StringComparison.OrdinalIgnoreCase);
+                            if (idx >= 0)
+                            {
+                                var rel = localFull.Substring(idx + anchor.Length); // <channel>/<file>
+                                var cliTmp = new LibmpvIptvClient.Services.WebDavClient(wd);
+                                remoteHrefFromLocal = cliTmp.Combine(recPath + "/" + rel);
+                                try
+                                {
+                                    var head = await cliTmp.HeadAsync(remoteHrefFromLocal);
+                                    canNetwork = head.ok;
+                                }
+                                catch
+                                {
+                                    canNetwork = false;
+                                }
+                            }
+                        }
+                        // 首先根据配置决定是否直接选择
+                        var recCfg = AppSettings.Current?.Recording ?? new RecordingConfig();
+                        var modePref = (recCfg.DefaultPlayChoice ?? "prompt").ToLowerInvariant();
+                        var directChosen = false;
+                        if (modePref == "local" || modePref == "remote" || modePref == "remember")
+                        {
+                            string desired = modePref == "remember" ? (recCfg.LastPlayChoice ?? "") : modePref;
+                            if (desired == "local" && canLocal) { preferRemote = false; directChosen = true; }
+                            else if (desired == "remote" && canNetwork) { preferRemote = true; directChosen = true; }
+                            // 如果配置的目标不可用，回退到另一个可用
+                            else if (!canLocal && canNetwork) { preferRemote = true; directChosen = true; }
+                            else if (!canNetwork && canLocal) { preferRemote = false; directChosen = true; }
+                            // 两者都不可用，继续弹窗
+                        }
+                        if (!directChosen)
+                        {
+                            var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Play_Mode_Title", "播放方式");
+                            string desc;
+                            if (canLocal && canNetwork)
+                                desc = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Play_Mode_Desc_Both", "此录播同时存在网络与本地，请选择播放方式");
+                            else if (canNetwork)
+                                desc = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Play_Mode_Desc_RemoteOnly", "此录播仅有网络版本");
+                            else
+                                desc = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Play_Mode_Desc_LocalOnly", "此录播仅有本地版本");
+                            var yesLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Btn_Play_Remote", "网络");
+                            var noLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Btn_Play_Local", "本地");
+                            var choice = ModernMessageBox.ShowCustom(this, desc, title, yesLabel, noLabel, canNetwork, canLocal);
+                            if (choice == null) return;
+                            preferRemote = choice == true;
+                            if (!canNetwork && canLocal) preferRemote = false;
+                            if (canNetwork && !canLocal) preferRemote = true;
+                            // 记忆选择（若设置为 remember）
+                            try
+                            {
+                                if (string.Equals(AppSettings.Current?.Recording?.DefaultPlayChoice ?? "", "remember", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    AppSettings.Current.Recording.LastPlayChoice = preferRemote ? "remote" : "local";
+                                    AppSettings.Current.Save();
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                    if (preferRemote && !string.IsNullOrWhiteSpace(remoteHrefFromLocal))
+                    {
+                        try
+                        {
+                            var wd = AppSettings.Current.WebDav;
+                            if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                            var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                            var href = remoteHrefFromLocal!;
+                            string authUrl = href;
+                            try
+                            {
+                                var u = new Uri(href);
+                                var user = wd.Username ?? "";
+                                var pass = wd.TokenOrPassword;
+                                if (string.IsNullOrWhiteSpace(pass)) pass = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(wd.EncryptedToken ?? "");
+                                var userInfo = $"{Uri.EscapeDataString(user)}:{Uri.EscapeDataString(pass)}";
+                                authUrl = $"{u.Scheme}://{userInfo}@{u.Host}{(u.IsDefaultPort ? "" : ":" + u.Port)}{u.AbsolutePath}{u.Query}{u.Fragment}";
+                            }
+                            catch { authUrl = href; }
+                            if (_timeshiftActive) { try { ToggleTimeshift(false); } catch { } }
+                            ClearLiveAndEpgIndicators();
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (remote-direct) " + RedactUrl(authUrl)); } catch { }
+                            _mpv.LoadFile(authUrl);
+                            _currentUrl = authUrl;
+                            try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
+                            try { _mpv.Pause(false); _mpv.SeekAbsolute(0); } catch { }
+                        }
+                        catch { }
+                        _paused = false;
+                        UpdatePlayPauseIcon();
+                        _currentPlayingProgram = null;
+                        _timeshiftActive = false;
+                        try
+                        {
+                            _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Record", "录播");
+                            _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                            TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush;
+                            TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush;
+                            _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                            _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed);
+                            if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; }
+                        }
+                        catch { }
+                        try { _currentRecordingPlaying = item; _currentRecordingPlaying.IsPlaying = true; } catch { }
+                        StartRecordReplayMonitor();
+                        return;
+                    }
+PLAY_LOCAL:
+                    if (string.Equals(item.Source ?? "", "Local", StringComparison.OrdinalIgnoreCase) || true)
+                    {
+                        try
+                        {
+                            if (_timeshiftActive) { try { ToggleTimeshift(false); } catch { } }
+                            ClearLiveAndEpgIndicators();
+                            ClearRecordingPlayingIndicator();
+                            var fu = new Uri(url, UriKind.Absolute);
+                            var fileUri = fu.AbsoluteUri;
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (remote-download) " + RedactUrl(fileUri)); } catch { }
+                            _mpv.LoadFile(fileUri);
+                            _currentUrl = fileUri;
+                            _currentUrl = fileUri;
+                        }
+                        catch
+                        {
+                            if (_timeshiftActive) { try { ToggleTimeshift(false); } catch { } }
+                            ClearLiveAndEpgIndicators();
+                            ClearRecordingPlayingIndicator();
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (local-raw) " + RedactUrl(url)); } catch { }
+                            _mpv.LoadFile(url);
+                            _currentUrl = url;
+                        }
+                        try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
+                        _paused = false;
+                        UpdatePlayPauseIcon();
+                try { _mpv.Pause(false); _mpv.SeekAbsolute(0); } catch { }
+                        _currentPlayingProgram = null;
+                        _timeshiftActive = false;
+                        try
+                        {
+                            _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Record", "录播");
+                            _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                            TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush;
+                            TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush;
+                            _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                            _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed);
+                            if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; }
+                        }
+                        catch { }
+                        try { _currentRecordingPlaying = item; _currentRecordingPlaying.IsPlaying = true; } catch { }
+                        StartRecordReplayMonitor();
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var wd = AppSettings.Current.WebDav;
+                            if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                            var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                            var href = url;
+                            if (!href.StartsWith("http", StringComparison.OrdinalIgnoreCase)) href = cli.Combine(href);
+                            // 优先流式播放
+                            string authUrl = href;
+                            try
+                            {
+                                var u = new Uri(href);
+                                var user = wd.Username ?? "";
+                                var pass = wd.TokenOrPassword;
+                                if (string.IsNullOrWhiteSpace(pass)) pass = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(wd.EncryptedToken ?? "");
+                                var userInfo = $"{Uri.EscapeDataString(user)}:{Uri.EscapeDataString(pass)}";
+                                authUrl = $"{u.Scheme}://{userInfo}@{u.Host}{(u.IsDefaultPort ? "" : ":" + u.Port)}{u.AbsolutePath}{u.Query}{u.Fragment}";
+                            }
+                            catch { authUrl = href; }
+                            if (_timeshiftActive) { try { ToggleTimeshift(false); } catch { } }
+                            ClearLiveAndEpgIndicators();
+                            ClearRecordingPlayingIndicator();
+                            _mpv.LoadFile(authUrl);
+                            _currentUrl = authUrl;
+                            try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
+                            try { _mpv.Pause(false); _mpv.SeekAbsolute(0); } catch { }
+                            try { LibmpvIptvClient.Services.NotificationService.Instance.Show(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Title", "录播列表"), authUrl, 4000); } catch { }
+                        }
+                        catch 
+                        { 
+                            // 回退：下载到临时目录
+                            try
+                            {
+                                var wd = AppSettings.Current.WebDav;
+                                if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                                var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                                var href = url;
+                                if (!href.StartsWith("http", StringComparison.OrdinalIgnoreCase)) href = cli.Combine(href);
+                            string authUrl = href;
+                            try
+                            {
+                                var u = new Uri(href);
+                                var user = wd.Username ?? "";
+                                var pass = wd.TokenOrPassword;
+                                if (string.IsNullOrWhiteSpace(pass)) pass = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(wd.EncryptedToken ?? "");
+                                var userInfo = $"{Uri.EscapeDataString(user)}:{Uri.EscapeDataString(pass)}";
+                                authUrl = $"{u.Scheme}://{userInfo}@{u.Host}{(u.IsDefaultPort ? "" : ":" + u.Port)}{u.AbsolutePath}{u.Query}{u.Fragment}";
+                            }
+                            catch { authUrl = href; }
+                                if (_timeshiftActive) { try { ToggleTimeshift(false); } catch { } }
+                                ClearLiveAndEpgIndicators();
+                                ClearRecordingPlayingIndicator();
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (remote-direct) " + RedactUrl(authUrl)); } catch { }
+                            _mpv.LoadFile(authUrl);
+                            _currentUrl = authUrl;
+                                try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { }
+                                try { _mpv.Pause(false); _mpv.SeekAbsolute(0); } catch { }
+                            try { LibmpvIptvClient.Services.NotificationService.Instance.Show(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Title", "录播列表"), authUrl, 4000); } catch { }
+                            }
+                            catch { }
+                        }
+                        _paused = false;
+                        UpdatePlayPauseIcon();
+                        _currentPlayingProgram = null;
+                        _timeshiftActive = false;
+                        try
+                        {
+                            _playbackStatusText = LibmpvIptvClient.Helpers.ResxLocalizer.Get("EPG_Status_Record", "录播");
+                            _playbackStatusBrush = (System.Windows.Media.Brush)FindResource("StatusReplayBrush");
+                            TxtPlaybackStatus.Text = _playbackStatusText; TxtPlaybackStatus.Foreground = _playbackStatusBrush;
+                            TxtBottomPlaybackStatus.Text = _playbackStatusText; TxtBottomPlaybackStatus.Foreground = _playbackStatusBrush;
+                            _overlayWpf?.SetPlaybackStatus(_playbackStatusText, _playbackStatusBrush);
+                            _overlayWpf?.SetSpeedEnabled(true); _mpv?.SetSpeed(_playbackSpeed); _overlayWpf?.SetSpeed(_playbackSpeed);
+                            if (BtnSpeed != null) { BtnSpeed.IsEnabled = true; LblSpeedBar.Text = $"{_playbackSpeed:0.##}x"; }
+                        }
+                        catch { }
+                        try { _currentRecordingPlaying = item; _currentRecordingPlaying.IsPlaying = true; } catch { }
+                        StartRecordReplayMonitor();
+                    }
+                }
+            }
+            catch { }
+        }
+        void RecordingItem_ContextMenu(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                var fe = sender as System.Windows.FrameworkElement;
+                if (fe == null) return;
+                var item = fe.DataContext as LibmpvIptvClient.Services.RecordingEntry;
+                if (item == null) return;
+                var cm = new System.Windows.Controls.ContextMenu();
+                System.Windows.Controls.MenuItem Add(string key, string fallback, Action click, bool isEnabled = true)
+                {
+                    var mi = new System.Windows.Controls.MenuItem();
+                    try { mi.Header = LibmpvIptvClient.Helpers.ResxLocalizer.Get(key, fallback); } catch { mi.Header = fallback; }
+                    mi.IsEnabled = isEnabled;
+                    mi.Click += (_, __) => { try { click(); } catch { } };
+                    cm.Items.Add(mi);
+                    return mi;
+                }
+                // 播放
+                Add("Drawer_Recordings_Play", "播放", () =>
+                {
+                    try
+                    {
+                        var btn = new System.Windows.Controls.Button { DataContext = item };
+                        BtnRecordingPlay_Click(btn, new RoutedEventArgs());
+                    }
+                    catch { }
+                }, true);
+                // 下载（仅远端）
+                Add("Drawer_Recordings_Download", "下载", () =>
+                {
+                    try
+                    {
+                        var btn = new System.Windows.Controls.Button { DataContext = item };
+                        BtnRecordingDownload_Click(btn, new RoutedEventArgs());
+                    }
+                    catch { }
+                }, string.Equals(item.Source ?? "", "Remote", StringComparison.OrdinalIgnoreCase));
+                cm.Items.Add(new System.Windows.Controls.Separator());
+                // 重命名（仅本地）
+                Add("Common_Rename", "重命名", () =>
+                {
+                    try
+                    {
+                        var path = item.PathOrUrl ?? "";
+                        if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return;
+                        var dir = System.IO.Path.GetDirectoryName(path) ?? "";
+                        var ext = System.IO.Path.GetExtension(path);
+                        var baseName = System.IO.Path.GetFileNameWithoutExtension(path);
+                        var dlg = new Microsoft.Win32.SaveFileDialog
+                        {
+                            InitialDirectory = dir,
+                            FileName = baseName + ext,
+                            Filter = "Video|*.ts;*.mp4;*.mkv;*.*"
+                        };
+                        var ok = dlg.ShowDialog() == true;
+                        if (!ok) return;
+                        var newPath = dlg.FileName;
+                        if (string.Equals(newPath, path, StringComparison.OrdinalIgnoreCase)) return;
+                        System.IO.File.Move(path, newPath, true);
+                        // sidecar 同步
+                        try
+                        {
+                            var sideOld = System.IO.Path.ChangeExtension(path, ".json");
+                            if (System.IO.File.Exists(sideOld))
+                            {
+                                var sideNew = System.IO.Path.ChangeExtension(newPath, ".json");
+                                System.IO.File.Move(sideOld, sideNew, true);
+                            }
+                        }
+                        catch { }
+                        item.PathOrUrl = newPath;
+                        item.Title = System.IO.Path.GetFileNameWithoutExtension(newPath);
+                        ScheduleRecordingsRefresh(ChannelFromFullPath(newPath));
+                    }
+                    catch { }
+                }, string.Equals(item.Source ?? "", "Local", StringComparison.OrdinalIgnoreCase));
+                Add("UI_Delete", "删除…", async () =>
+                {
+                    try
+                    {
+                        var dlg = new LibmpvIptvClient.Controls.DeleteRecordingDialog { Owner = this };
+                        var ok = dlg.ShowDialog() == true;
+                        if (!ok) return;
+                        var choice = dlg.Choice;
+                        var chKeyForToast = ResolveChannelKey() ?? "SrcBox";
+                        if (choice == "local" || choice == "both")
+                        {
+                            try
+                            {
+                                var path = item.PathOrUrl ?? "";
+                                if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+                                {
+                                    try { System.IO.File.Delete(path); } catch { }
+                                    try
+                                    {
+                                        var side = System.IO.Path.ChangeExtension(path, ".json");
+                                        if (System.IO.File.Exists(side)) System.IO.File.Delete(side);
+                                    }
+                                    catch { }
+                                }
+                            }
+                            catch { }
+                        }
+                        if (choice == "remote" || choice == "both")
+                        {
+                            try
+                            {
+                                var wd = AppSettings.Current.WebDav;
+                                if (wd != null && wd.Enabled && !string.IsNullOrWhiteSpace(wd.BaseUrl))
+                                {
+                                    var hrefTs = BuildRemoteUrlForRecording(wd, item, false);
+                                    var hrefJson = BuildRemoteUrlForRecording(wd, item, true);
+                                    if (!string.IsNullOrWhiteSpace(hrefTs))
+                                    {
+                                        var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Delete] Remote TS {RedactUrl(hrefTs)}"); } catch { }
+                                        try { await cli.DeleteAsync(hrefTs); } catch { }
+                                        if (!string.IsNullOrWhiteSpace(hrefJson))
+                                        {
+                                            try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Delete] Remote JSON {RedactUrl(hrefJson)}"); } catch { }
+                                            try { await cli.DeleteAsync(hrefJson); } catch { }
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                        try
+                        {
+                            var chKey = ResolveChannelKey() ?? "";
+                            if (!string.IsNullOrWhiteSpace(item.PathOrUrl)) chKey = ChannelFromFullPath(item.PathOrUrl);
+                            // 删除完成后先提示，再刷新（用户无感）
+                            try
+                            {
+                                var kind = choice == "local" ? LibmpvIptvClient.Services.ToastKind.DeleteLocal
+                                          : (choice == "remote" ? LibmpvIptvClient.Services.ToastKind.DeleteRemote
+                                            : LibmpvIptvClient.Services.ToastKind.DeleteBoth);
+                                var logo = TryResolveChannelLogo(chKeyForToast) ?? _currentChannel?.Logo;
+                                var subtitle = item.Title; // 节目名显示在频道下
+                                LibmpvIptvClient.Services.ToastService.ShowSimple(kind, chKeyForToast, subtitle, logo, 3000);
+                            }
+                            catch { }
+                            ScheduleRecordingsRefresh(chKey);
+                        }
+                        catch { }
+                    }
+                    catch { }
+                }, true);
+                cm.Items.Add(new System.Windows.Controls.Separator());
+                // 打开文件夹/复制路径
+                Add("Drawer_OpenFolder", "打开文件夹", () =>
+                {
+                    try
+                    {
+                        var p = item.PathOrUrl ?? "";
+                        if (!string.IsNullOrWhiteSpace(p) && System.IO.File.Exists(p))
+                        {
+                            try { System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + p + "\""); } catch { }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(p))
+                        {
+                            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = p, UseShellExecute = true }); } catch { }
+                        }
+                    }
+                    catch { }
+                }, true);
+                Add("Drawer_CopyPath", "复制路径", () =>
+                {
+                    try
+                    {
+                        var p = item.PathOrUrl ?? "";
+                        if (!string.IsNullOrWhiteSpace(p)) System.Windows.Clipboard.SetText(p);
+                    }
+                    catch { }
+                }, true);
+                fe.ContextMenu = cm;
+                cm.IsOpen = true;
+                e.Handled = true;
+            }
+            catch { }
+        }
+        async void BtnRecordingDownload_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.DataContext is LibmpvIptvClient.Services.RecordingEntry item)
+                {
+                    if (!string.Equals(item.Source ?? "", "Remote", StringComparison.OrdinalIgnoreCase)) return;
+                    var wd = AppSettings.Current.WebDav;
+                    if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                    var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                    // 统一构造远端 ts/json URL，避免重复 /webdav
+                    var tsUrl = BuildRemoteUrlForRecording(wd, item, false);
+                    var jsonUrl = BuildRemoteUrlForRecording(wd, item, true);
+                    if (string.IsNullOrWhiteSpace(tsUrl)) return;
+                    string channel = ChannelFromFullPath(item.PathOrUrl ?? "") ?? "";
+                    if (string.IsNullOrWhiteSpace(channel))
+                    {
+                        try
+                        {
+                            var uu = new Uri(tsUrl, UriKind.Absolute);
+                            var parts = uu.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                            for (int i = 0; i < parts.Length - 1; i++)
+                            {
+                                if (string.Equals(parts[i], "recordings", StringComparison.OrdinalIgnoreCase)) { channel = Uri.UnescapeDataString(parts[i + 1]); break; }
+                            }
+                        }
+                        catch { }
+                    }
+                    var safe = SanName(string.IsNullOrWhiteSpace(channel) ? "unknown" : channel);
+                    var dir = ResolveRecordingDir(safe);
+                    await EnsureRecordingDirReady(dir);
+                    var fileName = System.IO.Path.GetFileName(new Uri(tsUrl, UriKind.Absolute).AbsolutePath);
+                    var path = System.IO.Path.Combine(dir, fileName);
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Download] TS {RedactUrl(tsUrl)}"); } catch { }
+                    var res = await cli.GetBytesAsync(tsUrl);
+                    if (res.ok && res.bytes != null && res.bytes.Length > 0) { System.IO.File.WriteAllBytes(path, res.bytes); }
+                    // 下载 json（可选）
+                    if (!string.IsNullOrWhiteSpace(jsonUrl))
+                    {
+                        try
+                        {
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Download] JSON {RedactUrl(jsonUrl)}"); } catch { }
+                            var sideRes = await cli.GetBytesAsync(jsonUrl);
+                            if (sideRes.ok && sideRes.bytes != null && sideRes.bytes.Length > 0)
+                            {
+                                var sidePath = System.IO.Path.ChangeExtension(path, ".json");
+                                System.IO.File.WriteAllBytes(sidePath, sideRes.bytes);
+                            }
+                        }
+                        catch { }
+                    }
+                    try
+                    {
+                        var logo = TryResolveChannelLogo(safe) ?? _currentChannel?.Logo;
+                        var subtitle = item.Title; // 节目名显示在频道名下
+                        LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.DownloadSuccess, safe, subtitle, logo, 10000);
+                    }
+                    catch { }
+                    try { ScheduleRecordingsRefresh(safe); } catch { }
+                }
+            }
+            catch { }
+        }
+        async void BtnRecordingUpload_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.DataContext is LibmpvIptvClient.Services.RecordingEntry item)
+                {
+                    if (!string.Equals(item.Source ?? "", "Local", StringComparison.OrdinalIgnoreCase)) { /*仅本地触发上传*/ }
+                    var wd = AppSettings.Current.WebDav;
+                    if (wd == null || !wd.Enabled || string.IsNullOrWhiteSpace(wd.BaseUrl)) return;
+                    // 远端是否已存在：HEAD 检测
+                    var hrefTs = BuildRemoteUrlForRecording(wd, item, false);
+                    var cli = new LibmpvIptvClient.Services.WebDavClient(wd);
+                    var existsRemote = false;
+                    try { var head = await cli.HeadAsync(hrefTs); existsRemote = head.ok; } catch { existsRemote = false; }
+                    if (existsRemote) return; // 已有网络资源则不上传
+                    // 入队上传（ts 与 json 同步在队列与转正路径中已处理）
+                    var channel = ChannelFromFullPath(item.PathOrUrl ?? "") ?? "unknown";
+                    var safe = SanName(channel);
+                    var remoteDir = (wd.RecordingsPath ?? "/srcbox/recordings/").TrimEnd('/') + "/" + safe + "/";
+                    var fileName = System.IO.Path.GetFileName(item.PathOrUrl ?? "");
+                    if (string.IsNullOrWhiteSpace(fileName) || !System.IO.File.Exists(item.PathOrUrl ?? "")) return;
+                    LibmpvIptvClient.Services.UploadQueueService.Instance.Enqueue(item.PathOrUrl!, remoteDir, fileName, wd, false, null, _currentChannel?.Logo);
+                    // 手动上传：给 3 秒“已加入上传”气泡（频道名 + 节目名）
+                    try
+                    {
+                        var logo = TryResolveChannelLogo(safe) ?? _currentChannel?.Logo;
+                        var subtitle = item.Title;
+                        LibmpvIptvClient.Services.ToastService.ShowSimple(LibmpvIptvClient.Services.ToastKind.UploadQueued, safe, subtitle, logo, 3000);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+        void BtnRecordingUpload_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.DataContext is LibmpvIptvClient.Services.RecordingEntry item)
+                {
+                    var label = (item.SourceLabel ?? "").ToLowerInvariant();
+                    var hasRemote = label.Contains("网络") || label.Contains("remote") || label.Contains("удал");
+                    btn.IsEnabled = !hasRemote;
+                }
+            }
+            catch { }
+        }
+        string? TryResolveChannelLogo(string channelKey)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(channelKey)) return null;
+                var keySan = SanName(channelKey);
+                var ch = _channels?.FirstOrDefault(c => string.Equals(c.Name, channelKey, StringComparison.OrdinalIgnoreCase));
+                if (ch == null) ch = _channels?.FirstOrDefault(c => string.Equals(SanName(c.Name ?? ""), keySan, StringComparison.OrdinalIgnoreCase));
+                return ch?.Logo;
+            }
+            catch { return null; }
+        }
+        string? ReadSidecarTitle(string videoPath)
+        {
+            try
+            {
+                var jf = System.IO.Path.ChangeExtension(videoPath, ".json");
+                if (!System.IO.File.Exists(jf)) return null;
+                using var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(jf));
+                if (doc.RootElement.TryGetProperty("title", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return t.GetString();
+            }
+            catch { }
+            return null;
+        }
+        public string? GetCurrentChannelId() => _currentChannel?.TvgId ?? _currentChannel?.Id;
+        public string? GetCurrentChannelName() => _currentChannel?.Name;
+        public void SetFullscreenMode(bool on) => ToggleFullscreen(on);
+        string RedactUrl(string href)
+        {
+            try
+            {
+                var u = new Uri(href, UriKind.RelativeOrAbsolute);
+                if (!u.IsAbsoluteUri) return href;
+                var port = u.IsDefaultPort ? "" : ":" + u.Port.ToString();
+                var maskedHost = "***";
+                return $"{u.Scheme}://{maskedHost}{port}{u.AbsolutePath}{u.Query}";
+            }
+            catch { return href; }
         }
     }
 }

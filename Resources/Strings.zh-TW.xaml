@@ -127,6 +127,7 @@
   <sys:String x:Key="EPG_NextDay">後一天</sys:String>
   <sys:String x:Key="EPG_Status_Live">直播</sys:String>
   <sys:String x:Key="EPG_Status_Playback">回看</sys:String>
+  <sys:String x:Key="EPG_Status_Record">錄播</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">時移</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">預約</sys:String>
   <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ 回看</sys:String>
@@ -145,6 +146,20 @@
   <sys:String x:Key="Tab_Groups">分組</sys:String>
   <sys:String x:Key="Tab_History">歷史</sys:String>
   <sys:String x:Key="Tab_Favorites">收藏</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Tab">錄播</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Title">錄播列表</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Refresh">重新整理</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Play">播放</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Download">下載</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Channel">頻道</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Load">載入</sys:String>
+  <sys:String x:Key="Drawer_Recordings_LoadLocalGrouped">載入本地分組</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Local">本地存取</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Remote">網路存取</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Mixed">網路/本地</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Size">大小</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Duration">時長</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Format">格式</sys:String>
   <sys:String x:Key="History_Title">歷史</sys:String>
   <sys:String x:Key="History_DeleteSelected">刪除所選</sys:String>
   <sys:String x:Key="History_ClearAll">清空全部</sys:String>
@@ -175,6 +190,8 @@
   <sys:String x:Key="Overlay_SwitchSource">切換來源</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">畫面比例</sys:String>
   <sys:String x:Key="Overlay_Timeshift">時移</sys:String>
+  <sys:String x:Key="Overlay_RecordNow">即時錄播</sys:String>
+  <sys:String x:Key="Overlay_RecordStop">停止錄播</sys:String>
   <sys:String x:Key="Overlay_EPG">節目指南</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">折疊頻道列表</sys:String>
   <sys:String x:Key="Tooltip_PinTop">置頂</sys:String>
@@ -196,6 +213,9 @@
   <sys:String x:Key="UI_Playback_HlsHint">讓 HLS 直接跳到直播點；預讀秒過小可降低起播延遲，但弱網可能更易卡頓。</sys:String>
   <sys:String x:Key="UI_Playback_LangHint">例如：zh,en。僅在多音軌/字幕流生效；未命中會回退自動選擇。</sys:String>
   <sys:String x:Key="UI_Playback_MpvTimeoutHint">僅影響 mpv 層網路逾時；業務層「超時換源(秒)」保持不變。</sys:String>
+  <sys:String x:Key="Msg_Record_Start">開始錄播</sys:String>
+  <sys:String x:Key="Msg_Record_Stop">錄播已停止</sys:String>
+  <sys:String x:Key="Msg_Record_Uploaded">已上傳至 WebDAV</sys:String>
 
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG 位址</sys:String>
@@ -215,6 +235,13 @@
   
   <sys:String x:Key="UI_Logo_Config">台標設定</sys:String>
   <sys:String x:Key="UI_Logo_Desc">設定頻道台標圖片來源</sys:String>
+  <sys:String x:Key="UI_Recording_Settings">錄播設定</sys:String>
+  <sys:String x:Key="UI_UploadQueue_Tab">上傳佇列</sys:String>
+  <sys:String x:Key="UI_UploadQueue_View">查看上傳佇列</sys:String>
+  <sys:String x:Key="UI_Refresh">重新整理</sys:String>
+  <sys:String x:Key="UI_Retry">重試</sys:String>
+  <sys:String x:Key="UI_Remove">移除</sys:String>
+  <sys:String x:Key="Msg_Record_Disabled">已關閉錄播</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">支援佔位符 {name}</sys:String>
   <sys:String x:Key="UI_Logo_Cache_Enable">啟用台標本地快取</sys:String>
   <sys:String x:Key="UI_Logo_CacheDir">快取目錄</sys:String>
@@ -227,6 +254,29 @@
   <sys:String x:Key="Reminder_Notify">僅通知</sys:String>
   <sys:String x:Key="Reminder_Autoplay">自動播放</sys:String>
   <sys:String x:Key="Reminder_Record">錄播</sys:String>
+  <sys:String x:Key="Reminder_PlayNow">立即播放</sys:String>
+  <sys:String x:Key="Reminder_Dismiss">知道了</sys:String>
+  <sys:String x:Key="Reminder_RemainFmt">剩餘 {0} 秒</sys:String>
+  <sys:String x:Key="Reminder_Status_AutoPlayed">已開始播放</sys:String>
+  <sys:String x:Key="Menu_Reminders">預約</sys:String>
+  <sys:String x:Key="Menu_ReminderNotify">通知</sys:String>
+  <sys:String x:Key="Menu_ReminderAutoplay">播放</sys:String>
+  <sys:String x:Key="Menu_ReminderRecord">錄播</sys:String>
+  <sys:String x:Key="ReminderList_Title">預約管理</sys:String>
+  <sys:String x:Key="ReminderList_Edit">編輯</sys:String>
+  <sys:String x:Key="ReminderList_Delete">刪除</sys:String>
+  <sys:String x:Key="ReminderList_SelectAll">全選</sys:String>
+  <sys:String x:Key="ReminderList_Invert">反選</sys:String>
+  <sys:String x:Key="ReminderList_OnlyFuture">僅未來</sys:String>
+  <sys:String x:Key="ReminderList_Column_Channel">頻道</sys:String>
+  <sys:String x:Key="ReminderList_Column_Program">節目</sys:String>
+  <sys:String x:Key="ReminderList_Column_StartLocal">開始時間(本地)</sys:String>
+  <sys:String x:Key="ReminderList_Column_PreAlert">提前(秒)</sys:String>
+  <sys:String x:Key="ReminderList_Column_Enabled">啟用</sys:String>
+  <sys:String x:Key="ReminderList_Column_Completed">完成</sys:String>
+  <sys:String x:Key="ReminderList_Column_Action">類型</sys:String>
+  <sys:String x:Key="Reminder_Action_Notify">通知</sys:String>
+  <sys:String x:Key="Reminder_Action_Play">播放</sys:String>
   <sys:String x:Key="Reminder_Added">已新增預約</sys:String>
   <sys:String x:Key="EPG_Status_Booked">已預約</sys:String>
   <sys:String x:Key="Tray_OpenMain">打開主畫面</sys:String>
@@ -259,6 +309,8 @@
   <sys:String x:Key="UI_Close">關閉</sys:String>
 
   <sys:String x:Key="Msg_SettingsSaved">設定已儲存</sys:String>
+  <sys:String x:Key="UI_Total">共</sys:String>
+  <sys:String x:Key="UI_Future">未來</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">關於 源匣 (SrcBox)</sys:String>
@@ -290,4 +342,32 @@
   <sys:String x:Key="Disclaimer_Content2">2. 本專案不提供任何 m3u 播放列表檔案及其中包含的頻道資料，亦不對第三方資料來源負責。</sys:String>
   <sys:String x:Key="Disclaimer_Content3">3. SrcBox 僅作為一個開源的播放器工具，用戶需自行尋找合法的播放來源。請遵守當地法律法規。</sys:String>
   <sys:String x:Key="Disclaimer_Confirm">我已知曉 (I Understand)</sys:String>
+  
+  <!-- WebDAV Settings -->
+  <sys:String x:Key="UI_WebDAV_Tab">WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_Enable">啟用 WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl">基底位址</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Help">請填寫完整的 WebDAV 基底位址（含伺服器路徑）。範例：Nextcloud: https://host/remote.php/dav/files/&lt;user&gt;/；Cloudreve: https://host/dav/；AList: https://host/dav/&lt;path&gt;/。</sys:String>
+  <sys:String x:Key="UI_WebDAV_Username">使用者名稱</sys:String>
+  <sys:String x:Key="UI_WebDAV_Token">權杖/密碼</sys:String>
+  <sys:String x:Key="UI_WebDAV_AllowSelfSigned">允許自簽憑證</sys:String>
+  <sys:String x:Key="UI_WebDAV_RootPath">根目錄</sys:String>
+  <sys:String x:Key="UI_WebDAV_Path_Help">使用相對目錄（以 / 開頭），最終路徑為 {基底位址}/{目錄}。範例：/srcbox/。</sys:String>
+  <sys:String x:Key="UI_WebDAV_RecordingsPath">錄播目錄</sys:String>
+  <sys:String x:Key="UI_WebDAV_Recordings_Help">範例：/srcbox/recordings/。錄播檔案將上傳至此目錄。</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserDataPath">使用者資料目錄</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserData_Help">範例：/srcbox/user-data/。用戶端會自動建立並上傳 user_settings.json 與 user_data.json。</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestConnection">測試連線</sys:String>
+  <sys:String x:Key="UI_WebDAV_BackupUserData">備份使用者資料</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Invalid">請填寫完整的 WebDAV 基底位址，例如 https://example.com/remote.php/dav/files/&lt;user&gt;/。</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_NeedPath">基底位址缺少伺服器路徑，請填寫完整路徑，例如 /remote.php/dav/files/&lt;user&gt;/。</sys:String>
+  <sys:String x:Key="Msg_WebDAV_Connected">連線成功</sys:String>
+  <sys:String x:Key="Msg_WebDAV_ConnectionFailed">連線失敗</sys:String>
+  <sys:String x:Key="UI_WebDAV_RestoreUserData">恢復使用者資料</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestRecordingsWrite">錄播目錄寫入測試</sys:String>
+  <sys:String x:Key="UI_WebDAV_Restore_Confirm">將覆蓋本地使用者資料，確定繼續？</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreDone">恢復完成</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreFailed">恢復失敗</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteDone">錄播目錄寫入成功</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteFailed">錄播目錄寫入失敗</sys:String>
 </ResourceDictionary>

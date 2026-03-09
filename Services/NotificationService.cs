@@ -62,7 +62,7 @@ namespace LibmpvIptvClient.Services
             var miReminder = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Reminders", "预约"));
             var miReminderNotify = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderNotify", "通知"));
             miReminderNotify.Click += (s, e) => { try { _openReminderNotify?.Invoke(); } catch { } };
-            var miReminderAutoplay = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderAutoplay", "播放")) { Enabled = false };
+            var miReminderAutoplay = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderAutoplay", "播放")) { Enabled = true };
             miReminderAutoplay.Click += (s, e) => { try { _openReminderAutoplay?.Invoke(); } catch { } };
             var miReminderRecord = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderRecord", "录播")) { Enabled = false };
             miReminderRecord.Click += (s, e) => { try { _openReminderRecord?.Invoke(); } catch { } };

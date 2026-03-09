@@ -232,8 +232,8 @@
                 <Setter Property="CornerRadius" Value="4"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource ChipButtonBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Padding" Value="6,2"/>
-                <Setter Property="Margin" Value="6,0,0,0"/>
+                <Setter Property="Padding" Value="4,1"/>
+                <Setter Property="Margin" Value="4,0,0,0"/>
             </Style>
             <!-- 抽屉顶部操作按钮（统一芯片风格） -->
             <Style x:Key="ActionChipButton" TargetType="{x:Type Button}">
@@ -263,6 +263,42 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ItemActionChipButton" TargetType="{x:Type Button}" BasedOn="{StaticResource ActionChipButton}">
+                <Setter Property="Padding" Value="4,2"/>
+                <Setter Property="MinWidth" Value="40"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="FontSize" Value="10"/>
+            </Style>
+            <Style x:Key="IconGlyphButton" TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="bd" CornerRadius="4" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -763,9 +799,11 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="TxtSearch" Grid.Column="0" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearch_TextChanged" />
-                                <Button Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Width="50" Height="30" Margin="8,0,0,0" Click="BtnClearSearch_Click" Style="{StaticResource BarButton}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Button x:Name="BtnClearSearch" Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearch_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <Button x:Name="BtnChannelsRefresh" Grid.Column="2" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefresh_Click" Style="{StaticResource ItemActionChipButton}"/>
                             </Grid>
                             <!-- 列表区 -->
                             <Grid Grid.Row="1" Margin="0,10,0,0">
@@ -973,13 +1011,6 @@
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                         <Setter Property="VerticalContentAlignment" Value="Center"/>
                                         <Setter Property="Padding" Value="0"/>
-                                        <Setter Property="ContextMenu">
-                                            <Setter.Value>
-                                                <ContextMenu>
-                                                    <MenuItem Header="{DynamicResource History_Context_DeleteOne}" Command="ApplicationCommands.Delete" CommandParameter="{Binding}"/>
-                                                </ContextMenu>
-                                            </Setter.Value>
-                                        </Setter>
                                     </Style>
                                 </ListBox.ItemContainerStyle>
                                 <ListBox.ItemTemplate>
@@ -1014,6 +1045,194 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="{DynamicResource Drawer_Recordings_Tab}" x:Name="TabRecordings">
+                        <Grid Background="Transparent">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="12,12,12,8">
+                                <Grid DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="TxtRecordingsSearch" Grid.Column="0" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" 
+                                             Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0"
+                                             TextChanged="TxtRecordingsSearch_TextChanged" />
+                                    <Button x:Name="BtnRecordingsSearchClear" Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0"
+                                            Click="BtnRecordingsSearchClear_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                    <Button x:Name="BtnRecordingsRefresh" Grid.Column="2" Content="{DynamicResource Drawer_Recordings_Refresh}" Click="BtnRecordingsRefresh_Click" 
+                                            Style="{StaticResource ItemActionChipButton}" Margin="8,0,0,0"/>
+                                </Grid>
+                            </DockPanel>
+                            <ScrollViewer Grid.Row="1" Margin="10,0,10,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <TextBlock x:Name="TxtRecordingsCount" Margin="0,0,0,6" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
+                                    <ItemsControl x:Name="ListRecordingsGrouped" Margin="0,0,0,10">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Expander IsExpanded="False" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                          Loaded="RecordingGroup_Loaded" Expanded="RecordingGroup_Expanded" Collapsed="RecordingGroup_Collapsed">
+                                                    <Expander.Header>
+                                                        <DockPanel LastChildFill="True" Margin="6,4">
+                                                            <TextBlock Text="{Binding Channel}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13"/>
+                                                            <TextBlock Text="{Binding Count, StringFormat=(\{0\})}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" DockPanel.Dock="Right"/>
+                                                        </DockPanel>
+                                                    </Expander.Header>
+                                                    <ItemsControl ItemsSource="{Binding Items}">
+                                                        <ItemsControl.ItemContainerStyle>
+                                                            <Style TargetType="ContentPresenter">
+                                                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                                            </Style>
+                                                        </ItemsControl.ItemContainerStyle>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1"
+                                                                        PreviewMouseRightButtonUp="RecordingItem_ContextMenu">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                                                    <Setter Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
+                                                                                    <Setter Property="BorderBrush" Value="{DynamicResource StatusReplayBrush}"/>
+                                                                                    <Setter Property="BorderThickness" Value="4,0,0,1"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Border.Style>
+                                                                    <Grid Margin="10,8">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="80"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                                            <TextBlock x:Name="TitleText" Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left">
+                                                                                <TextBlock.Style>
+                                                                                    <Style TargetType="TextBlock">
+                                                                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                                        <Setter Property="FontWeight" Value="Normal"/>
+                                                                                        <Style.Triggers>
+                                                                                            <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusReplayBrush}"/>
+                                                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                                            </DataTrigger>
+                                                                                        </Style.Triggers>
+                                                                                    </Style>
+                                                                                </TextBlock.Style>
+                                                                            </TextBlock>
+                                                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                                                <Border Style="{StaticResource TagChip}">
+                                                                                    <TextBlock Text="{Binding StartTime, StringFormat=yyyy-MM-dd HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                                                </Border>
+                                                                                <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                                    <TextBlock Text="{Binding EndLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                                                </Border>
+                                                                            </StackPanel>
+                                                                            <WrapPanel Margin="0,4,0,0" ItemWidth="Auto" ItemHeight="Auto">
+                                                                                <Border Style="{StaticResource TagChip}" Visibility="{Binding SourceLabel, Converter={StaticResource StringToVis}}">
+                                                                                    <TextBlock Text="{Binding SourceLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                                                </Border>
+                                                                                <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                                    <TextBlock Text="{Binding SizeLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                                                </Border>
+                                                                                <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                                    <TextBlock Text="{Binding FormatLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                                                </Border>
+                                                                            </WrapPanel>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                                            <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingPlay_Click" ToolTip="{DynamicResource Drawer_Recordings_Play}" Margin="0,0,0,6">
+                                                                                <Path Data="M 8,5 L 8,19 L 19,12 Z" Fill="{DynamicResource TextPrimaryBrush}" Stretch="Uniform" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                            </Button>
+                                                                            <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingDownload_Click" ToolTip="{DynamicResource Drawer_Recordings_Download}">
+                                                                                <Path Data="M 12,2 L 12,16 M 6,10 L 12,16 L 18,10 M 4,20 L 20,20" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                            </Button>
+                                                                            <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingUpload_Click" Loaded="BtnRecordingUpload_Loaded" ToolTip="{DynamicResource Drawer_Recordings_Upload}" Margin="0,6,0,0">
+                                                                                <Path Data="M 12,22 L 12,8 M 6,14 L 12,8 L 18,14 M 4,22 L 20,22" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                            </Button>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <ListBox x:Name="ListRecordings" Background="Transparent" BorderThickness="0" Visibility="Collapsed"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         VirtualizingPanel.IsVirtualizing="True"
+                                         VirtualizingPanel.VirtualizationMode="Recycling">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1"
+                                                    PreviewMouseRightButtonUp="RecordingItem_ContextMenu">
+                                                <Grid Margin="10,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="80"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                        <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Left"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                            <Border Style="{StaticResource TagChip}">
+                                                                <TextBlock Text="{Binding StartTime, StringFormat=yyyy-MM-dd HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                            </Border>
+                                                            <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                <TextBlock Text="{Binding EndLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <WrapPanel Margin="0,4,0,0" ItemWidth="Auto" ItemHeight="Auto">
+                                                            <Border Style="{StaticResource TagChip}" Visibility="{Binding SourceLabel, Converter={StaticResource StringToVis}}">
+                                                                <TextBlock Text="{Binding SourceLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                            </Border>
+                                                            <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                <TextBlock Text="{Binding SizeLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                            </Border>
+                                                            <Border Style="{StaticResource TagChip}" Margin="6,0,0,0">
+                                                                <TextBlock Text="{Binding FormatLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"/>
+                                                            </Border>
+                                                        </WrapPanel>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                        <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingPlay_Click" ToolTip="{DynamicResource Drawer_Recordings_Play}" Margin="0,0,0,6">
+                                                            <Path Data="M 8,5 L 8,19 L 19,12 Z" Stretch="Uniform" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                <Path.Style>
+                                                                    <Style TargetType="Path">
+                                                                        <Setter Property="Fill" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                                                <Setter Property="Fill" Value="{DynamicResource StatusReplayBrush}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Path.Style>
+                                                            </Path>
+                                                        </Button>
+                                                        <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingDownload_Click" ToolTip="{DynamicResource Drawer_Recordings_Download}">
+                                                            <Path Data="M 12,2 L 12,16 M 6,10 L 12,16 L 18,10 M 4,20 L 20,20" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </TabItem>
                     <TabItem Header="{DynamicResource Tab_Favorites}">
@@ -1160,6 +1379,10 @@
                         <!-- 倍速按钮（窗口模式） -->
                         <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}">
                             <TextBlock x:Name="LblSpeedBar" Text="1.0x"/>
+                        </ToggleButton>
+                        <!-- 实时录播 -->
+                        <ToggleButton x:Name="BtnRecordNow" Style="{StaticResource BarToggle}" Click="BtnRecordNow_Click" ToolTip="{DynamicResource Overlay_RecordNow}">
+                            <TextBlock Text="REC"/>
                         </ToggleButton>
                         <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" Click="CbTimeshift_Click" ToolTip="{DynamicResource Overlay_Timeshift}">
                             <ui:SymbolIcon Symbol="Clock"/>

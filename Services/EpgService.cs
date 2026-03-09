@@ -18,6 +18,7 @@ namespace LibmpvIptvClient.Services
         private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
         private Dictionary<string, string?> _smartMatchCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // ChannelName -> TvgId (Cache)
+        private readonly Dictionary<string, Dictionary<DateTime, List<EpgProgram>>> _programsByHour = new Dictionary<string, Dictionary<DateTime, List<EpgProgram>>>(StringComparer.OrdinalIgnoreCase); // tvgId -> hourBucket -> programs in that hour
 
         public EpgService()
         {
@@ -286,6 +287,48 @@ namespace LibmpvIptvClient.Services
             // 3. 或者找马上要开始的？（暂时不处理，避免显示未开始的节目造成误解）
 
             return null;
+        }
+        public EpgProgram? GetProgramAt(string tvgId, DateTime timeLocal, string? channelName = null)
+        {
+            if (!ValidateTimeRange(timeLocal)) return null;
+            var list = GetPrograms(tvgId, channelName);
+            var hit = list.FirstOrDefault(p => timeLocal >= p.Start && timeLocal < p.End);
+            if (hit != null) return hit;
+            var recent = list.LastOrDefault(p => p.End <= timeLocal && (timeLocal - p.End).TotalMinutes < 15);
+            if (recent != null) return recent;
+            return null;
+        }
+
+        bool ValidateTimeRange(DateTime local)
+        {
+            try
+            {
+                if (local.Year < 1980 || local.Year > 2037) return false;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        public List<EpgProgram> GetProgramsByHour(string tvgId, DateTime hourLocal, string? channelName = null)
+        {
+            hourLocal = new DateTime(hourLocal.Year, hourLocal.Month, hourLocal.Day, hourLocal.Hour, 0, 0, hourLocal.Kind);
+            if (!_programsByHour.TryGetValue(tvgId ?? "", out var hours))
+            {
+                hours = new Dictionary<DateTime, List<EpgProgram>>();
+                _programsByHour[tvgId ?? ""] = hours;
+            }
+            if (hours.TryGetValue(hourLocal, out var cached)) return cached;
+            var list = GetPrograms(tvgId, channelName);
+            var seg = list.Where(p => !(p.End <= hourLocal || p.Start >= hourLocal.AddHours(1))).OrderBy(p => p.Start).ToList();
+            hours[hourLocal] = seg;
+            return seg;
+        }
+
+        public void SeedPrograms(string tvgId, List<EpgProgram> programs, string? channelName = null)
+        {
+            _programs[tvgId] = programs.OrderBy(p => p.Start).ToList();
+            if (!string.IsNullOrWhiteSpace(channelName)) _channelNameMap[channelName] = tvgId;
+            _programsByHour.Remove(tvgId);
         }
     }
 }

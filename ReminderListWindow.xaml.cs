@@ -32,7 +32,21 @@ namespace LibmpvIptvClient
                 }
                 _items = new ObservableCollection<ScheduledReminder>(q.OrderBy(x => x.StartAtUtc));
                 Grid.ItemsSource = _items;
-                TxtSummary.Text = $"共 {_items.Count} 条（未来 {_items.Count(i => i.StartAtUtc > DateTime.UtcNow)} 条）";
+                try
+                {
+                    var title = LibmpvIptvClient.Helpers.ResxLocalizer.Get("ReminderList_Title", "预约管理");
+                    var summary = string.Format("{0}: {1}  {2}: {3}",
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_Total", "共"),
+                        _items.Count,
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_Future", "未来"),
+                        _items.Count(i => i.StartAtUtc > DateTime.UtcNow));
+                    TxtSummary.Text = summary;
+                    this.Title = title;
+                }
+                catch
+                {
+                    TxtSummary.Text = $"共 {_items.Count} 条（未来 {_items.Count(i => i.StartAtUtc > DateTime.UtcNow)} 条）";
+                }
             }
             catch { }
         }
@@ -48,6 +62,7 @@ namespace LibmpvIptvClient
                     {
                         r.PreAlertSeconds = dlg.PreAlertSeconds;
                         r.Action = dlg.Action;
+                        try { r.PlayMode = dlg.PlayMode; } catch { }
                         AppSettings.Current.Save();
                         LibmpvIptvClient.Services.ReminderService.Instance.Start();
                         LoadData();

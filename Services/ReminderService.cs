@@ -24,6 +24,11 @@ namespace LibmpvIptvClient.Services
             try
             {
                 _list = AppSettings.Current.ScheduledReminders ?? new List<ScheduledReminder>();
+                try
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] start loaded={_list.Count} enabled={_list.Count(x=>x.Enabled && !x.Completed)}");
+                }
+                catch { }
             }
             catch { _list = new List<ScheduledReminder>(); }
             // 先处理已经到点或刚过点（宽限内）的预约，然后再安排下一次
@@ -51,17 +56,27 @@ namespace LibmpvIptvClient.Services
             try
             {
                 var now = DateTime.UtcNow;
-                var next = _list.Where(x => x.Enabled && !x.Completed && x.StartAtUtc.AddSeconds(-(x.PreAlertSeconds)) > now)
-                                .OrderBy(x => x.StartAtUtc.AddSeconds(-x.PreAlertSeconds))
-                                .FirstOrDefault();
+                var next = _list.Where(x => x.Enabled && !x.Completed)
+                    .Select(x =>
+                    {
+                        bool isPlay = string.Equals(x.Action, "play", StringComparison.OrdinalIgnoreCase);
+                        var dueAt = isPlay
+                            ? (x.PreAlertSeconds > 0 ? x.StartAtUtc.AddSeconds(-x.PreAlertSeconds) : x.StartAtUtc)
+                            : x.StartAtUtc.AddSeconds(-x.PreAlertSeconds);
+                        return new { Item = x, Due = dueAt };
+                    })
+                    .Where(p => p.Due > now)
+                    .OrderBy(p => p.Due)
+                    .FirstOrDefault();
                 if (next == null) { _timer.Stop(); return; }
-                var due = next.StartAtUtc.AddSeconds(-next.PreAlertSeconds);
+                var due = next.Due;
                 var ms = Math.Max(500, (int)(due - now).TotalMilliseconds);
                 _timer.Interval = ms;
                 _timer.Start();
                 try
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] next={due.ToLocalTime():yyyy-MM-dd HH:mm:ss} count={_list.Count(r=>r.Enabled && !r.Completed)}");
+                    var act = next.Item?.Action ?? "";
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] next={due.ToLocalTime():yyyy-MM-dd HH:mm:ss} action={act} count={_list.Count(r=>r.Enabled && !r.Completed)}");
                 }
                 catch { }
             }
@@ -83,12 +98,43 @@ namespace LibmpvIptvClient.Services
             int ok = 0, miss = 0;
             foreach (var r in _list.Where(x => x.Enabled && !x.Completed).OrderBy(x => x.StartAtUtc))
             {
-                var triggerAt = r.StartAtUtc.AddSeconds(-r.PreAlertSeconds);
+                bool doPlay = string.Equals(r.Action, "play", StringComparison.OrdinalIgnoreCase);
+                var preAt = r.StartAtUtc.AddSeconds(-r.PreAlertSeconds);
+                if (doPlay && r.PreAlertSeconds > 0 && now >= preAt && now < r.StartAtUtc)
+                {
+                    try
+                    {
+                        var local = r.StartAtUtc.ToLocalTime();
+                        string? logoLocal = null;
+                        try
+                        {
+                            if (!string.IsNullOrWhiteSpace(r.ChannelLogo))
+                            {
+                                if (System.IO.File.Exists(r.ChannelLogo)) logoLocal = r.ChannelLogo;
+                                else logoLocal = LogoCacheService.Instance.GetOrDownloadAsync(r.ChannelLogo).GetAwaiter().GetResult();
+                            }
+                        }
+                        catch { }
+                        try 
+                        { 
+                            LibmpvIptvClient.Services.ToastService.ShowPlayAppointment(
+                                r.ChannelId ?? "", r.ChannelName ?? "", r.Note ?? "", local, logoLocal, r.PlayMode ?? "default", r.PreAlertSeconds);
+                        } 
+                        catch { }
+                        // 预提醒即进入倒计时与自动播放流程，标记完成防止开始时间再次触发
+                        r.Completed = true; ok++;
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] pre-alert scheduled autoplay id={r.Id} ch={r.ChannelName} at={preAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"); } catch { }
+                    }
+                    catch { }
+                    continue;
+                }
+                var triggerAt = doPlay ? r.StartAtUtc : preAt;
                 if (triggerAt <= now)
                 {
                     var delta = (now - triggerAt).TotalSeconds;
-                    if (!includeGrace && delta > 1) continue; // 非宽限模式，仅处理“到点”/极近的
-                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; continue; }
+                    // 允许一定抖动（调度/挂起/线程切换导致的轻微延迟）
+                    if (!includeGrace && delta > 5) continue;
+                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] missed id={r.Id} ch={r.ChannelName} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss} delta={delta:F1}s"); } catch { } continue; }
                     try
                     {
                         var local = r.StartAtUtc.ToLocalTime();
@@ -104,24 +150,30 @@ namespace LibmpvIptvClient.Services
                         catch { }
                         try
                         {
-                            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                            if (doPlay)
                             {
-                                try
-                                {
-                                    var toast = new LibmpvIptvClient.ReminderToastWindow(r.ChannelId ?? "", r.ChannelName ?? "", r.Note ?? "", local, logoLocal, true, null);
-                                    toast.Show();
-                                }
-                                catch
-                                {
-                                    NotificationService.Instance.ShowWithLogo(r.ChannelName ?? "", r.Note ?? "", local, logoLocal, 8000);
-                                }
-                            });
+                                LibmpvIptvClient.Services.ToastService.ShowPlayAppointment(r.ChannelId ?? "", r.ChannelName ?? "", r.Note ?? "", local, logoLocal, r.PlayMode ?? "default");
+                            }
+                            else
+                            {
+                                LibmpvIptvClient.Services.ToastService.ShowReminder(r.ChannelId ?? "", r.ChannelName ?? "", r.Note ?? "", local, logoLocal, true);
+                            }
                         }
-                        catch
-                        {
-                            NotificationService.Instance.ShowWithLogo(r.ChannelName ?? "", r.Note ?? "", local, logoLocal, 8000);
-                        }
+                        catch { NotificationService.Instance.ShowWithLogo(r.ChannelName ?? "", r.Note ?? "", local, logoLocal, 8000); }
                         r.Completed = true; ok++;
+                        try
+                        {
+                            LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] fired id={r.Id} ch={r.ChannelName} action={r.Action} local={local:yyyy-MM-dd HH:mm:ss}");
+                        }
+                        catch { }
+                    }
+                    catch { }
+                }
+                else
+                {
+                    try
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] pending id={r.Id} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
                     }
                     catch { }
                 }

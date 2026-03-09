@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LibmpvIptvClient
 {
@@ -18,6 +19,7 @@ namespace LibmpvIptvClient
         public string Url { get; set; } = "";
         public double RefreshIntervalHours { get; set; } = 24;
         public bool EnableSmartMatch { get; set; } = true; // Added
+        public bool StrictMatchByPlaybackTime { get; set; } = true; // 灰度开关：按回放/时移的播放时刻匹配节目单
     }
 
     public class LogoConfig
@@ -71,6 +73,9 @@ namespace LibmpvIptvClient
         public TimeshiftConfig Timeshift { get; set; } = new TimeshiftConfig();
         
         public TimeOverrideConfig TimeOverride { get; set; } = new TimeOverrideConfig();
+        public WebDavConfig WebDav { get; set; } = new WebDavConfig();
+        public string RecordingLocalDir { get; set; } = "recordings/{channel}";
+        public RecordingConfig Recording { get; set; } = new RecordingConfig();
 
         // Compatibility Properties (Deprecated)
         [System.Text.Json.Serialization.JsonIgnore]
@@ -126,6 +131,45 @@ namespace LibmpvIptvClient
         public static PlaybackSettings Current { get; set; } = PlaybackSettings.Load();
     }
     
+    public class RecordingConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public string DefaultPlayChoice { get; set; } = "prompt";
+        public string LastPlayChoice { get; set; } = "";
+        public string SaveMode { get; set; } = "local_then_upload";
+        public string DirTemplate { get; set; } = "recordings/{channel}";
+        public string FileTemplate { get; set; } = "{yyyyMMdd_HHmmss}.ts";
+        public bool VerifyDirReady { get; set; } = true;
+        public int GrowthTimeoutSec { get; set; } = 20;
+        public int RetryCount { get; set; } = 1;
+        public int UploadMaxConcurrency { get; set; } = 1;
+        public int UploadRetry { get; set; } = 3;
+        public int UploadRetryBackoffMs { get; set; } = 1000;
+        public int UploadMaxKBps { get; set; } = 0;
+        public bool ResumeUpload { get; set; } = false;
+        public int RealtimeUploadIntervalSec { get; set; } = 5;
+        public string RemoteTempSuffix { get; set; } = ".part";
+        public bool RealtimeFinalizeEnabled { get; set; } = false;
+        public int RealtimeFinalizeDelaySec { get; set; } = 10;
+        public int RealtimeFinalizeMaxKBps { get; set; } = 0;
+    }
+    
+    public class WebDavConfig
+    {
+        public bool Enabled { get; set; } = false;
+        public string BaseUrl { get; set; } = "";
+        public string Username { get; set; } = "";
+        [JsonIgnore]
+        public string TokenOrPassword { get; set; } = "";
+        public string EncryptedToken { get; set; } = "";
+        public bool AllowSelfSignedCert { get; set; } = false;
+        public string RootPath { get; set; } = "/srcbox/";
+        public string RecordingsPath { get; set; } = "/srcbox/recordings/";
+        public string UserDataPath { get; set; } = "/srcbox/user-data/";
+        public bool? MoveSupported { get; set; }
+        public bool? CopySupported { get; set; }
+    }
+    
     public class TimeOverrideConfig
     {
         public bool Enabled { get; set; } = false;
@@ -148,6 +192,7 @@ namespace LibmpvIptvClient
         public DateTime StartAtUtc { get; set; } = DateTime.UtcNow;
         public int PreAlertSeconds { get; set; } = 0;
         public string Action { get; set; } = "notify";
+        public string? PlayMode { get; set; } = "default";
         public bool Enabled { get; set; } = true;
         public bool Completed { get; set; } = false;
         public string Note { get; set; } = "";

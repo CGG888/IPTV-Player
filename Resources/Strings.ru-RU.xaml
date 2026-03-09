@@ -127,6 +127,7 @@
   <sys:String x:Key="EPG_NextDay">Следующий день</sys:String>
   <sys:String x:Key="EPG_Status_Live">Прямой эфир</sys:String>
   <sys:String x:Key="EPG_Status_Playback">Запись</sys:String>
+  <sys:String x:Key="EPG_Status_Record">Запись (локальная)</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">Таймшифт</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">Запланировано</sys:String>
   <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ Запись</sys:String>
@@ -145,6 +146,20 @@
   <sys:String x:Key="Tab_Groups">Группы</sys:String>
   <sys:String x:Key="Tab_History">История</sys:String>
   <sys:String x:Key="Tab_Favorites">Избранное</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Tab">Записи</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Title">Список записей</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Refresh">Обновить</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Play">Воспроизвести</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Download">Скачать</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Channel">Канал</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Load">Загрузить</sys:String>
+  <sys:String x:Key="Drawer_Recordings_LoadLocalGrouped">Загрузить локальные группы</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Local">Локальный доступ</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Remote">Удалённый доступ</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Mixed">Удал./Локал.</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Size">Размер</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Duration">Длительность</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Format">Формат</sys:String>
   <sys:String x:Key="History_Title">История</sys:String>
   <sys:String x:Key="History_DeleteSelected">Удалить выбранные</sys:String>
   <sys:String x:Key="History_ClearAll">Очистить всё</sys:String>
@@ -175,6 +190,8 @@
   <sys:String x:Key="Overlay_SwitchSource">Сменить источник</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">Соотношение</sys:String>
   <sys:String x:Key="Overlay_Timeshift">Таймшифт</sys:String>
+  <sys:String x:Key="Overlay_RecordNow">Запись сейчас</sys:String>
+  <sys:String x:Key="Overlay_RecordStop">Остановить запись</sys:String>
   <sys:String x:Key="Overlay_EPG">Программа</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">Свернуть список</sys:String>
   <sys:String x:Key="Tooltip_PinTop">Поверх всех</sys:String>
@@ -196,6 +213,9 @@
   <sys:String x:Key="UI_Playback_HlsHint">Запуск с live-edge. Малый readahead снижает задержку старта, но на слабой сети возможны подергивания.</sys:String>
   <sys:String x:Key="UI_Playback_LangHint">Напр.: zh,en. Работает только для мультитрековых потоков; при несовпадении используется авто-выбор.</sys:String>
   <sys:String x:Key="UI_Playback_MpvTimeoutHint">Задает только таймаут mpv; логика «Таймаут источника (сек)» не меняется.</sys:String>
+  <sys:String x:Key="Msg_Record_Start">Запись начата</sys:String>
+  <sys:String x:Key="Msg_Record_Stop">Запись остановлена</sys:String>
+  <sys:String x:Key="Msg_Record_Uploaded">Загружено на WebDAV</sys:String>
 
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
@@ -215,6 +235,13 @@
   
   <sys:String x:Key="UI_Logo_Config">Настройки логотипов</sys:String>
   <sys:String x:Key="UI_Logo_Desc">Источник логотипов каналов</sys:String>
+  <sys:String x:Key="UI_Recording_Settings">Настройки записи</sys:String>
+  <sys:String x:Key="UI_UploadQueue_Tab">Очередь загрузки</sys:String>
+  <sys:String x:Key="UI_UploadQueue_View">Открыть очередь загрузки</sys:String>
+  <sys:String x:Key="UI_Refresh">Обновить</sys:String>
+  <sys:String x:Key="UI_Retry">Повтор</sys:String>
+  <sys:String x:Key="UI_Remove">Удалить</sys:String>
+  <sys:String x:Key="Msg_Record_Disabled">Запись отключена</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">Поддержка {name}</sys:String>
   <sys:String x:Key="UI_Logo_Cache_Enable">Включить кэш логотипов</sys:String>
   <sys:String x:Key="UI_Logo_CacheDir">Каталог кэша</sys:String>
@@ -227,6 +254,14 @@
   <sys:String x:Key="Reminder_Notify">Только уведомление</sys:String>
   <sys:String x:Key="Reminder_Autoplay">Автовоспроизведение</sys:String>
   <sys:String x:Key="Reminder_Record">Запись</sys:String>
+  <sys:String x:Key="Reminder_PlayNow">Воспроизвести</sys:String>
+  <sys:String x:Key="Reminder_Dismiss">Понятно</sys:String>
+  <sys:String x:Key="Reminder_RemainFmt">Осталось {0} с</sys:String>
+  <sys:String x:Key="Reminder_Status_AutoPlayed">Воспроизведение начато</sys:String>
+  <sys:String x:Key="Menu_Reminders">Напоминания</sys:String>
+  <sys:String x:Key="Menu_ReminderNotify">Уведомление</sys:String>
+  <sys:String x:Key="Menu_ReminderAutoplay">Воспроизведение</sys:String>
+  <sys:String x:Key="Menu_ReminderRecord">Запись</sys:String>
   <sys:String x:Key="Reminder_Added">Напоминание добавлено</sys:String>
   <sys:String x:Key="EPG_Status_Booked">Запланировано</sys:String>
   <sys:String x:Key="Tray_OpenMain">Открыть главное окно</sys:String>
@@ -259,6 +294,8 @@
   <sys:String x:Key="UI_Close">Закрыть</sys:String>
 
   <sys:String x:Key="Msg_SettingsSaved">Настройки сохранены</sys:String>
+  <sys:String x:Key="UI_Total">Всего</sys:String>
+  <sys:String x:Key="UI_Future">Будущие</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">О SrcBox</sys:String>
@@ -290,4 +327,49 @@
   <sys:String x:Key="Disclaimer_Content2">2. Этот проект не предоставляет файлы плейлистов m3u или данные каналов, содержащиеся в них, и не несет ответственности за сторонние источники данных.</sys:String>
   <sys:String x:Key="Disclaimer_Content3">3. SrcBox - это просто инструмент с открытым исходным кодом; пользователи должны самостоятельно находить законные источники воспроизведения. Пожалуйста, соблюдайте местные законы и правила.</sys:String>
   <sys:String x:Key="Disclaimer_Confirm">Я понимаю (I Understand)</sys:String>
+  
+  <!-- WebDAV Settings -->
+  <sys:String x:Key="UI_WebDAV_Tab">WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_Enable">Включить WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl">Базовый URL</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Help">Укажите полный базовый URL WebDAV (включая путь сервера). Примеры: Nextcloud: https://host/remote.php/dav/files/&lt;user&gt;/; Cloudreve: https://host/dav/; AList: https://host/dav/&lt;path&gt;/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_Username">Имя пользователя</sys:String>
+  <sys:String x:Key="UI_WebDAV_Token">Токен/Пароль</sys:String>
+  <sys:String x:Key="UI_WebDAV_AllowSelfSigned">Разрешить самоподписанные сертификаты</sys:String>
+  <sys:String x:Key="UI_WebDAV_RootPath">Корневой путь</sys:String>
+  <sys:String x:Key="UI_WebDAV_Path_Help">Используйте относительные пути, начинающиеся с /. Итоговый путь: {Base URL}/{Path}. Пример: /srcbox/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_RecordingsPath">Путь записей</sys:String>
+  <sys:String x:Key="UI_WebDAV_Recordings_Help">Пример: /srcbox/recordings/. Сюда будут загружаться записи.</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserDataPath">Путь пользовательских данных</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserData_Help">Пример: /srcbox/user-data/. Клиент автоматически создаст и загрузит user_settings.json и user_data.json.</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestConnection">Проверить соединение</sys:String>
+  <sys:String x:Key="UI_WebDAV_BackupUserData">Резервная копия данных</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Invalid">Укажите полный базовый URL WebDAV, напр., https://example.com/remote.php/dav/files/&lt;user&gt;/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_NeedPath">В базовом URL отсутствует путь сервера. Укажите полный путь, напр., /remote.php/dav/files/&lt;user&gt;/.</sys:String>
+  <sys:String x:Key="Msg_WebDAV_Connected">Соединение установлено</sys:String>
+  <sys:String x:Key="Msg_WebDAV_ConnectionFailed">Ошибка соединения</sys:String>
+  <sys:String x:Key="UI_WebDAV_RestoreUserData">Восстановить данные</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestRecordingsWrite">Тест записи в каталог записей</sys:String>
+  <sys:String x:Key="UI_WebDAV_Restore_Confirm">Это перезапишет локальные пользовательские данные. Продолжить?</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreDone">Восстановление завершено</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreFailed">Не удалось восстановить</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteDone">Запись в каталог записей выполнена успешно</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteFailed">Ошибка записи в каталог записей</sys:String>
+
+  <!-- Reminders -->
+  <sys:String x:Key="ReminderList_Title">Управление напоминаниями</sys:String>
+  <sys:String x:Key="ReminderList_Edit">Изменить</sys:String>
+  <sys:String x:Key="ReminderList_Delete">Удалить</sys:String>
+  <sys:String x:Key="ReminderList_SelectAll">Выбрать все</sys:String>
+  <sys:String x:Key="ReminderList_Invert">Инвертировать</sys:String>
+  <sys:String x:Key="ReminderList_OnlyFuture">Только будущие</sys:String>
+  <sys:String x:Key="ReminderList_Column_Channel">Канал</sys:String>
+  <sys:String x:Key="ReminderList_Column_Program">Передача</sys:String>
+  <sys:String x:Key="ReminderList_Column_StartLocal">Время начала (лок.)</sys:String>
+  <sys:String x:Key="ReminderList_Column_PreAlert">Предупр. (сек)</sys:String>
+  <sys:String x:Key="ReminderList_Column_Enabled">Вкл.</sys:String>
+  <sys:String x:Key="ReminderList_Column_Completed">Готово</sys:String>
+  <sys:String x:Key="ReminderList_Column_Action">Тип</sys:String>
+  <sys:String x:Key="Reminder_Action_Notify">Уведомление</sys:String>
+  <sys:String x:Key="Reminder_Action_Play">Воспроизведение</sys:String>
 </ResourceDictionary>

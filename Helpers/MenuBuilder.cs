@@ -138,7 +138,15 @@ namespace LibmpvIptvClient.Helpers
                 }
                 catch { }
             };
-            var miAutoplay = new MenuItem { Header = Localizer.S("Menu_ReminderAutoplay", "播放"), IsEnabled = false };
+            var miAutoplay = new MenuItem { Header = Localizer.S("Menu_ReminderAutoplay", "播放") };
+            miAutoplay.Click += (s, a) =>
+            {
+                try
+                {
+                    LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate();
+                }
+                catch { }
+            };
             var miRecord = new MenuItem { Header = Localizer.S("Menu_ReminderRecord", "录播"), IsEnabled = false };
             miReminder.Items.Add(miNotify);
             miReminder.Items.Add(miAutoplay);

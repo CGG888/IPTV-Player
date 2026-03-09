@@ -130,5 +130,36 @@ namespace LibmpvIptvClient
                 _ => (bool?)null
             };
         }
+
+        public static bool? ShowCustom(Window? owner, string message, string title, string yesLabel, string noLabel, bool enableYes, bool enableNo, string? linkUrl = null)
+        {
+            var dlg = new ModernMessageBox(title, message, MessageBoxButton.YesNo, linkUrl);
+            try
+            {
+                dlg.BtnYes.Content = yesLabel ?? dlg.BtnYes.Content;
+                dlg.BtnNo.Content = noLabel ?? dlg.BtnNo.Content;
+                dlg.BtnYes.IsEnabled = enableYes;
+                dlg.BtnNo.IsEnabled = enableNo;
+            }
+            catch { }
+            if (owner != null)
+            {
+                dlg.Owner = owner;
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (owner.Topmost) dlg.Topmost = true;
+            }
+            else
+            {
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                dlg.Topmost = true;
+            }
+            dlg.ShowDialog();
+            return dlg._choice switch
+            {
+                Choice.Yes => true,
+                Choice.No => false,
+                _ => (bool?)null
+            };
+        }
     }
 }

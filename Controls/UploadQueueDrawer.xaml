@@ -1,0 +1,34 @@
+<UserControl x:Class="LibmpvIptvClient.Controls.UploadQueueDrawer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="16,8,16,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
+            <Button x:Name="BtnRefresh" Content="{DynamicResource UI_Refresh}" Width="80" Height="30" Margin="0,0,8,0" Click="BtnRefresh_Click"/>
+            <TextBlock x:Name="TxtSummary" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </StackPanel>
+        <DataGrid x:Name="GridQueue" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  HeadersVisibility="Column" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="File" Binding="{Binding FileName}" Width="2*"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*"/>
+                <DataGridTextColumn Header="Attempts" Binding="{Binding Attempts}" Width="Auto"/>
+                <DataGridTextColumn Header="Error" Binding="{Binding Error}" Width="2*"/>
+                <DataGridTemplateColumn Header="Ops" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{DynamicResource UI_Retry}" Margin="0,0,6,0" Tag="{Binding Id}" Click="BtnRetry_Click"/>
+                                <Button Content="{DynamicResource UI_Remove}" Tag="{Binding Id}" Click="BtnRemove_Click"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
+

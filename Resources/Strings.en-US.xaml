@@ -137,6 +137,7 @@
   <sys:String x:Key="EPG_NextDay">Next day</sys:String>
   <sys:String x:Key="EPG_Status_Live">Live</sys:String>
   <sys:String x:Key="EPG_Status_Playback">Replay</sys:String>
+  <sys:String x:Key="EPG_Status_Record">Recording</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">Timeshift</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">Scheduled</sys:String>
   <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ Playback</sys:String>
@@ -155,6 +156,20 @@
   <sys:String x:Key="Tab_Groups">Groups</sys:String>
   <sys:String x:Key="Tab_History">History</sys:String>
   <sys:String x:Key="Tab_Favorites">Favorites</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Tab">Recordings</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Title">Recording List</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Refresh">Refresh</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Play">Play</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Download">Download</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Channel">Channel</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Load">Load</sys:String>
+  <sys:String x:Key="Drawer_Recordings_LoadLocalGrouped">Load Local Grouped</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Local">Local Access</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Remote">Remote Access</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Access_Mixed">Remote/Local</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Size">Size</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Duration">Duration</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Format">Format</sys:String>
   <sys:String x:Key="History_Title">History</sys:String>
   <sys:String x:Key="History_DeleteSelected">Delete selected</sys:String>
   <sys:String x:Key="History_ClearAll">Clear all</sys:String>
@@ -184,6 +199,8 @@
   <sys:String x:Key="Overlay_SwitchSource">Switch source</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">Aspect ratio</sys:String>
   <sys:String x:Key="Overlay_Timeshift">Timeshift</sys:String>
+  <sys:String x:Key="Overlay_RecordNow">Record Now</sys:String>
+  <sys:String x:Key="Overlay_RecordStop">Stop Recording</sys:String>
   <sys:String x:Key="Overlay_EPG">Program guide</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">Toggle channel list</sys:String>
   <sys:String x:Key="Tooltip_PinTop">Always on top</sys:String>
@@ -204,6 +221,9 @@
   <sys:String x:Key="UI_Playback_HlsHint">Start from live edge. Lower readahead reduces start delay but may stutter on weak networks.</sys:String>
   <sys:String x:Key="UI_Playback_LangHint">Example: zh,en. Only effective for multi-track streams; falls back to auto when unmatched.</sys:String>
   <sys:String x:Key="UI_Playback_MpvTimeoutHint">Affects mpv’s network-timeout only; the “Source timeout (sec)” logic remains unchanged.</sys:String>
+  <sys:String x:Key="Msg_Record_Start">Recording started</sys:String>
+  <sys:String x:Key="Msg_Record_Stop">Recording stopped</sys:String>
+  <sys:String x:Key="Msg_Record_Uploaded">Uploaded to WebDAV</sys:String>
 
   <!-- EPG page -->
   <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
@@ -223,6 +243,13 @@
   
   <sys:String x:Key="UI_Logo_Config">Logo Config</sys:String>
   <sys:String x:Key="UI_Logo_Desc">Configure channel logo source</sys:String>
+  <sys:String x:Key="UI_Recording_Settings">Recording Settings</sys:String>
+  <sys:String x:Key="UI_UploadQueue_Tab">Upload Queue</sys:String>
+  <sys:String x:Key="UI_UploadQueue_View">View Upload Queue</sys:String>
+  <sys:String x:Key="UI_Refresh">Refresh</sys:String>
+  <sys:String x:Key="UI_Retry">Retry</sys:String>
+  <sys:String x:Key="UI_Remove">Remove</sys:String>
+  <sys:String x:Key="Msg_Record_Disabled">Recording is disabled</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Note">Supports placeholder {name}</sys:String>
   <sys:String x:Key="UI_Logo_Cache_Enable">Enable logo cache</sys:String>
   <sys:String x:Key="UI_Logo_CacheDir">Cache directory</sys:String>
@@ -237,6 +264,29 @@
   <sys:String x:Key="Reminder_Autoplay">Auto Play</sys:String>
   <sys:String x:Key="Reminder_Record">Record</sys:String>
   <sys:String x:Key="Reminder_Added">Reminder added</sys:String>
+  <sys:String x:Key="Reminder_PlayNow">Play now</sys:String>
+  <sys:String x:Key="Reminder_Dismiss">Got it</sys:String>
+  <sys:String x:Key="Reminder_RemainFmt">{0}s remaining</sys:String>
+  <sys:String x:Key="Reminder_Status_AutoPlayed">Started playing</sys:String>
+  <sys:String x:Key="Menu_Reminders">Reminders</sys:String>
+  <sys:String x:Key="Menu_ReminderNotify">Notify</sys:String>
+  <sys:String x:Key="Menu_ReminderAutoplay">Play</sys:String>
+  <sys:String x:Key="Menu_ReminderRecord">Record</sys:String>
+  <sys:String x:Key="ReminderList_Title">Reminder Manager</sys:String>
+  <sys:String x:Key="ReminderList_Edit">Edit</sys:String>
+  <sys:String x:Key="ReminderList_Delete">Delete</sys:String>
+  <sys:String x:Key="ReminderList_SelectAll">Select all</sys:String>
+  <sys:String x:Key="ReminderList_Invert">Invert</sys:String>
+  <sys:String x:Key="ReminderList_OnlyFuture">Only future</sys:String>
+  <sys:String x:Key="ReminderList_Column_Channel">Channel</sys:String>
+  <sys:String x:Key="ReminderList_Column_Program">Program</sys:String>
+  <sys:String x:Key="ReminderList_Column_StartLocal">Start time (local)</sys:String>
+  <sys:String x:Key="ReminderList_Column_PreAlert">Pre-alert (sec)</sys:String>
+  <sys:String x:Key="ReminderList_Column_Enabled">Enabled</sys:String>
+  <sys:String x:Key="ReminderList_Column_Completed">Completed</sys:String>
+  <sys:String x:Key="ReminderList_Column_Action">Type</sys:String>
+  <sys:String x:Key="Reminder_Action_Notify">Notify</sys:String>
+  <sys:String x:Key="Reminder_Action_Play">Play</sys:String>
   <sys:String x:Key="EPG_Status_Booked">Booked</sys:String>
   <sys:String x:Key="Tray_OpenMain">Open Main Window</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Close Confirmation</sys:String>
@@ -268,6 +318,8 @@
   <sys:String x:Key="UI_Close">Close</sys:String>
 
   <sys:String x:Key="Msg_SettingsSaved">Settings saved successfully</sys:String>
+  <sys:String x:Key="UI_Total">Total</sys:String>
+  <sys:String x:Key="UI_Future">Future</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">About SrcBox</sys:String>
@@ -304,4 +356,32 @@
   <sys:String x:Key="Disclaimer_Content2">2. This project does not provide any m3u playlist files or the channel data contained therein, nor is it responsible for third-party data sources.</sys:String>
   <sys:String x:Key="Disclaimer_Content3">3. SrcBox is merely an open-source player tool; users must find legal playback sources themselves. Please comply with local laws and regulations.</sys:String>
   <sys:String x:Key="Disclaimer_Confirm">I Understand</sys:String>
+  
+  <!-- WebDAV Settings -->
+  <sys:String x:Key="UI_WebDAV_Tab">WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_Enable">Enable WebDAV</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl">Base URL</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Help">Enter the complete WebDAV base URL (including server path). Examples: Nextcloud: https://host/remote.php/dav/files/&lt;user&gt;/; Cloudreve: https://host/dav/; AList: https://host/dav/&lt;path&gt;/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_Username">Username</sys:String>
+  <sys:String x:Key="UI_WebDAV_Token">Token/Password</sys:String>
+  <sys:String x:Key="UI_WebDAV_AllowSelfSigned">Allow self-signed certificates</sys:String>
+  <sys:String x:Key="UI_WebDAV_RootPath">Root Path</sys:String>
+  <sys:String x:Key="UI_WebDAV_Path_Help">Use relative paths starting with /. Final path is {Base URL}/{Path}. Example: /srcbox/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_RecordingsPath">Recordings Path</sys:String>
+  <sys:String x:Key="UI_WebDAV_Recordings_Help">Example: /srcbox/recordings/. Recording files will be uploaded here.</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserDataPath">User Data Path</sys:String>
+  <sys:String x:Key="UI_WebDAV_UserData_Help">Example: /srcbox/user-data/. The client will create and upload user_settings.json and user_data.json.</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestConnection">Test Connection</sys:String>
+  <sys:String x:Key="UI_WebDAV_BackupUserData">Backup User Data</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_Invalid">Please enter a complete WebDAV base URL, e.g., https://example.com/remote.php/dav/files/&lt;user&gt;/.</sys:String>
+  <sys:String x:Key="UI_WebDAV_BaseUrl_NeedPath">The base URL is missing the server path. Please provide the full path, e.g., /remote.php/dav/files/&lt;user&gt;/.</sys:String>
+  <sys:String x:Key="Msg_WebDAV_Connected">Connected</sys:String>
+  <sys:String x:Key="Msg_WebDAV_ConnectionFailed">Connection failed</sys:String>
+  <sys:String x:Key="UI_WebDAV_RestoreUserData">Restore User Data</sys:String>
+  <sys:String x:Key="UI_WebDAV_TestRecordingsWrite">Recordings Write Test</sys:String>
+  <sys:String x:Key="UI_WebDAV_Restore_Confirm">This will overwrite local user data. Continue?</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreDone">Restore completed</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RestoreFailed">Restore failed</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteDone">Recordings directory write succeeded</sys:String>
+  <sys:String x:Key="Msg_WebDAV_RecordingsWriteFailed">Recordings directory write failed</sys:String>
 </ResourceDictionary>

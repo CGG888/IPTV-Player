@@ -116,7 +116,7 @@
           </Grid.ColumnDefinitions>
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <Image Source="/srcbox.png" Width="18" Height="18" Margin="0,0,8,0"/>
-            <TextBlock Text="{DynamicResource UI_SettingsTitle}" Foreground="#EEE" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="{DynamicResource UI_SettingsTitle}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
           </StackPanel>
           <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button.Style>
@@ -296,6 +296,11 @@
               <controls:TimeshiftDrawer x:Name="TimeshiftSettingsControl"/>
           </TabItem>
 
+          <!-- Recording Settings -->
+          <TabItem x:Name="TabRecording" Header="{DynamicResource UI_Recording_Settings}">
+              <controls:RecordingDrawer x:Name="RecordingSettingsControl"/>
+          </TabItem>
+
           <!-- 时间覆盖（仅替换时间片段） -->
           <TabItem x:Name="TabTimeOverride" Header="{DynamicResource UI_TimeOverride_Tab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
@@ -453,6 +458,65 @@
                     </StackPanel>
                   </Grid>
                 </StackPanel>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- WebDAV -->
+          <TabItem Header="{DynamicResource UI_WebDAV_Tab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/><!-- BaseUrl help -->
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/><!-- Root help -->
+                  <RowDefinition Height="Auto"/><!-- Rec help -->
+                  <RowDefinition Height="Auto"/><!-- UserData help -->
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox x:Name="CbWebDavEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_Enable}"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebDAV_BaseUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbWebDavBase" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
+                         />
+                <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                           Text="{DynamicResource UI_WebDAV_BaseUrl_Help}"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Username}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbWebDavUser" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Token}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <PasswordBox x:Name="PbWebDavToken" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"/>
+                <CheckBox x:Name="CbWebDavSelfSigned" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_AllowSelfSigned}" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RootPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbWebDavRoot" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
+                         />
+                <TextBlock Grid.Row="10" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
+                           Text="{DynamicResource UI_WebDAV_Path_Help}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RecordingsPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbWebDavRec" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
+                         />
+                <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
+                           Text="{DynamicResource UI_WebDAV_Recordings_Help}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="{DynamicResource UI_WebDAV_UserDataPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbWebDavUserData" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
+                         />
+                <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
+                           Text="{DynamicResource UI_WebDAV_UserData_Help}" TextWrapping="Wrap"/>
+                <WrapPanel Grid.Row="9" Grid.ColumnSpan="2" Margin="0,12,0,0">
+                  <Button x:Name="BtnWebDavTest" Content="{DynamicResource UI_WebDAV_TestConnection}" MinWidth="100" Height="30" Margin="0,0,12,0" Click="BtnWebDavTest_Click" Style="{StaticResource ChipButton}"/>
+                  <Button x:Name="BtnWebDavBackup" Content="{DynamicResource UI_WebDAV_BackupUserData}" MinWidth="120" Height="30" Click="BtnWebDavBackup_Click" Style="{StaticResource ChipButton}"/>
+                  <Button x:Name="BtnWebDavRestore" Content="{DynamicResource UI_WebDAV_RestoreUserData}" MinWidth="120" Height="30" Margin="12,0,0,0" Click="BtnWebDavRestore_Click" Style="{StaticResource ChipButton}"/>
+                  <Button x:Name="BtnWebDavTestRecWrite" Content="{DynamicResource UI_WebDAV_TestRecordingsWrite}" MinWidth="150" Height="30" Margin="12,0,0,0" Click="BtnWebDavTestRecordingsWrite_Click" Style="{StaticResource ChipButton}"/>
+                </WrapPanel>
               </Grid>
             </ScrollViewer>
           </TabItem>

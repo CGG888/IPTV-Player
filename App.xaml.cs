@@ -134,6 +134,7 @@ namespace LibmpvIptvClient
             catch { }
             try
             {
+                try { LibmpvIptvClient.Services.ToastService.Init(); } catch { }
                 ApplyTheme(AppSettings.Current.ThemeMode);
                 ApplyLanguage(AppSettings.Current.Language);
             }

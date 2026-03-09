@@ -67,6 +67,14 @@ namespace LibmpvIptvClient
         {
             mpv_set_property_string(_handle, name, value);
         }
+        public void SetOptionString(string name, string value)
+        {
+            mpv_set_property_string(_handle, name, value);
+        }
+        public void SetPropertyString(string name, string value)
+        {
+            mpv_set_property_string(_handle, name, value);
+        }
         void SetupProtocolOptions(string url)
         {
             var u = url.ToLowerInvariant();
@@ -99,9 +107,11 @@ namespace LibmpvIptvClient
                 SetString("demuxer-lavf-buffersize", "128000"); // 减小缓冲区
                 if (u.StartsWith("udp://"))
                 {
-                    SetString("cache", "no");
-                    SetString("demuxer-max-back-bytes", "0");
-                    Logger.Debug($"[mpv] udp-ts demux=mpegts cache=no max-back=0 probesize=32 adur=0 url={url}");
+                    // 改为开启缓存以支持录制，通过 cache-secs 控制延迟
+                    SetString("cache", "yes");
+                    SetString("cache-secs", _settings.CacheSecs > 0 ? _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture) : "10");
+                    SetString("demuxer-max-back-bytes", "128MiB"); // 允许回溯
+                    Logger.Debug($"[mpv] udp-ts demux=mpegts cache=yes max-back=128MiB probesize=32 adur=0 url={url}");
                 }
                 else
                 {
@@ -117,9 +127,18 @@ namespace LibmpvIptvClient
             {
                 // 清空强制格式，恢复自动探测
                 SetString("demuxer-lavf-format", "");
-                // Ensure default cache settings for other protocols (like http/hls)
+                
+                // 强制开启激进缓存以支持录制
                 SetString("cache", "yes");
-                Logger.Debug($"[mpv] generic http cache=yes url={url}");
+                SetString("demuxer-max-bytes", "512MiB");
+                SetString("demuxer-max-back-bytes", "256MiB");
+                SetString("force-seekable", "yes"); // 关键：强制视为可回溯
+                
+                // 强制 demuxer 预读并保持数据，这对于 stream-record 至关重要
+                SetString("demuxer-readahead-secs", "60"); 
+                SetString("demuxer-cache-wait", "no"); // 不要等待缓存填满才播放，但要持续缓存
+                
+                Logger.Debug($"[mpv] generic http cache=yes max=512MiB back=256MiB seekable=yes readahead=60 url={url}");
             }
             // 3. HLS 自适应（仅在启用时）
             if (_settings.EnableProtocolAdaptive && (u.Contains(".m3u8") || u.Contains("format=hls")))
@@ -134,7 +153,7 @@ namespace LibmpvIptvClient
         {
             var p = mpv_get_property_string(_handle, name);
             if (p == IntPtr.Zero) return null;
-            try { return Marshal.PtrToStringAnsi(p); }
+            try { return Marshal.PtrToStringUTF8(p); }
             finally { mpv_free(p); }
         }
         public int? GetInt(string name)
@@ -267,7 +286,7 @@ namespace LibmpvIptvClient
             if (p == IntPtr.Zero) return null;
             try
             {
-                var s = Marshal.PtrToStringAnsi(p);
+                var s = Marshal.PtrToStringUTF8(p);
                 if (string.IsNullOrEmpty(s)) return null;
                 if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) return d;
                 return null;
@@ -281,6 +300,35 @@ namespace LibmpvIptvClient
         {
             var args = new string[] { "stop", null! };
             mpv_command(_handle, args);
+        }
+        public void Command(params string[] args)
+        {
+            var ptrs = new IntPtr[args.Length + 1];
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == null)
+                {
+                    ptrs[i] = IntPtr.Zero;
+                    continue;
+                }
+                var bytes = Encoding.UTF8.GetBytes(args[i]);
+                var mem = Marshal.AllocHGlobal(bytes.Length + 1);
+                Marshal.Copy(bytes, 0, mem, bytes.Length);
+                Marshal.WriteByte(mem, bytes.Length, 0);
+                ptrs[i] = mem;
+            }
+            ptrs[args.Length] = IntPtr.Zero;
+            try
+            {
+                mpv_command_ptr(_handle, ptrs);
+            }
+            finally
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (ptrs[i] != IntPtr.Zero) Marshal.FreeHGlobal(ptrs[i]);
+                }
+            }
         }
         public void Dispose()
         {
@@ -308,13 +356,15 @@ namespace LibmpvIptvClient
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int mpv_initialize(IntPtr ctx);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
-        static extern int mpv_set_property(IntPtr ctx, string name, mpv_format format, byte[] data);
+        static extern int mpv_set_property(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, mpv_format format, byte[] data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
-        static extern int mpv_set_property_string(IntPtr ctx, string name, string data);
+        static extern int mpv_set_property_string(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
-        static extern int mpv_command(IntPtr ctx, string[] args);
+        static extern int mpv_command(IntPtr ctx, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] string[] args);
+        [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "mpv_command")]
+        static extern int mpv_command_ptr(IntPtr ctx, IntPtr[] args);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
-        static extern IntPtr mpv_get_property_string(IntPtr ctx, string name);
+        static extern IntPtr mpv_get_property_string(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern void mpv_free(IntPtr data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]

@@ -25,11 +25,13 @@ namespace LibmpvIptvClient
         private Controls.TimeshiftDrawer? _timeshiftDrawer;
         private Controls.EpgDrawer? _epgDrawer;
         private Controls.LogoDrawer? _logoDrawer;
+        private Controls.RecordingDrawer? _recordingDrawer;
         
         private ReplayConfig _tempReplay;
         private TimeshiftConfig _tempTimeshift;
         private EpgConfig _tempEpg;
         private LogoConfig _tempLogo;
+        private RecordingConfig _tempRecording;
         
         // private FrameworkElement? _currentDrawer;
 
@@ -93,12 +95,15 @@ namespace LibmpvIptvClient
                 LogoSettingsControl?.Load(_tempLogo);
                 ReplaySettingsControl?.Load(_tempReplay);
                 TimeshiftSettingsControl?.Load(_tempTimeshift);
+                _tempRecording = current.Recording ?? new RecordingConfig();
+                RecordingSettingsControl?.Load(_tempRecording);
 
                 // Wire up pointers for HasChanges check if needed, or just check controls directly
                 _epgDrawer = EpgSettingsControl;
                 _logoDrawer = LogoSettingsControl;
                 _playbackDrawer = ReplaySettingsControl;
                 _timeshiftDrawer = TimeshiftSettingsControl;
+                _recordingDrawer = RecordingSettingsControl;
                 
                 // Time Override UI init
                 try
@@ -176,6 +181,122 @@ namespace LibmpvIptvClient
             }
             catch { }
             _ = CheckUpdateInlineAsync(false);
+            
+            try
+            {
+                if (current.WebDav != null)
+                {
+                    CbWebDavEnabled.IsChecked = current.WebDav.Enabled;
+                    TbWebDavBase.Text = current.WebDav.BaseUrl ?? "";
+                    TbWebDavUser.Text = current.WebDav.Username ?? "";
+                    var tok = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(current.WebDav.EncryptedToken ?? "");
+                    PbWebDavToken.Password = tok;
+                    CbWebDavSelfSigned.IsChecked = current.WebDav.AllowSelfSignedCert;
+                    TbWebDavRoot.Text = current.WebDav.RootPath ?? "/srcbox/";
+                    TbWebDavRec.Text = current.WebDav.RecordingsPath ?? "/srcbox/recordings/";
+                    TbWebDavUserData.Text = current.WebDav.UserDataPath ?? "/srcbox/user-data/";
+                }
+            }
+            catch { }
+        }
+        void SetWebDavFields(WebDavConfig wd)
+        {
+            try
+            {
+                if (wd == null) return;
+                CbWebDavEnabled.IsChecked = wd.Enabled;
+                TbWebDavBase.Text = wd.BaseUrl ?? "";
+                TbWebDavUser.Text = wd.Username ?? "";
+                var tok = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(wd.EncryptedToken ?? "");
+                PbWebDavToken.Password = tok;
+                CbWebDavSelfSigned.IsChecked = wd.AllowSelfSignedCert;
+                TbWebDavRoot.Text = wd.RootPath ?? "/srcbox/";
+                TbWebDavRec.Text = wd.RecordingsPath ?? "/srcbox/recordings/";
+                TbWebDavUserData.Text = wd.UserDataPath ?? "/srcbox/user-data/";
+            }
+            catch { }
+        }
+        void ReloadFromSettings(PlaybackSettings s)
+        {
+            try
+            {
+                // 基础播放设置
+                CbHwdec.IsChecked = s.Hwdec;
+                TbCacheSecs.Text = s.CacheSecs.ToString(CultureInfo.InvariantCulture);
+                TbMaxBytes.Text = s.DemuxerMaxBytesMiB.ToString(CultureInfo.InvariantCulture);
+                TbMaxBackBytes.Text = s.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture);
+                TbFccPrefetch.Text = s.FccPrefetchCount.ToString(CultureInfo.InvariantCulture);
+                TbSourceTimeout.Text = s.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture);
+                // 新增播放选项
+                CbAdaptive.IsChecked = s.EnableProtocolAdaptive;
+                CbHlsStart.IsChecked = s.HlsStartAtLiveEdge;
+                TbHlsReadahead.Text = s.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture);
+                TbAlang.Text = s.Alang ?? "";
+                TbSlang.Text = s.Slang ?? "";
+                TbMpvTimeout.Text = s.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture);
+                // EPG/Logo/Replay/Timeshift 控件刷新
+                _tempReplay = new ReplayConfig { Enabled = s.Replay.Enabled, UrlFormat = s.Replay.UrlFormat, DurationHours = s.Replay.DurationHours };
+                _tempTimeshift = new TimeshiftConfig { Enabled = s.Timeshift.Enabled, UrlFormat = s.Timeshift.UrlFormat, DurationHours = s.Timeshift.DurationHours };
+                _tempEpg = new EpgConfig { Enabled = s.Epg.Enabled, Url = s.Epg.Url, RefreshIntervalHours = s.Epg.RefreshIntervalHours };
+                _tempLogo = new LogoConfig { Enabled = s.Logo.Enabled, Url = s.Logo.Url, EnableCache = s.Logo.EnableCache, CacheDir = s.Logo.CacheDir, CacheTtlHours = s.Logo.CacheTtlHours, CacheMaxMiB = s.Logo.CacheMaxMiB };
+                EpgSettingsControl?.Load(_tempEpg);
+                LogoSettingsControl?.Load(_tempLogo);
+                ReplaySettingsControl?.Load(_tempReplay);
+                TimeshiftSettingsControl?.Load(_tempTimeshift);
+                _tempRecording = s.Recording ?? new RecordingConfig();
+                RecordingSettingsControl?.Load(_tempRecording);
+                // 时间覆盖 UI
+                var to = s.TimeOverride ?? new TimeOverrideConfig();
+                if (CbTimeOverrideEnabled != null) CbTimeOverrideEnabled.IsChecked = to.Enabled;
+                if (CbTimeOverrideMode != null)
+                {
+                    CbTimeOverrideMode.SelectedIndex = string.Equals(to.Mode, "replace_all", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                    _prevModeIndex = CbTimeOverrideMode.SelectedIndex;
+                }
+                if (CbTimeLayout != null)
+                {
+                    if (string.Equals(to.Layout, "playseek", StringComparison.OrdinalIgnoreCase)) CbTimeLayout.SelectedIndex = 1;
+                    else if (string.Equals(to.Layout, "start_duration", StringComparison.OrdinalIgnoreCase)) CbTimeLayout.SelectedIndex = 2;
+                    else CbTimeLayout.SelectedIndex = 0;
+                    UpdateTimeOverrideKeyFieldsVisibility();
+                }
+                if (CbTimeEncoding != null)
+                {
+                    if (string.Equals(to.Encoding, "utc", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 1;
+                    else if (string.Equals(to.Encoding, "unix", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 2;
+                    else if (string.Equals(to.Encoding, "unix_ms", StringComparison.OrdinalIgnoreCase)) CbTimeEncoding.SelectedIndex = 3;
+                    else CbTimeEncoding.SelectedIndex = 0;
+                }
+                if (CbStartKey != null) CbStartKey.Text = to.StartKey ?? "start";
+                if (CbEndKey != null) CbEndKey.Text = to.EndKey ?? "end";
+                if (CbDurationKey != null) CbDurationKey.Text = to.DurationKey ?? "duration";
+                if (CbPlayseekKey != null) CbPlayseekKey.Text = to.PlayseekKey ?? "playseek";
+                if (CbUrlEncode != null) CbUrlEncode.IsChecked = to.UrlEncode;
+                // 语言与主题
+                if (CbLanguage != null)
+                {
+                    var lang = (s.Language ?? "").Trim();
+                    int idx = 0;
+                    if (string.Equals(lang, "zh-CN", StringComparison.OrdinalIgnoreCase)) idx = 1;
+                    else if (string.Equals(lang, "zh-TW", StringComparison.OrdinalIgnoreCase)) idx = 2;
+                    else if (string.Equals(lang, "en-US", StringComparison.OrdinalIgnoreCase)) idx = 3;
+                    else if (string.Equals(lang, "ru-RU", StringComparison.OrdinalIgnoreCase)) idx = 4;
+                    CbLanguage.SelectedIndex = idx;
+                }
+                if (CbTheme != null)
+                {
+                    var theme = (s.ThemeMode ?? "System").Trim();
+                    int idx = string.Equals(theme, "Light", StringComparison.OrdinalIgnoreCase) ? 1
+                            : string.Equals(theme, "Dark", StringComparison.OrdinalIgnoreCase) ? 2 : 0;
+                    CbTheme.SelectedIndex = idx;
+                }
+                // CDN 列表
+                _cdn = new ObservableCollection<string>(s.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>());
+                ListCdn.ItemsSource = _cdn;
+                // WebDAV
+                SetWebDavFields(s.WebDav);
+            }
+            catch { }
         }
         void Settings_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
@@ -235,12 +356,15 @@ namespace LibmpvIptvClient
             _timeshiftDrawer?.Save(_tempTimeshift);
             _epgDrawer?.Save(_tempEpg);
             _logoDrawer?.Save(_tempLogo);
+            _recordingDrawer?.Save(_tempRecording);
 
             // Assign Temp Configs to Result
             s.Replay = _tempReplay;
             s.Timeshift = _tempTimeshift;
             s.Epg = _tempEpg;
             s.Logo = _tempLogo;
+            s.Recording = _tempRecording;
+            try { s.RecordingLocalDir = s.Recording?.DirTemplate ?? s.RecordingLocalDir; } catch { }
 
             // CDN
             CleanCdnListForSave(s);
@@ -270,11 +394,172 @@ namespace LibmpvIptvClient
                 s.TimeOverride = to;
             }
             catch { }
+            try
+            {
+                var wd = new WebDavConfig();
+                wd.Enabled = CbWebDavEnabled?.IsChecked == true;
+                wd.BaseUrl = (TbWebDavBase?.Text ?? "").Trim();
+                wd.Username = (TbWebDavUser?.Text ?? "").Trim();
+                var plain = (PbWebDavToken?.Password ?? "").Trim();
+                wd.TokenOrPassword = plain;
+                wd.EncryptedToken = LibmpvIptvClient.Services.CryptoUtil.ProtectString(plain);
+                wd.AllowSelfSignedCert = CbWebDavSelfSigned?.IsChecked == true;
+                wd.RootPath = (TbWebDavRoot?.Text ?? "/srcbox/").Trim();
+                wd.RecordingsPath = (TbWebDavRec?.Text ?? "/srcbox/recordings/").Trim();
+                wd.UserDataPath = (TbWebDavUserData?.Text ?? "/srcbox/user-data/").Trim();
+                s.WebDav = wd;
+            }
+            catch { }
             ApplySettingsRequested?.Invoke(s);
 
             ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_SettingsSaved", "设置已保存"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
             // DialogResult = true;
             // Close();
+        }
+        async void BtnWebDavTest_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var cfg = new WebDavConfig
+                {
+                    BaseUrl = (TbWebDavBase?.Text ?? "").Trim(),
+                    Username = (TbWebDavUser?.Text ?? "").Trim(),
+                    TokenOrPassword = (PbWebDavToken?.Password ?? "").Trim(),
+                    AllowSelfSignedCert = CbWebDavSelfSigned?.IsChecked == true
+                };
+                // 基地址校验：必须是绝对 URI，且包含路径（非根）
+                try
+                {
+                    if (!Uri.TryCreate(cfg.BaseUrl, UriKind.Absolute, out var u))
+                    {
+                        ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_WebDAV_BaseUrl_Invalid", "请填写完整的 WebDAV 基地址，例如 https://example.com/remote.php/dav/files/<user>/"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                        return;
+                    }
+                    var b = cfg.BaseUrl;
+                    if (!b.EndsWith("/")) b += "/";
+                    cfg.BaseUrl = b;
+                }
+                catch { }
+                var cli = new LibmpvIptvClient.Services.WebDavClient(cfg);
+                var ok = await cli.TestConnectionAsync(cfg.BaseUrl);
+                var msg = ok ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_Connected", "连接成功")
+                             : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_ConnectionFailed", "连接失败");
+                ModernMessageBox.Show(this, msg, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+            }
+            catch { }
+        }
+        async void BtnWebDavBackup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var cfg = new WebDavConfig
+                {
+                    BaseUrl = (TbWebDavBase?.Text ?? "").Trim(),
+                    Username = (TbWebDavUser?.Text ?? "").Trim(),
+                    TokenOrPassword = (PbWebDavToken?.Password ?? "").Trim(),
+                    AllowSelfSignedCert = CbWebDavSelfSigned?.IsChecked == true,
+                    UserDataPath = (TbWebDavUserData?.Text ?? "/srcbox/user-data/").Trim()
+                };
+                var cli = new LibmpvIptvClient.Services.WebDavClient(cfg);
+                var baseUrl = cfg.BaseUrl.TrimEnd('/');
+                var dir = AppDomain.CurrentDomain.BaseDirectory;
+                var path1 = System.IO.Path.Combine(dir, "user_settings.json");
+                var path2 = System.IO.Path.Combine(dir, "user_data.json");
+                // Ensure remote directory
+                await cli.EnsureCollectionAsync(cfg.UserDataPath);
+                int count = 0;
+                if (System.IO.File.Exists(path1))
+                {
+                    var bytes = await System.IO.File.ReadAllBytesAsync(path1);
+                    var ok = await cli.PutAsync(cli.Combine(cfg.UserDataPath + "/user_settings.json"), bytes, "application/json");
+                    if (ok) count++;
+                }
+                if (System.IO.File.Exists(path2))
+                {
+                    var bytes = await System.IO.File.ReadAllBytesAsync(path2);
+                    var ok = await cli.PutAsync(cli.Combine(cfg.UserDataPath + "/user_data.json"), bytes, "application/json");
+                    if (ok) count++;
+                }
+                var msg = count > 0 ? "备份完成" : "备份失败";
+                ModernMessageBox.Show(this, msg, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+            }
+            catch { }
+        }
+        async void BtnWebDavRestore_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var cfg = new WebDavConfig
+                {
+                    BaseUrl = (TbWebDavBase?.Text ?? "").Trim(),
+                    Username = (TbWebDavUser?.Text ?? "").Trim(),
+                    TokenOrPassword = (PbWebDavToken?.Password ?? "").Trim(),
+                    AllowSelfSignedCert = CbWebDavSelfSigned?.IsChecked == true,
+                    UserDataPath = (TbWebDavUserData?.Text ?? "/srcbox/user-data/").Trim()
+                };
+                var cli = new LibmpvIptvClient.Services.WebDavClient(cfg);
+                var dir = AppDomain.CurrentDomain.BaseDirectory;
+                var path1 = System.IO.Path.Combine(dir, "user_settings.json");
+                var path2 = System.IO.Path.Combine(dir, "user_data.json");
+                bool needConfirm = System.IO.File.Exists(path1) || System.IO.File.Exists(path2);
+                if (needConfirm)
+                {
+                    bool? confirm = ModernMessageBox.Show(this,
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("UI_WebDAV_Restore_Confirm", "将覆盖本地用户数据，确定继续？"),
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"),
+                        MessageBoxButton.YesNo);
+                    if (confirm != true) return;
+                }
+                int count = 0;
+                var r1 = await cli.GetBytesAsync(cli.Combine(cfg.UserDataPath + "/user_settings.json"));
+                if (r1.ok && r1.bytes.Length > 0)
+                {
+                    await System.IO.File.WriteAllBytesAsync(path1, r1.bytes);
+                    count++;
+                }
+                var r2 = await cli.GetBytesAsync(cli.Combine(cfg.UserDataPath + "/user_data.json"));
+                if (r2.ok && r2.bytes.Length > 0)
+                {
+                    await System.IO.File.WriteAllBytesAsync(path2, r2.bytes);
+                    count++;
+                }
+                var msg = count > 0
+                    ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_RestoreDone", "恢复完成")
+                    : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_RestoreFailed", "恢复失败");
+                ModernMessageBox.Show(this, msg, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                try
+                {
+                    var reloaded = PlaybackSettings.Load();
+                    AppSettings.Current = reloaded;
+                    ReloadFromSettings(reloaded);
+                    ApplySettingsRequested?.Invoke(reloaded);
+                }
+                catch { }
+            }
+            catch { }
+        }
+        async void BtnWebDavTestRecordingsWrite_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var cfg = new WebDavConfig
+                {
+                    BaseUrl = (TbWebDavBase?.Text ?? "").Trim(),
+                    Username = (TbWebDavUser?.Text ?? "").Trim(),
+                    TokenOrPassword = (PbWebDavToken?.Password ?? "").Trim(),
+                    AllowSelfSignedCert = CbWebDavSelfSigned?.IsChecked == true,
+                    RecordingsPath = (TbWebDavRec?.Text ?? "/srcbox/recordings/").Trim()
+                };
+                var cli = new LibmpvIptvClient.Services.WebDavClient(cfg);
+                await cli.EnsureCollectionAsync(cfg.RecordingsPath);
+                var content = System.Text.Encoding.UTF8.GetBytes($"SrcBox write test {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}");
+                var ok = await cli.PutAsync(cli.Combine(cfg.RecordingsPath + "/write_test.txt"), content, "text/plain");
+                var msg = ok
+                    ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_RecordingsWriteDone", "录播目录写入成功")
+                    : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_WebDAV_RecordingsWriteFailed", "录播目录写入失败");
+                ModernMessageBox.Show(this, msg, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+            }
+            catch { }
         }
         
         void BtnPreviewReplay_Click(object sender, RoutedEventArgs e)
