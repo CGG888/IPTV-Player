@@ -1,0 +1,280 @@
+using LibmpvIptvClient.Architecture.Presentation.Mvvm;
+using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Windows.Input;
+
+namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
+{
+    public partial class MainWindowMenuActionsViewModel : ObservableObject
+    {
+        private readonly MainShellViewModel _shell;
+
+        public event Action<string>? RequestLoadChannels;
+        public event Action<string>? RequestLoadSingleStream;
+        public event Action<bool>? RequestFccUpdate;
+        public event Action<bool>? RequestUdpUpdate;
+        public event Action<bool>? RequestEpgToggle;
+        public event Action<bool>? RequestMinimalToggle;
+
+        public MainWindowMenuActionsViewModel(MainShellViewModel shell)
+        {
+            _shell = shell;
+        }
+
+        public void OpenFile()
+        {
+            var file = _shell.DialogActions.PromptOpenFile();
+            if (!string.IsNullOrWhiteSpace(file))
+            {
+                _shell.SourceLoader.UpdateLastSource(file, null);
+                RequestLoadChannels?.Invoke(file!);
+            }
+        }
+
+        public void OpenUrl()
+        {
+            var owner = GetOwnerWindow();
+            var url = _shell.DialogActions.PromptOpenUrl(owner);
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                if (AppSettings.Current.SavedSources != null)
+                {
+                    foreach (var s in AppSettings.Current.SavedSources) s.IsSelected = false;
+                    AppSettings.Current.Save();
+                }
+                RequestLoadSingleStream?.Invoke(url!);
+            }
+        }
+
+        public void AddM3uFile()
+        {
+            var files = _shell.DialogActions.PromptOpenFiles();
+            if (files.Count > 0)
+            {
+                if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
+                
+                M3uSource? lastSrc = null;
+                foreach (var file in files)
+                {
+                    var src = new M3uSource { Name = System.IO.Path.GetFileNameWithoutExtension(file), Url = file };
+                    AppSettings.Current.SavedSources.Add(src);
+                    lastSrc = src;
+                }
+                AppSettings.Current.Save();
+                
+                if (lastSrc != null) LoadM3u(lastSrc);
+            }
+        }
+
+        public void AddM3uUrl()
+        {
+            var owner = GetOwnerWindow();
+            var result = _shell.DialogActions.PromptAddM3u(owner);
+            if (result == null) return;
+            var src = new M3uSource { Name = result.Name, Url = result.Url };
+            if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
+            AppSettings.Current.SavedSources.Add(src);
+            AppSettings.Current.Save();
+            LoadM3u(src);
+        }
+
+        public void EditM3u(M3uSource source)
+        {
+            var owner = GetOwnerWindow();
+            var result = _shell.DialogActions.PromptEditM3u(owner, source.Name, source.Url, _shell.WindowStateActions.IsFullscreen);
+            
+            if (result != null)
+            {
+                if (result.IsDelete)
+                {
+                    if (AppSettings.Current.SavedSources != null)
+                    {
+                        var target = AppSettings.Current.SavedSources.FirstOrDefault(s => s.Name == source.Name && s.Url == source.Url);
+                        if (target != null)
+                        {
+                            AppSettings.Current.SavedSources.Remove(target);
+                            AppSettings.Current.Save();
+                        }
+                    }
+                }
+                else
+                {
+                    source.Name = result.Name;
+                    source.Url = result.Url;
+                    AppSettings.Current.Save();
+                }
+            }
+        }
+
+        public void LoadM3u(M3uSource src)
+        {
+            _shell.SourceLoader.UpdateLastSource("", src);
+            RequestLoadChannels?.Invoke(src.Url);
+        }
+
+        public void ShowAbout()
+        {
+            var owner = GetOwnerWindow();
+            var dlg = _shell.DialogActions.CreateAboutDialog(owner, _shell.WindowStateActions.IsFullscreen);
+            dlg.ShowDialog();
+        }
+
+        public void ExitApp()
+        {
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        public void ToggleFcc(bool on)
+        {
+            AppSettings.Current.FccPrefetchCount = on ? 2 : 0;
+            AppSettings.Current.Save();
+            RequestFccUpdate?.Invoke(on);
+        }
+
+        public void ToggleUdp(bool on)
+        {
+            AppSettings.Current.EnableUdpOptimization = on;
+            AppSettings.Current.Save();
+            RequestUdpUpdate?.Invoke(on);
+        }
+
+        public void ToggleEpg(bool on)
+        {
+            RequestEpgToggle?.Invoke(on);
+        }
+
+        public void ToggleDrawer(bool on)
+        {
+            _shell.IsDrawerCollapsed = !on;
+        }
+
+        public void ToggleMinimalMode(bool on)
+        {
+            RequestMinimalToggle?.Invoke(on);
+        }
+
+        private System.Windows.Window GetOwnerWindow()
+        {
+            return (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) 
+                ? (System.Windows.Window)_shell.WindowStateActions.FullscreenWindow 
+                : System.Windows.Application.Current.MainWindow;
+        }
+
+        public List<MenuItemViewModel> BuildSourceMenuItems()
+        {
+            if (_shell.CurrentChannel == null) return new List<MenuItemViewModel>();
+            if (_shell.CurrentSources == null || _shell.CurrentSources.Count == 0)
+            {
+                _shell.CurrentSources = _shell.SourceLoader.BuildSourcesForChannel(_shell.CurrentChannel, _shell.Channels);
+            }
+
+            string currentPlayingUrl = "";
+            if (_shell.CurrentChannel.Tag is Source playingSrc)
+            {
+                currentPlayingUrl = _shell.SourceLoader.SanitizeUrl(playingSrc.Url);
+            }
+
+            var list = new List<MenuItemViewModel>();
+            foreach (var s in _shell.CurrentSources)
+            {
+                var isChecked = _shell.SourceLoader.SanitizeUrl(s.Url) == currentPlayingUrl;
+                list.Add(new MenuItemViewModel
+                {
+                    Header = SourceLabel(s),
+                    Command = new RelayCommand(() => SwitchSource(s)),
+                    IsChecked = isChecked,
+                    IsCheckable = true,
+                    Tag = s
+                });
+            }
+            return list;
+        }
+
+        private void SwitchSource(Source newSrc)
+        {
+            if (_shell.CurrentChannel == null) return;
+            _shell.CurrentChannel.Tag = newSrc;
+            var u = _shell.SourceLoader.SanitizeUrl(newSrc.Url);
+            LibmpvIptvClient.Diagnostics.Logger.Log("切换源 " + u);
+            _shell.PlayerEngine?.Play(u);
+        }
+
+        public List<MenuItemViewModel> BuildRatioMenuItems()
+        {
+            var options = new[] { 
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Default", "默认"), "default"),
+                ("16:9", "16:9"),
+                ("4:3", "4:3"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Stretch", "拉伸"), "stretch"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Fill", "填充"), "fill"),
+                (LibmpvIptvClient.Helpers.ResxLocalizer.Get("Ratio_Crop", "裁剪"), "crop")
+            };
+
+            var list = new List<MenuItemViewModel>();
+            foreach (var (label, val) in options)
+            {
+                var isChecked = string.Equals(_shell.CurrentAspect, val, StringComparison.OrdinalIgnoreCase);
+                list.Add(new MenuItemViewModel
+                {
+                    Header = label,
+                    Command = new RelayCommand(() => SwitchRatio(val)),
+                    IsChecked = isChecked,
+                    IsCheckable = true,
+                    Tag = val
+                });
+            }
+            return list;
+        }
+
+        private void SwitchRatio(string val)
+        {
+            _shell.CurrentAspect = val;
+            _shell.PlayerEngine?.SetAspectRatio(val);
+        }
+
+        private string SourceLabel(Source s)
+        {
+            var parts = new List<string>();
+            bool isMulticast = false;
+            bool isUnicast = false;
+
+            if (!string.IsNullOrWhiteSpace(s.Name))
+            {
+                if (s.Name.Contains("组播")) isMulticast = true;
+                else if (s.Name.Contains("单播")) isUnicast = true;
+            }
+            
+            if (!isMulticast && !isUnicast)
+            {
+                isMulticast = _shell.SourceLoader.IsMulticast(s.Url);
+            }
+
+            parts.Add(isMulticast ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Multicast", "组播") : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Unicast", "单播"));
+            
+            if (s.Quality != null)
+            {
+                if (s.Quality.Height >= 2160) parts.Add("UHD");
+                else if (s.Quality.Height >= 1080) parts.Add("FHD");
+                else if (s.Quality.Height >= 720) parts.Add("HD");
+                else if (s.Quality.Height > 0) parts.Add("SD");
+            }
+            
+            if (s.Quality != null && s.Quality.Fps > 0) parts.Add($"{s.Quality.Fps:0.#}fps");
+            
+            return string.Join("-", parts);
+        }
+    }
+
+    public class MenuItemViewModel
+    {
+        public string Header { get; set; } = "";
+        public ICommand? Command { get; set; }
+        public bool IsChecked { get; set; }
+        public bool IsCheckable { get; set; }
+        public object? Tag { get; set; }
+    }
+}

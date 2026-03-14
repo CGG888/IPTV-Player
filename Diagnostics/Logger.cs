@@ -33,7 +33,8 @@ namespace LibmpvIptvClient.Diagnostics
             };
             
             // Format: [Time][Level][Class.Method] Message
-            var msg = $"[{DateTime.Now:HH:mm:ss.fff}][{prefix}][{fileName}.{caller}] {message}";
+            var redactedMessage = LogRedactor.Redact(message);
+            var msg = $"[{DateTime.Now:HH:mm:ss.fff}][{prefix}][{fileName}.{caller}] {redactedMessage}";
             OnMessage?.Invoke(msg);
             OnMessageLeveled?.Invoke(level, msg);
         }

@@ -153,7 +153,7 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" Opacity="0.9">
+    <Border Background="{DynamicResource TopOverlayScrimBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -208,16 +208,28 @@
 
                 <!-- 3. Maximize/Restore -->
                 <Button x:Name="BtnMax" Style="{StaticResource TopBtnStyle}" Click="BtnMax_Click">
-                    <!-- Restore Icon (Double Square) -->
-                    <Path Data="M4.5,6.5 H9.5 V11.5 H4.5 Z M6.5,6.5 V4.5 H11.5 V9.5 H9.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Path x:Name="PathMaxIcon" Data="M4.5,4.5 H11.5 V11.5 H4.5 Z" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
                 
                 <!-- 4. Fullscreen (Exit/Toggle) -->
                 <Button x:Name="BtnFullscreen" Style="{StaticResource TopBtnStyle}" Click="BtnFullscreen_Click">
-                     <!-- Four outward arrows/corners (Yellow) -->
-                     <Path Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
+                     <Path x:Name="PathFullscreenIcon" Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
                            Stroke="{DynamicResource AccentBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
+
+                <ToggleButton x:Name="BtnMinimal" Click="BtnMinimal_Click" ToolTip="{DynamicResource Overlay_ToggleMinimal}">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton" BasedOn="{StaticResource TopBtnStyle}">
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                    <Path x:Name="PathMinimalIcon" Data="M4,6 H12 M4,9 H12 M4,12 H12" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </ToggleButton>
 
                 <!-- 5. Close -->
                 <Button x:Name="BtnClose" Click="BtnClose_Click" Background="Transparent">

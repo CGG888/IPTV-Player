@@ -81,7 +81,7 @@
   <sys:String x:Key="UI_DebugLog">Debug Log</sys:String>
   <sys:String x:Key="UI_Clear">Clear</sys:String>
   <sys:String x:Key="UI_SettingsTitle">Settings</sys:String>
-  <sys:String x:Key="UI_LangThemeNote">Language and theme apply immediately; saving persists for next launch.</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">Language and theme changes take effect after clicking Save.</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Supports {name} placeholder, e.g. http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">e.g. https://gh-proxy.org</sys:String>
   <sys:String x:Key="UI_Cdn_Help">CDN (Content Delivery Network) accelerates GitHub file downloads. If updates fail, try switching or adding a new mirror.</sys:String>
@@ -139,6 +139,7 @@
   <sys:String x:Key="EPG_Status_Playback">Replay</sys:String>
   <sys:String x:Key="EPG_Status_Record">Recording</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">Timeshift</sys:String>
+  <sys:String x:Key="EPG_Status_LocalFile">Local</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">Scheduled</sys:String>
   <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ Playback</sys:String>
   <sys:String x:Key="EPG_Yesterday">Yesterday</sys:String>
@@ -190,6 +191,7 @@
   <sys:String x:Key="Menu_List">List</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">Channels</sys:String>
+  <sys:String x:Key="Menu_MinimalMode">Minimal mode</sys:String>
   <sys:String x:Key="Menu_SwitchM3u">Switch M3U</sys:String>
   <sys:String x:Key="Menu_Settings">Settings</sys:String>
   <sys:String x:Key="Menu_Exit">Exit</sys:String>
@@ -203,6 +205,8 @@
   <sys:String x:Key="Overlay_RecordStop">Stop Recording</sys:String>
   <sys:String x:Key="Overlay_EPG">Program guide</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">Toggle channel list</sys:String>
+  <sys:String x:Key="Overlay_ToggleMinimal">Minimal mode</sys:String>
+  <sys:String x:Key="Overlay_ExitMinimal">Exit minimal</sys:String>
   <sys:String x:Key="Tooltip_PinTop">Always on top</sys:String>
   <!-- Playback page -->
   <sys:String x:Key="UI_Playback_EnableHwdec">Enable hardware decoding (d3d11va)</sys:String>

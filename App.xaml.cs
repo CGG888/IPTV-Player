@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
+using LibmpvIptvClient.Architecture.Core;
 
 namespace LibmpvIptvClient
 {
@@ -24,6 +25,7 @@ namespace LibmpvIptvClient
         const int SW_HIDE = 0;
 
         public static event Action? LanguageChanged;
+        public static event Action? ThemeChanged;
         public App()
         {
             try
@@ -135,10 +137,20 @@ namespace LibmpvIptvClient
             try
             {
                 try { LibmpvIptvClient.Services.ToastService.Init(); } catch { }
+                try { SrcBoxArchitectureHost.InitializeAsync().GetAwaiter().GetResult(); } catch { }
                 ApplyTheme(AppSettings.Current.ThemeMode);
                 ApplyLanguage(AppSettings.Current.Language);
             }
             catch { }
+        }
+        protected override void OnExit(ExitEventArgs e)
+        {
+            try
+            {
+                SrcBoxArchitectureHost.ShutdownAsync().GetAwaiter().GetResult();
+            }
+            catch { }
+            base.OnExit(e);
         }
         public static void ApplyTheme(string mode)
         {
@@ -162,6 +174,17 @@ namespace LibmpvIptvClient
                 var actual = ThemeManager.Current.ActualApplicationTheme;
                 var src = actual == ApplicationTheme.Light ? "Resources/Colors.Light.xaml" : "Resources/Colors.Dark.xaml";
                 app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(src, UriKind.Relative) });
+                foreach (Window w in app.Windows)
+                {
+                    try
+                    {
+                        LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(w);
+                        w.InvalidateVisual();
+                        w.UpdateLayout();
+                    }
+                    catch { }
+                }
+                ThemeChanged?.Invoke();
             }
             catch { }
         }

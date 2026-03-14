@@ -354,16 +354,16 @@ namespace LibmpvIptvClient.Services
             catch { }
             return (move, copy);
         }
-        public async Task<(bool ok, byte[] bytes)> GetBytesAsync(string url)
+        public async Task<(bool ok, byte[] bytes)> GetBytesAsync(string url, System.Threading.CancellationToken ct = default)
         {
             try
             {
                 var t0 = Stopwatch.StartNew();
-                var resp = await _http.GetAsync(url);
+                var resp = await _http.GetAsync(url, ct);
                 t0.Stop();
                 var ok = resp.IsSuccessStatusCode;
                 byte[] buf = Array.Empty<byte>();
-                if (ok) buf = await resp.Content.ReadAsByteArrayAsync();
+                if (ok) buf = await resp.Content.ReadAsByteArrayAsync(ct);
                 try
                 {
                     var code = (int)resp.StatusCode;
@@ -377,6 +377,34 @@ namespace LibmpvIptvClient.Services
             {
                 try { Logger.Info($"[WebDAV] GET {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return (false, Array.Empty<byte>());
+            }
+        }
+        
+        public async Task<(bool ok, long size, DateTime? lastmod)> HeadAsync(string url, System.Threading.CancellationToken ct = default)
+        {
+            try
+            {
+                var t0 = Stopwatch.StartNew();
+                var req = new HttpRequestMessage(HttpMethod.Head, url);
+                var resp = await _http.SendAsync(req, ct);
+                t0.Stop();
+                long size = 0;
+                DateTime? lastmod = null;
+                if (resp.Content.Headers.ContentLength.HasValue) size = resp.Content.Headers.ContentLength.Value;
+                if (resp.Content.Headers.LastModified.HasValue) lastmod = resp.Content.Headers.LastModified.Value.UtcDateTime;
+                try
+                {
+                    var code = (int)resp.StatusCode;
+                    var cls = Classify(code);
+                    Logger.Info($"[WebDAV] HEAD {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                }
+                catch { }
+                return (resp.IsSuccessStatusCode, size, lastmod);
+            }
+            catch
+            {
+                try { Logger.Info($"[WebDAV] HEAD {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                return (false, 0, null);
             }
         }
         static ConcurrentDictionary<string, (long size, DateTime? lastmod)> _headCache = new ConcurrentDictionary<string, (long, DateTime?)>();

@@ -1,0 +1,45 @@
+using System.Windows.Controls;
+using LibmpvIptvClient.Architecture.Presentation.Mvvm;
+
+namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
+
+public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
+{
+    public ContextMenu BuildMenu(
+        Action? openFile,
+        Action? openUrl,
+        Action? addM3uFile,
+        Action? addM3uUrl,
+        Action<M3uSource>? editM3u,
+        Action<M3uSource>? loadM3u,
+        Action? openSettings,
+        Action? exitApp,
+        Action<bool>? toggleFcc,
+        Action<bool>? toggleUdp,
+        Action<bool>? toggleEpg,
+        Action<bool>? toggleDrawer,
+        Action<bool>? toggleMinimal,
+        bool isEpgChecked,
+        bool isDrawerChecked,
+        bool isMinimalChecked)
+    {
+        return LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
+            openFile: openFile,
+            openUrl: openUrl,
+            addM3uFile: addM3uFile,
+            addM3uUrl: addM3uUrl,
+            editM3u: editM3u,
+            loadM3u: loadM3u,
+            openSettings: openSettings,
+            showAbout: null,
+            exitApp: exitApp,
+            toggleFcc: toggleFcc,
+            toggleUdp: toggleUdp,
+            toggleEpg: toggleEpg,
+            toggleDrawer: toggleDrawer,
+            toggleMinimal: toggleMinimal,
+            isEpgChecked: isEpgChecked,
+            isDrawerChecked: isDrawerChecked,
+            isMinimalChecked: isMinimalChecked);
+    }
+}

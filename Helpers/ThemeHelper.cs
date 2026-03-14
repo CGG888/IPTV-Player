@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using LibmpvIptvClient.Architecture.Application.Shared;
+using LibmpvIptvClient.Architecture.Core;
 
 namespace LibmpvIptvClient.Helpers
 {
@@ -42,6 +44,13 @@ namespace LibmpvIptvClient.Helpers
         {
             try
             {
+                try
+                {
+                    var service = SrcBoxArchitectureHost.Kernel.Resolve<IThemeTitleBarService>();
+                    service.Apply(w, AppSettings.Current?.ThemeMode);
+                    return;
+                }
+                catch { }
                 var mode = AppSettings.Current?.ThemeMode ?? "System";
                 bool dark = false;
                 if (string.Equals(mode, "Dark", StringComparison.OrdinalIgnoreCase)) dark = true;

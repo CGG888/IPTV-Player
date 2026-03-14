@@ -43,10 +43,16 @@
   <!-- Status Colors -->
   <SolidColorBrush x:Key="StatusLiveBrush" Color="#FF453A"/>
   <SolidColorBrush x:Key="StatusReplayBrush" Color="#32CD32"/>
-  <SolidColorBrush x:Key="StatusTimeshiftBrush" Color="#FF9F0A"/>
+  <SolidColorBrush x:Key="StatusTimeshiftBrush" Color="#32D3D3"/>
   <SolidColorBrush x:Key="StatusBookBrush" Color="#0A84FF"/>
   
   <!-- Filled Chips -->
   <SolidColorBrush x:Key="StatusLiveFillBrush" Color="#FF453A"/>
   <SolidColorBrush x:Key="StatusReplayFillBrush" Color="#2E7D32"/>
+  <SolidColorBrush x:Key="StatusTimeshiftFillBrush" Color="#32D3D3"/>
+  
+  <LinearGradientBrush x:Key="TopOverlayScrimBrush" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Color="#CC000000" Offset="0"/>
+    <GradientStop Color="#00000000" Offset="1"/>
+  </LinearGradientBrush>
 </ResourceDictionary>

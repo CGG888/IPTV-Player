@@ -7,6 +7,7 @@ namespace LibmpvIptvClient
 {
     public partial class ReminderListWindow : Window
     {
+        public static event Action? RemindersChanged;
         private ObservableCollection<ScheduledReminder> _items = new ObservableCollection<ScheduledReminder>();
         public ReminderListWindow()
         {
@@ -66,6 +67,7 @@ namespace LibmpvIptvClient
                         AppSettings.Current.Save();
                         LibmpvIptvClient.Services.ReminderService.Instance.Start();
                         LoadData();
+                        try { RemindersChanged?.Invoke(); } catch { }
                     }
                 }
             }
@@ -87,6 +89,7 @@ namespace LibmpvIptvClient
                     AppSettings.Current.Save();
                     LibmpvIptvClient.Services.ReminderService.Instance.Start();
                     LoadData();
+                    try { RemindersChanged?.Invoke(); } catch { }
                 }
                 else if (Grid.SelectedItems != null && Grid.SelectedItems.Count > 0)
                 {
@@ -99,6 +102,7 @@ namespace LibmpvIptvClient
                     AppSettings.Current.Save();
                     LibmpvIptvClient.Services.ReminderService.Instance.Start();
                     LoadData();
+                    try { RemindersChanged?.Invoke(); } catch { }
                 }
             }
             catch { }

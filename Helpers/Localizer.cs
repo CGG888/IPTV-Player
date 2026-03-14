@@ -1,4 +1,6 @@
 using System;
+using LibmpvIptvClient.Architecture.Application.Shared;
+using LibmpvIptvClient.Architecture.Core;
 using WpfApp = System.Windows;
 
 namespace LibmpvIptvClient.Helpers
@@ -9,6 +11,12 @@ namespace LibmpvIptvClient.Helpers
         {
             try
             {
+                try
+                {
+                    var service = SrcBoxArchitectureHost.Kernel.Resolve<ILocalizationService>();
+                    return service.GetText(key, fallback);
+                }
+                catch { }
                 var app = WpfApp.Application.Current;
                 if (app != null)
                 {

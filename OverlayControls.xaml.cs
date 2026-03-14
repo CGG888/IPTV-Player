@@ -34,11 +34,16 @@ namespace LibmpvIptvClient
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
         }
-        public void SetPaused(bool paused)
+        public void SetPlaySymbol(ModernWpf.Controls.Symbol symbol)
         {
+            try { IconPlayPause.Symbol = symbol; } catch { }
+        }
+        public void SetMuted(bool muted)
+        {
+            _muted = muted;
             try
             {
-                IconPlayPause.Symbol = paused ? ModernWpf.Controls.Symbol.Play : ModernWpf.Controls.Symbol.Pause;
+                IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
             }
             catch { }
         }

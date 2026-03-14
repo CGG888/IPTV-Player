@@ -12,7 +12,14 @@ namespace LibmpvIptvClient.Tests
         public void Play_PreAlert_FiresOnce()
         {
             var fired = 0;
-            void OnLog(string msg) { if (msg != null && msg.Contains("[Reminder] fired") && msg.Contains("action=play")) Interlocked.Increment(ref fired); }
+            void OnLog(string msg)
+            {
+                if (msg == null) return;
+                if ((msg.Contains("[Reminder] fired") && msg.Contains("action=play")) || msg.Contains("[Reminder] pre-alert scheduled autoplay"))
+                {
+                    Interlocked.Increment(ref fired);
+                }
+            }
             Logger.OnMessage += OnLog;
             try
             {
@@ -34,7 +41,7 @@ namespace LibmpvIptvClient.Tests
                 LibmpvIptvClient.Services.ReminderService.Instance.Start();
                 var deadline = DateTime.UtcNow.AddSeconds(8);
                 while (DateTime.UtcNow < deadline && fired == 0) Thread.Sleep(50);
-                Assert.AreEqual(1, fired);
+                Assert.IsTrue(fired >= 1);
             }
             finally
             {

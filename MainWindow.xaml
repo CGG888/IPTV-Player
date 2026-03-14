@@ -9,6 +9,7 @@
         x:Class="LibmpvIptvClient.MainWindow"
         Title="{DynamicResource App_Name}" Width="1280" Height="720" WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow" ResizeMode="CanResize"
+        AllowDrop="True" Drop="OnDrop"
         Icon="pack://application:,,,/srcbox.ico">
     
     <WindowChrome.WindowChrome>
@@ -408,16 +409,40 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="EpgColumn" Width="0"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition x:Name="DrawerColumn" Width="380"/>
+            <ColumnDefinition x:Name="DrawerColumn" Width="{Binding DrawerGridLength}"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- 自定义标题栏 -->
+            <RowDefinition Height="Auto">
+                <RowDefinition.Style>
+                    <Style TargetType="RowDefinition">
+                        <Setter Property="Height" Value="Auto"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding WindowStateActions.IsFullscreen}" Value="True">
+                                <Setter Property="Height" Value="0"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsMinimalMode}" Value="True">
+                                <Setter Property="Height" Value="0"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </RowDefinition.Style>
+            </RowDefinition>
             <RowDefinition Height="*"/>    <!-- 视频区 -->
             <RowDefinition Height="Auto"/> <!-- 底部控制栏 -->
         </Grid.RowDefinitions>
 
         <!-- Custom Title Bar -->
         <Border Grid.Row="0" Grid.ColumnSpan="3" Background="{DynamicResource TitleBarBrush}" Height="40" BorderBrush="{DynamicResource BorderBrushCommon}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsMinimalMode}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -488,7 +513,7 @@
                     </Button>
                     
                     <!-- 4. Fullscreen (Yellow when Checked) -->
-                    <ToggleButton x:Name="BtnWinFullscreen" Style="{StaticResource TopBtnStyle}" Click="CbFullscreen_Checked">
+                    <ToggleButton x:Name="BtnWinFullscreen" Style="{StaticResource TopBtnStyle}" Click="CbFullscreen_Checked" IsChecked="{Binding WindowStateActions.IsFullscreen, Mode=OneWay}">
                         <ToggleButton.Template>
                             <ControlTemplate TargetType="ToggleButton">
                                 <Border x:Name="bd" Background="{TemplateBinding Background}">
@@ -518,6 +543,10 @@
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </ToggleButton.Template>
+                    </ToggleButton>
+
+                    <ToggleButton x:Name="BtnMinimalTop" Style="{StaticResource TopBtnStyle}" Click="BtnMinimal_Click" IsChecked="{Binding IsMinimalMode, Mode=OneWay}" ToolTip="{DynamicResource Overlay_ToggleMinimal}">
+                        <Path Data="M4,6 H12 M4,9 H12 M4,12 H12" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </ToggleButton>
 
                     <!-- 5. Close -->
@@ -602,6 +631,23 @@
                                             <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource StatusReplayBrush}"/>
                                             <Setter TargetName="RowBd" Property="BorderThickness" Value="4,0,0,1"/>
                                         </MultiDataTrigger>
+                                        <!-- 直播播放中：增加左侧彩色标识 -->
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsPlaying}" Value="True"/>
+                                                <Condition Binding="{Binding Status}" Value="直播"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource StatusLiveBrush}"/>
+                                            <Setter TargetName="RowBd" Property="BorderThickness" Value="4,0,0,1"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsPlaying}" Value="True"/>
+                                                <Condition Binding="{Binding DataContext.PlaybackMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="Timeshift"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="RowBd" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftBrush}"/>
+                                            <Setter TargetName="RowBd" Property="BorderThickness" Value="4,0,0,1"/>
+                                        </MultiDataTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -661,6 +707,18 @@
                                                     <Setter Property="IsHitTestVisible" Value="True"/>
                                                     <Setter Property="Cursor" Value="Hand"/>
                                                 </DataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsPlaying}" Value="True"/>
+                                                        <Condition Binding="{Binding DataContext.PlaybackMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="Timeshift"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter TargetName="Chip" Property="Background" Value="{DynamicResource StatusTimeshiftFillBrush}"/>
+                                                    <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftFillBrush}"/>
+                                                    <Setter TargetName="TxtStatusChip" Property="Foreground" Value="#FFFFFFFF"/>
+                                                    <Setter TargetName="TxtStatusChip" Property="Text" Value="{DynamicResource EPG_Status_Timeshift}"/>
+                                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                                    <Setter Property="Cursor" Value="Arrow"/>
+                                                </MultiDataTrigger>
                                                 <!-- 悬停/按下立体感 -->
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter TargetName="Chip" Property="Effect">
@@ -723,8 +781,8 @@
         </Grid>
 
         <!-- 视频区域 -->
-        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel">
-            <wfi:WindowsFormsHost x:Name="VideoHost" Background="Black" PreviewMouseWheel="VideoHost_PreviewMouseWheel">
+        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel" MouseLeftButtonDown="VideoArea_MouseLeftButtonDown" MouseMove="VideoArea_MouseMove">
+            <wfi:WindowsFormsHost x:Name="VideoHost" Background="Black" PreviewMouseWheel="VideoHost_PreviewMouseWheel" PreviewMouseMove="VideoHost_PreviewMouseMove">
                 <wf:Panel x:Name="VideoPanel" BackColor="Black"/>
             </wfi:WindowsFormsHost>
             
@@ -737,13 +795,13 @@
 
             <!-- Playback Status Indicator (Live/Catchup) -->
             <Border x:Name="PlaybackStatusIndicator" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20,0,0,140" 
-                    Background="{DynamicResource StatusIndicatorBackgroundBrush}" CornerRadius="4" Padding="8,4" Visibility="Collapsed" IsHitTestVisible="False">
-                <TextBlock x:Name="TxtPlaybackStatus" Text="{DynamicResource EPG_Status_Live}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold"/>
+                    Background="{DynamicResource StatusIndicatorBackgroundBrush}" CornerRadius="4" Padding="8,4" Visibility="{Binding PlaybackStatusText, Converter={StaticResource StringToVis}}" IsHitTestVisible="False">
+                <TextBlock x:Name="TxtPlaybackStatus" Text="{Binding PlaybackStatusText}" Foreground="{Binding PlaybackStatusBrush}" FontSize="14" FontWeight="Bold"/>
             </Border>
         </Grid>
 
         <!-- 右侧频道/分组抽屉 -->
-        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,0" x:Name="DrawerPanel">
+        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="1" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,0" x:Name="DrawerPanel">
              <!-- ... Drawer Content (Same as before) ... -->
              <Grid>
                 <Grid.RowDefinitions>
@@ -1298,7 +1356,20 @@
         </Border>
 
         <!-- 底部控制栏 -->
-        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="1" Background="{DynamicResource TitleBarBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
+        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource TitleBarBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding WindowStateActions.IsFullscreen}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsMinimalMode}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid Margin="12,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- 进度条 -->
@@ -1312,8 +1383,7 @@
                         <ColumnDefinition Width="120"/>
                     </Grid.ColumnDefinitions>
                     <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}" 
-                            Minimum="0" Maximum="100" 
-                            ValueChanged="SliderSeek_ValueChanged" 
+                            Minimum="0" Maximum="{Binding SeekMaximum}" Value="{Binding SeekValue, Mode=TwoWay}"
                             PreviewMouseDown="SliderSeek_PreviewMouseDown"
                             PreviewMouseUp="SliderSeek_PreviewMouseUp"
                             PreviewMouseMove="SliderSeek_MouseMove"
@@ -1324,10 +1394,21 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
-                            <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
+                            <ui:SymbolIcon x:Name="IconMute" Symbol="Volume">
+                                <ui:SymbolIcon.Style>
+                                    <Style TargetType="ui:SymbolIcon">
+                                        <Setter Property="Symbol" Value="Volume"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                <Setter Property="Symbol" Value="Mute"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:SymbolIcon.Style>
+                            </ui:SymbolIcon>
                         </Button>
                         <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume" 
-                                               VolumeChanged="SliderVolume_VolumeChanged" 
+                                               Volume="{Binding Volume, Mode=TwoWay}" 
                                                VerticalAlignment="Center"/>
                     </Grid>
                 </Grid>
@@ -1343,10 +1424,10 @@
                     <!-- 左侧：播放控制 -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <Border x:Name="BottomStatusIndicator" Height="32" VerticalAlignment="Center" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4" Padding="10,0" Margin="0,0,8,0">
-                            <TextBlock x:Name="TxtBottomPlaybackStatus" Text="{DynamicResource EPG_Status_Live}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtBottomPlaybackStatus" Text="{Binding PlaybackStatusText}" Foreground="{Binding PlaybackStatusBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
                         </Border>
                         <Button x:Name="BtnPlayPause" Style="{StaticResource BarButton}" Click="BtnPlayPause_Click">
-                            <ui:SymbolIcon x:Name="IconPlayPause" Symbol="Play"/>
+                            <ui:SymbolIcon x:Name="IconPlayPause" Symbol="{Binding PlayPauseSymbol}"/>
                         </Button>
                         <Button x:Name="BtnStop" Style="{StaticResource BarButton}" Click="BtnStop_Click">
                             <ui:SymbolIcon Symbol="Stop"/>
@@ -1360,10 +1441,23 @@
                         
                         <!-- 时间信息 -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                            <TextBlock x:Name="LblElapsed" Text="00:00" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock x:Name="LblElapsed" Text="{Binding ElapsedTimeText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
                             <TextBlock Text=" / " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock x:Name="LblDuration" Text="00:00" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <WrapPanel x:Name="TagPanel" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            <TextBlock x:Name="LblDuration" Text="{Binding DurationText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <ItemsControl ItemsSource="{Binding MediaInfo.Tags}" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource TagChip}" Margin="0,0,4,0">
+                                            <TextBlock Text="{Binding}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </StackPanel>
 
@@ -1377,14 +1471,14 @@
                             <ui:SymbolIcon Symbol="Crop"/>
                         </Button>
                         <!-- 倍速按钮（窗口模式） -->
-                        <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}">
-                            <TextBlock x:Name="LblSpeedBar" Text="1.0x"/>
+                        <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}" IsEnabled="{Binding IsSpeedEnabled}">
+                            <TextBlock x:Name="LblSpeedBar" Text="{Binding SpeedText}"/>
                         </ToggleButton>
                         <!-- 实时录播 -->
                         <ToggleButton x:Name="BtnRecordNow" Style="{StaticResource BarToggle}" Click="BtnRecordNow_Click" ToolTip="{DynamicResource Overlay_RecordNow}">
                             <TextBlock Text="REC"/>
                         </ToggleButton>
-                        <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" Click="CbTimeshift_Click" ToolTip="{DynamicResource Overlay_Timeshift}">
+                        <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" IsChecked="{Binding IsTimeshiftActive, Mode=TwoWay}" ToolTip="{DynamicResource Overlay_Timeshift}">
                             <ui:SymbolIcon Symbol="Clock"/>
                         </ToggleButton>
 
@@ -1393,6 +1487,9 @@
                         </ToggleButton>
                         <ToggleButton x:Name="CbDrawer" Style="{StaticResource BarToggle}" Click="CbDrawer_Click" ToolTip="{DynamicResource Overlay_ToggleDrawer}">
                             <ui:SymbolIcon Symbol="List"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="BtnMinimalRight" Style="{StaticResource BarToggle}" Click="BtnMinimal_Click" ToolTip="{DynamicResource Overlay_ToggleMinimal}" IsChecked="{Binding IsMinimalMode, Mode=OneWay}">
+                            <TextBlock Text="简"/>
                         </ToggleButton>
                     </StackPanel>
                 </Grid>

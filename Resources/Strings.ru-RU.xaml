@@ -81,7 +81,7 @@
   <sys:String x:Key="UI_DebugLog">Журнал отладки</sys:String>
   <sys:String x:Key="UI_Clear">Очистить</sys:String>
   <sys:String x:Key="UI_SettingsTitle">Настройки</sys:String>
-  <sys:String x:Key="UI_LangThemeNote">Язык и тема применяются сразу; сохранение действует при следующем запуске.</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">Изменения языка и темы вступают в силу после нажатия «Сохранить».</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Поддерживается {name}, напр. http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">напр. https://gh-proxy.org</sys:String>
   <sys:String x:Key="UI_Cdn_Help">CDN ускоряет загрузку с GitHub. Если обновление не удается, попробуйте переключить зеркало.</sys:String>
@@ -181,6 +181,7 @@
   <sys:String x:Key="Menu_List">Список</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">Каналы</sys:String>
+  <sys:String x:Key="Menu_MinimalMode">Минимальный режим</sys:String>
   <sys:String x:Key="Menu_SwitchM3u">Сменить M3U</sys:String>
   <sys:String x:Key="Menu_Settings">Настройки</sys:String>
   <sys:String x:Key="Menu_Exit">Выход</sys:String>
@@ -194,6 +195,8 @@
   <sys:String x:Key="Overlay_RecordStop">Остановить запись</sys:String>
   <sys:String x:Key="Overlay_EPG">Программа</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">Свернуть список</sys:String>
+  <sys:String x:Key="Overlay_ToggleMinimal">Минимальный режим</sys:String>
+  <sys:String x:Key="Overlay_ExitMinimal">Выйти из мини-режима</sys:String>
   <sys:String x:Key="Tooltip_PinTop">Поверх всех</sys:String>
 
   <!-- Playback/Stream -->

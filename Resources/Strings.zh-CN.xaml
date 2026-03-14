@@ -88,7 +88,7 @@
   <sys:String x:Key="UI_CopyAll">复制全部</sys:String>
   <sys:String x:Key="Common_Close">关闭</sys:String>
   <sys:String x:Key="UI_SettingsTitle">设置</sys:String>
-  <sys:String x:Key="UI_LangThemeNote">语言与外观切换立即应用，保存后下次启动保持。</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">语言与外观修改需点击保存后生效。</sys:String>
 
   <sys:String x:Key="Update_Title">软件更新</sys:String>
   <sys:String x:Key="Update_LatestVersion">最新版本：</sys:String>
@@ -222,6 +222,7 @@
   <sys:String x:Key="Menu_List">列表</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">频道</sys:String>
+  <sys:String x:Key="Menu_MinimalMode">精简模式</sys:String>
   <sys:String x:Key="Menu_SwitchM3u">切换 M3U</sys:String>
   <sys:String x:Key="Menu_Settings">设置</sys:String>
   <sys:String x:Key="Menu_Exit">退出</sys:String>
@@ -235,6 +236,8 @@
   <sys:String x:Key="Overlay_RecordStop">停止录播</sys:String>
   <sys:String x:Key="Overlay_EPG">节目指南</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">折叠频道表</sys:String>
+  <sys:String x:Key="Overlay_ToggleMinimal">精简模式</sys:String>
+  <sys:String x:Key="Overlay_ExitMinimal">退出精简</sys:String>
   <sys:String x:Key="Tooltip_PinTop">置顶</sys:String>
   
   <!-- 播放页 -->
@@ -315,6 +318,7 @@
   <sys:String x:Key="Msg_SettingsSaved">设置已保存</sys:String>
   <sys:String x:Key="UI_Total">共</sys:String>
   <sys:String x:Key="UI_Future">未来</sys:String>
+  <sys:String x:Key="EPG_Status_LocalFile">本地</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">关于 源匣 (SrcBox)</sys:String>

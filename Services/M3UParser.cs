@@ -24,10 +24,14 @@ namespace LibmpvIptvClient.Services
         {
             try
             {
+                LibmpvIptvClient.Diagnostics.Logger.Log($"[M3UParser] Downloading from {url}");
                 var data = await _http.GetByteArrayAsync(url);
+                LibmpvIptvClient.Diagnostics.Logger.Log($"[M3UParser] Downloaded {data.Length} bytes");
+                
                 string text;
                 if (IsGzip(data))
                 {
+                    LibmpvIptvClient.Diagnostics.Logger.Log("[M3UParser] Detected GZIP content");
                     using var ms = new MemoryStream(data);
                     using var gz = new GZipStream(ms, CompressionMode.Decompress);
                     using var sr = new StreamReader(gz, Encoding.UTF8, true);
@@ -41,7 +45,7 @@ namespace LibmpvIptvClient.Services
             }
             catch (Exception ex)
             {
-                LibmpvIptvClient.Diagnostics.Logger.Error($"M3U ParseFromUrlAsync failed: {ex.Message}");
+                LibmpvIptvClient.Diagnostics.Logger.Error($"M3U ParseFromUrlAsync failed: {ex}");
                 throw; // Rethrow to let caller handle
             }
         }

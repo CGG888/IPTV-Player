@@ -54,6 +54,17 @@ namespace LibmpvIptvClient.Services
             }
             catch { }
         }
+        public void SetTrayTooltip(string text)
+        {
+            try
+            {
+                var value = string.IsNullOrWhiteSpace(text) ? "SrcBox" : text.Trim();
+                const int maxLen = 63;
+                if (value.Length > maxLen) value = value.Substring(0, maxLen);
+                _icon.Text = value;
+            }
+            catch { }
+        }
         void BuildContextMenu()
         {
             _menu = new ContextMenuStrip();

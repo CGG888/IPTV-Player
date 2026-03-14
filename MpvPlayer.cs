@@ -63,7 +63,7 @@ namespace LibmpvIptvClient
         {
             SetFlag("mute", mute);
         }
-        void SetString(string name, string value)
+        public void SetString(string name, string value)
         {
             mpv_set_property_string(_handle, name, value);
         }

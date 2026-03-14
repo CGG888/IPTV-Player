@@ -64,13 +64,13 @@ namespace LibmpvIptvClient.Services
                             SizeBytes = fi.Length
                         };
                          try { item.SourceLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_Recordings_Access_Local", "本地存取"); } catch { item.SourceLabel = "本地存取"; }
-                        TryLoadMeta(f, item);
+                        var hasMetaTitle = TryLoadMeta(f, item);
                         if (resolver != null)
                         {
                             try
                             {
                                 var tup = resolver(start);
-                                if (!string.IsNullOrWhiteSpace(tup.Item1)) item.Title = tup.Item1!;
+                                if (!hasMetaTitle && !string.IsNullOrWhiteSpace(tup.Item1)) item.Title = tup.Item1!;
                             }
                             catch { }
                         }
@@ -293,7 +293,7 @@ namespace LibmpvIptvClient.Services
             var e = ext.ToUpperInvariant();
             return e == "TS" || e == "MP4" || e == "MKV" || e == "MOV" || e == "M4V";
         }
-        void TryLoadMeta(string filePath, RecordingEntry item)
+        bool TryLoadMeta(string filePath, RecordingEntry item)
         {
             try
             {
@@ -311,9 +311,10 @@ namespace LibmpvIptvClient.Services
                     var jf = Path.ChangeExtension(filePath, ".json");
                     if (File.Exists(jf)) json = File.ReadAllText(jf);
                 }
-                if (string.IsNullOrWhiteSpace(json)) return;
+                if (string.IsNullOrWhiteSpace(json)) return false;
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
+                var hasMetaTitle = false;
                 if (root.TryGetProperty("start_utc", out var st) && st.ValueKind == JsonValueKind.String)
                 {
                     if (DateTime.TryParse(st.GetString(), out var dt)) item.StartTime = dt.ToLocalTime();
@@ -325,10 +326,16 @@ namespace LibmpvIptvClient.Services
                 if (root.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String)
                 {
                     var s = t.GetString();
-                    if (!string.IsNullOrWhiteSpace(s)) item.Title = s!;
+                    if (!string.IsNullOrWhiteSpace(s))
+                    {
+                        item.Title = s!;
+                        hasMetaTitle = true;
+                    }
                 }
+                return hasMetaTitle;
             }
             catch { }
+            return false;
         }
 
         void FillLabels(RecordingEntry item, string ext)

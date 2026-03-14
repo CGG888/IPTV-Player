@@ -21,8 +21,10 @@ namespace LibmpvIptvClient.Helpers
             Action<bool>? toggleUdp,
             Action<bool>? toggleEpg,
             Action<bool>? toggleDrawer,
+            Action<bool>? toggleMinimal,
             bool isEpgChecked,
-            bool isDrawerChecked)
+            bool isDrawerChecked,
+            bool isMinimalChecked)
         {
             var cm = new ContextMenu();
 
@@ -103,6 +105,15 @@ namespace LibmpvIptvClient.Helpers
             };
             miChannel.Click += (s, args) => toggleDrawer?.Invoke(miChannel.IsChecked);
             miList.Items.Add(miChannel);
+
+            var miMinimal = new MenuItem
+            {
+                Header = Localizer.S("Menu_MinimalMode", "精简模式"),
+                IsCheckable = true,
+                IsChecked = isMinimalChecked
+            };
+            miMinimal.Click += (s, args) => toggleMinimal?.Invoke(miMinimal.IsChecked);
+            miList.Items.Add(miMinimal);
 
             var miM3uList = new MenuItem { Header = Localizer.S("Menu_SwitchM3u", "切换 M3U") };
             if (AppSettings.Current.SavedSources != null && AppSettings.Current.SavedSources.Count > 0)

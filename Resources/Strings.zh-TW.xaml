@@ -81,7 +81,7 @@
   <sys:String x:Key="UI_DebugLog">除錯日誌</sys:String>
   <sys:String x:Key="UI_Clear">清除</sys:String>
   <sys:String x:Key="UI_SettingsTitle">設定</sys:String>
-  <sys:String x:Key="UI_LangThemeNote">語言與主題即時套用，儲存後下次啟動保留。</sys:String>
+  <sys:String x:Key="UI_LangThemeNote">語言與主題修改需點擊儲存後生效。</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">支援 {name} 佔位符，例如 http://site.com/{name}.png</sys:String>
   <sys:String x:Key="UI_Cdn_Example">例如 https://gh-proxy.org</sys:String>
   <sys:String x:Key="UI_Cdn_Help">CDN（內容傳遞網路）用於加速 GitHub 檔案下載。若檢查更新失敗，請嘗試切換或新增鏡像線路。</sys:String>
@@ -181,6 +181,7 @@
   <sys:String x:Key="Menu_List">列表</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">頻道</sys:String>
+  <sys:String x:Key="Menu_MinimalMode">精簡模式</sys:String>
   <sys:String x:Key="Menu_SwitchM3u">切換 M3U</sys:String>
   <sys:String x:Key="Menu_Settings">設定</sys:String>
   <sys:String x:Key="Menu_Exit">退出</sys:String>
@@ -194,6 +195,8 @@
   <sys:String x:Key="Overlay_RecordStop">停止錄播</sys:String>
   <sys:String x:Key="Overlay_EPG">節目指南</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">折疊頻道列表</sys:String>
+  <sys:String x:Key="Overlay_ToggleMinimal">精簡模式</sys:String>
+  <sys:String x:Key="Overlay_ExitMinimal">退出精簡</sys:String>
   <sys:String x:Key="Tooltip_PinTop">置頂</sys:String>
 
   <!-- Playback/Stream -->
@@ -311,6 +314,7 @@
   <sys:String x:Key="Msg_SettingsSaved">設定已儲存</sys:String>
   <sys:String x:Key="UI_Total">共</sys:String>
   <sys:String x:Key="UI_Future">未來</sys:String>
+  <sys:String x:Key="EPG_Status_LocalFile">本地</sys:String>
 
   <!-- About -->
   <sys:String x:Key="About_TitleBar">關於 源匣 (SrcBox)</sys:String>
