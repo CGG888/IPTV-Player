@@ -42,12 +42,13 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
 
 ## Overview
 
-**SrcBox** uses `libmpv-2.dll` as its playback core, hosting the video window via `WindowsFormsHost`. It provides features such as IPTV channel lists, grouping, EPG, catchup/replay, and source switching.
+**SrcBox** uses `libmpv-2.dll` as its playback core, hosting the video window via `WindowsFormsHost`. It provides IPTV channel list, EPG, catchup, timeshift, recording, and upload queue capabilities.
 
 - Entry Window: [MainWindow.xaml](./MainWindow.xaml)
 - libmpv Wrapper: [MpvPlayer.cs](./MpvPlayer.cs)
 - M3U Parser: [Services/M3UParser.cs](./Services/M3UParser.cs)
 - EPG Service: [Services/EpgService.cs](./Services/EpgService.cs)
+- Main playback state: [Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs](./Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs)
 
 ---
 
@@ -56,7 +57,8 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
 This project is developed using **C# / WPF**. The core architecture is as follows:
 
 - **UI Layer**: Built with WPF (ModernWpf), providing a smooth and modern user experience.
-- **Interop Layer**: Encapsulates libmpv C API via `MpvPlayer.cs` using P/Invoke.
+- **Architecture Layer**: `Architecture/` is split into Application / Platform / Presentation, with modular playback and settings flows.
+- **Interop Layer**: Encapsulates libmpv calls via `MpvPlayer.cs` and `MpvPlayerEngineAdapter`.
 - **Rendering Layer**: Uses `WindowsFormsHost` to host a Win32 window handle, embedding mpv's rendering output into the WPF interface to bypass WPF's native media element limitations.
 - **Service Layer**:
   - `M3UParser`: High-performance regex-based parser supporting complex M3U extended tags.
@@ -66,36 +68,42 @@ This project is developed using **C# / WPF**. The core architecture is as follow
 
 ```text
 📂 SrcBox
-├── 📂 Models          # Data Models (Channel, EpgProgram, Source)
-├── 📂 Services        # Core Services (M3U Parsing, EPG, Channel Mgmt)
-├── 📂 Resources       # Resources (Localization, Styles, Fonts)
-├── 📂 Interop         # libmpv Interop Layer (P/Invoke)
-├── 📄 MainWindow.xaml # Main Window Logic
-└── 📄 MpvPlayer.cs    # Player Core Wrapper
+├── 📂 Architecture    # Layered modules (Application/Platform/Presentation)
+├── 📂 Services        # Core services (M3U/EPG/Recording/WebDAV/Notifications)
+├── 📂 Controls        # Drawers and dialogs (EPG/Recording/Timeshift/Upload Queue)
+├── 📂 Resources       # Localization and theme resources
+├── 📂 Tests           # MSTest automation project
+├── 📄 MainWindow.*.cs # Split main window logic
+└── 📄 MpvPlayer.cs    # libmpv wrapper
 ```
 
 ---
 
 ## Features & Changelog
 
+Version note: verifiable Git tags in this repository are `1.0.1` to `1.1.2`; the current branch describes as `1.1.2-6-gedf98b6`, while the project version is `1.1.4` (see `LibmpvIptvClient.csproj` / `setup.iss`). The table only keeps tag-verifiable mappings; items not mappable to a released tag are marked as “Post-1.1.2 (untagged)”.
+
 ### Core Playback
 
 | Feature | Description | Params/Example | Changelog |
 | :--- | :--- | :--- | :--- |
-| **Playback Control** | Play/Pause, Stop, Seek, Fast Forward/Rewind | No default hotkeys yet; mouse supported | v1.0.0 (Initial) |
-| **Volume Control** | Slider adjustment, mute support | Range 0-100 | v1.0.0 (Initial) |
-| **Status Indicators** | Live/Replay/Timeshift status in overlay | Auto-detection | v1.1.0 (2024-05, Update) <br>Added "Timeshift" status; optimized green replay badge |
+| **Playback Control** | Play/Pause, Stop, Seek, Fast Forward/Rewind | No default hotkeys yet; mouse supported | Since 1.0.1 |
+| **Volume Control** | Slider adjustment, mute support | Range 0-100 | Since 1.0.7 |
+| **Status Indicators** | Live/Replay/Timeshift status in overlay | Auto-detection | Since 1.0.5 |
+| **Scheduled Reminder & Auto Play** | Program reminder and scheduled autoplay policy | Supports “remind-only / auto-play” modes | Since 1.1.2 |
+| **Minimal Mode** | Compact player window mode with dedicated interactions | Synchronized behavior in window/fullscreen states | Post-1.1.2 (untagged) |
 
 ### IPTV Specifics
 
 | Feature | Description | Params/Example | Changelog |
 | :--- | :--- | :--- | :--- |
-| **M3U Parsing** | Local/Remote M3U, UTF-8/GB18030 compatible | Supports `#EXTINF` attributes | v1.0.0 (Initial) |
-| **EPG** | XMLTV (gz) support, day switching | Auto-match `tvg-id` | v1.0.0 (Initial) |
-| **Catchup (Replay)** | Template-based catchup URL generation | `{utc:yyyyMMddHHmmss}` etc. | v1.0.0 (Initial) |
-| **Timeshift** | Seek back in live stream history | Depends on `catchup-source` | v1.1.0 (2024-05, New) <br>Syncs between fullscreen/window; real-time timeline |
-| **Channel Mgmt** | Grouping, Search, Favorites | Favorites are runtime-only | v1.0.0 (Initial) |
-| **FCC/UDP** | Fast Channel Change & Multicast optimization | Toggle in Settings | v1.0.0 (Initial) |
+| **M3U Parsing** | Local/Remote M3U, UTF-8/GB18030 compatible | Supports `#EXTINF` attributes | Since 1.0.1 |
+| **EPG** | XMLTV (gz) support, day switching | Auto-match `tvg-id` | Since 1.0.1 |
+| **Catchup (Replay)** | Template-based catchup URL generation | `{utc:yyyyMMddHHmmss}` etc. | Since 1.0.1 |
+| **Timeshift** | Seek back in live stream history | Depends on `catchup-source` | Since 1.0.2 |
+| **Channel Mgmt** | Grouping, Search, Favorites, History | Favorites and history are persisted locally | Group/Search/Favorites: since 1.0.1; History: since 1.0.4 |
+| **FCC/UDP** | Fast Channel Change & Multicast optimization | Toggle in Settings | Since 1.0.1 |
+| **Recording & Upload** | Local recording, WebDAV upload, upload queue | Local/remote save modes | Post-1.1.2 (untagged) |
 
 ### Fullscreen & Overlay
 
@@ -116,6 +124,10 @@ We are dedicated to continuously improving the IPTV viewing experience. Here are
 - [ ] **Advanced A/V**: HDR10+ dynamic metadata support, 8K 120fps decoding optimization.
 - [ ] **Interactive Features**: Voice barrage (Speech-to-Text), low-latency cloud gaming entry.
 - [ ] **Copyright Protection**: Blockchain-based copyright verification.
+- [ ] **Test Coverage Expansion**: Add more unit tests for playback state, recording index, and EPG synchronization.
+- [ ] **Recording UX Improvements**: Improve in-progress metadata sync and remote metadata consistency.
+- [ ] **Playback Pipeline Optimization**: Further reduce zap latency and improve weak-network resilience.
+- [ ] **Source Governance**: Improve source health checks, fallback policies, and observability logs.
 
 ### Completed Features
 - [x] **Timeshift**: Replay-based timeshifting via `catchup-source` with real-time seeking.
@@ -125,7 +137,10 @@ We are dedicated to continuously improving the IPTV viewing experience. Here are
 - [x] **Channel Mgmt**: Grouping, search, and favorites.
 - [x] **Live Optimization**: FCC fast switching, UDP multicast optimization, auto-source switching.
 - [x] **Hardware Decoding**: Enabled `d3d11va` by default.
-- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (CN/EN).
+- [x] **Recording**: Local recording, recording index, upload queue, and WebDAV integration.
+- [x] **Scheduling**: Program reminders, reminder list, and scheduled autoplay policy.
+- [x] **Minimal Mode**: Compact player mode, top-bar interactions, and state synchronization across window/fullscreen.
+- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (ZH/EN/ZH-TW/RU).
 
 ---
 
@@ -193,7 +208,7 @@ This project depends on `libmpv-2.dll`.
 - **OS**: Windows 10 / 11 (x64)
 - **IDE**: Visual Studio 2022 or JetBrains Rider
 - **SDK**: .NET 8.0 SDK
-- **Dependency**: `libmpv-2.dll` (Must be manually placed in the output directory)
+- **Dependency**: `libmpv-2.dll` (included in repository root and copied to output on build)
 
 ### Build & Run
 
@@ -206,9 +221,12 @@ dotnet build
 
 # Run
 dotnet run
+
+# Tests
+dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 ```
 
-**Note**: Ensure `libmpv-2.dll` is placed in `bin\Debug\net8.0-windows\` before running, otherwise the app will crash.
+**Note**: If `libmpv-2.dll` is missing at runtime, the app will fail to start; by default the repository copy is copied during build.
 
 ### Troubleshooting
 

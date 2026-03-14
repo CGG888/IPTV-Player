@@ -42,12 +42,13 @@
 
 ## 项目概览
 
-**源匣（SrcBox）** 以 `libmpv-2.dll` 为播放内核，通过 `WindowsFormsHost` 承载视频窗口句柄，提供 IPTV 频道列表、分组、EPG、回放、源切换等功能。
+**源匣（SrcBox）** 以 `libmpv-2.dll` 为播放内核，通过 `WindowsFormsHost` 承载视频窗口句柄，提供 IPTV 频道列表、EPG、回放、时移、录播、上传队列等完整能力。
 
 - 播放器入口窗口：[MainWindow.xaml](./MainWindow.xaml)
 - libmpv 绑定封装：[MpvPlayer.cs](./MpvPlayer.cs)
 - M3U 解析：[Services/M3UParser.cs](./Services/M3UParser.cs)
 - EPG 解析与缓存：[Services/EpgService.cs](./Services/EpgService.cs)
+- 主状态与播放模式：[Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs](./Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs)
 
 ---
 
@@ -56,7 +57,8 @@
 本项目采用 **C# / WPF** 开发，核心架构如下：
 
 - **UI 层**：基于 WPF (ModernWpf)，提供流畅的现代化交互体验。
-- **互操作层**：通过 `MpvPlayer.cs` 封装 libmpv 的 C API，实现 P/Invoke 调用。
+- **架构层**：`Architecture/` 下按 Application / Platform / Presentation 分层，播放、设置、同步逻辑均模块化拆分。
+- **互操作层**：通过 `MpvPlayer.cs` 与 `MpvPlayerEngineAdapter` 封装 libmpv 调用。
 - **渲染层**：利用 `WindowsFormsHost` 承载 Win32 窗口句柄，将 mpv 的渲染输出嵌入 WPF 界面，解决 WPF 原生媒体元素性能不足的问题。
 - **服务层**：
   - `M3UParser`：高效的正则表达式解析器，支持极其复杂的 M3U 扩展标签。
@@ -66,36 +68,42 @@
 
 ```text
 📂 SrcBox
-├── 📂 Models          # 数据模型 (Channel, EpgProgram, Source)
-├── 📂 Services        # 核心服务 (M3U解析, EPG下载, 频道管理)
-├── 📂 Resources       # 资源文件 (多语言字符串, 样式, 字体)
-├── 📂 Interop         # libmpv 互操作层 (P/Invoke)
-├── 📄 MainWindow.xaml # 主界面逻辑
-└── 📄 MpvPlayer.cs    # 播放器核心封装
+├── 📂 Architecture    # 分层架构 (Application/Platform/Presentation)
+├── 📂 Services        # 核心服务 (M3U/EPG/录播/WebDAV/通知等)
+├── 📂 Controls        # 抽屉与弹窗控件 (EPG/录播/时移/上传队列)
+├── 📂 Resources       # 国际化与主题资源
+├── 📂 Tests           # MSTest 自动化测试
+├── 📄 MainWindow.*.cs # 主窗口分片逻辑
+└── 📄 MpvPlayer.cs    # libmpv 封装
 ```
 
 ---
 
 ## 功能清单与变更记录
 
+版本说明：仓库可核对的 Git Tag 为 `1.0.1` ～ `1.1.2`，当前分支描述为 `1.1.2-6-gedf98b6`，工程版本号为 `1.1.4`（见 `LibmpvIptvClient.csproj` / `setup.iss`）。下表仅填写可从 Tag/代码符号交叉验证的版本；无法映射到已打 Tag 的功能，标注为“1.1.2 后（未打 Tag）”。
+
 ### 核心播放功能
 
 | 功能点 | 说明 | 参数/示例 | 变更记录 |
 | :--- | :--- | :--- | :--- |
-| **播放控制** | 播放/暂停、停止、快进/快退、拖动进度 | 快捷键：暂无默认快捷键，支持鼠标操作 | v1.0.0 (Initial) |
-| **音量调节** | 滑块调节，支持静音 | 范围 0-100 | v1.0.0 (Initial) |
-| **状态标识** | 全屏条显示直播/回放/时移状态 | 自动检测 | v1.1.0 (2024-05, Update) <br>新增“时移”状态显示，优化回放绿色标识 |
+| **播放控制** | 播放/暂停、停止、快进/快退、拖动进度 | 快捷键：暂无默认快捷键，支持鼠标操作 | 1.0.1 起 |
+| **音量调节** | 滑块调节，支持静音 | 范围 0-100 | 1.0.7 起 |
+| **状态标识** | 全屏条显示直播/回放/时移状态 | 自动检测 | 1.0.5 起 |
+| **预约通知与预约播放** | 支持节目预约提醒与到点播放策略 | 支持“仅提醒/自动播放”模式 | 1.1.2 起 |
+| **精简模式** | 提供精简播放器窗口形态与独立交互 | 支持窗口态/全屏态同步 | 1.1.2 后（未打 Tag） |
 
 ### IPTV 专用功能
 
 | 功能点 | 说明 | 参数/示例 | 变更记录 |
 | :--- | :--- | :--- | :--- |
-| **M3U 解析** | 支持本地/远程 M3U，兼容 UTF-8/GB18030 | 支持 `#EXTINF` 扩展属性 | v1.0.0 (Initial) |
-| **EPG 节目单** | 支持 XMLTV (gz)，按日切换 | 自动匹配 `tvg-id` | v1.0.0 (Initial) |
-| **回放 (Catchup)** | 支持基于模板的回放 URL 生成 | `{utc:yyyyMMddHHmmss}` 等 | v1.0.0 (Initial) |
-| **时移 (Time-Shift)** | 拖动进度条回看直播历史 | 依赖 `catchup-source` | v1.1.0 (2024-05, New) <br>支持全屏/窗口同步，实时时间轴 |
-| **频道管理** | 分组、搜索、收藏 | 收藏列表运行时有效 | v1.0.0 (Initial) |
-| **FCC/UDP 优化** | 快速切台与组播优化开关 | 设置中开启 | v1.0.0 (Initial) |
+| **M3U 解析** | 支持本地/远程 M3U，兼容 UTF-8/GB18030 | 支持 `#EXTINF` 扩展属性 | 1.0.1 起 |
+| **EPG 节目单** | 支持 XMLTV (gz)，按日切换 | 自动匹配 `tvg-id` | 1.0.1 起 |
+| **回放 (Catchup)** | 支持基于模板的回放 URL 生成 | `{utc:yyyyMMddHHmmss}` 等 | 1.0.1 起 |
+| **时移 (Time-Shift)** | 拖动进度条回看直播历史 | 依赖 `catchup-source` | 1.0.2 起 |
+| **频道管理** | 分组、搜索、收藏、历史 | 收藏与历史本地持久化 | 分组/搜索/收藏：1.0.1 起；历史：1.0.4 起 |
+| **FCC/UDP 优化** | 快速切台与组播优化开关 | 设置中开启 | 1.0.1 起 |
+| **录播与上传** | 本地录播、WebDAV 上传、上传队列 | 支持本地/远端双模式 | 1.1.2 后（未打 Tag） |
 
 ### 全屏与悬浮层
 
@@ -116,6 +124,10 @@
 - [ ] **高级视听体验**：HDR10+ 动态元数据支持、8K 120fps 解码优化。
 - [ ] **互动功能**：语音弹幕（语音转字幕）、低延迟云游戏入口。
 - [ ] **版权保护**：区块链版权校验（防篡改溯源）。
+- [ ] **测试体系扩展**：补齐播放状态机、录播索引、EPG 同步相关单元测试。
+- [ ] **录播体验增强**：录制中信息同步、远端元数据一致性与失败恢复优化。
+- [ ] **播放链路优化**：继续降低切台延迟，优化弱网和高抖动场景稳定性。
+- [ ] **多源治理能力**：增强源健康检测、自动降级与可观测性日志。
 
 ### 已实现功能
 - [x] **时移 (Time-Shift)**：基于 `catchup-source` 的回放式时移，支持实时拖动回看。
@@ -125,7 +137,10 @@
 - [x] **频道管理**：分组、搜索、收藏功能。
 - [x] **直播优化**：FCC 快速切台、UDP 组播优化、自动换源。
 - [x] **硬件解码**：默认开启 `d3d11va`。
-- [x] **UI/UX**：全屏悬浮控制、侧边抽屉、多语言支持（中/英）。
+- [x] **录播能力**：本地录播、录播索引、上传队列、WebDAV 集成。
+- [x] **预约能力**：节目预约提醒、预约列表、到点自动播放策略。
+- [x] **精简模式**：支持精简窗口、顶栏交互、窗口态与全屏态状态同步。
+- [x] **UI/UX**：全屏悬浮控制、侧边抽屉、多语言支持（中/英/繁中/俄语）。
 
 ---
 
@@ -193,7 +208,7 @@
 - **操作系统**：Windows 10 / 11 (x64)
 - **开发工具**：Visual Studio 2022 或 JetBrains Rider
 - **SDK**：.NET 8.0 SDK
-- **依赖库**：`libmpv-2.dll` (必须手动放置在输出目录)
+- **依赖库**：`libmpv-2.dll`（仓库根目录提供，构建时复制到输出目录）
 
 ### 编译与运行
 
@@ -206,9 +221,12 @@ dotnet build
 
 # 运行
 dotnet run
+
+# 测试
+dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 ```
 
-**注意**：运行前请确保 `libmpv-2.dll` 已放置在 `bin\Debug\net8.0-windows\` 目录下，否则程序会闪退或报错。
+**注意**：若运行环境缺少 `libmpv-2.dll`，应用会在启动阶段报错；默认仓库中的 dll 会在构建时复制到输出目录。
 
 ### 故障排查
 
