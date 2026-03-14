@@ -20,6 +20,8 @@ We are dedicated to continuously improving the IPTV viewing experience.
 - [x] **Channel Mgmt**: Grouping, search, and favorites.
 - [x] **Live Optimization**: FCC fast switching, UDP multicast optimization, auto-source switching.
 - [x] **Hardware Decoding**: Enabled `d3d11va` by default.
+- [x] **Scheduling**: Program reminders, reminder list, and scheduled autoplay policy.
+- [x] **Minimal Mode**: Compact player mode, top-bar interactions, and synchronized window/fullscreen states.
 - [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (CN/EN).
 
 - [x] **v1.1.2+ Interaction Updates**:

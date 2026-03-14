@@ -39,12 +39,24 @@ Seek back in live stream history (depends on `catchup-source`).
 - Consistent UI in fullscreen and window; adapts to dark/light themes
 
 ### Channel Management
-Grouping, Search, and Favorites (runtime-only).
+Grouping, Search, Favorites, and History (persisted locally).
 
 ### Channel List Badges (R/T)
 - R: Catchup available; T: Timeshift available
 - Hover tooltips localized (ZH/EN/ZH-TW/RU)
 - Consistent style and layout in fullscreen and window
+
+### Scheduled Reminder & Auto Play
+- Future programs provide scheduling entry with separate “remind-only” and “auto-play-at-time” policies
+- Reminder list supports single-instance management, checkbox batch deletion, Select All / Invert
+- Unified entries from tray/dropdown/right-click; windows stay above the player in window/fullscreen states
+- Due and success notifications do not steal focus, with consistent placement policies
+
+### Minimal Mode
+- Compact player window mode with top interactions and core playback controls
+- Dedicated resize hit-testing, edge cursor hints, and drag/resize synchronization
+- Synchronized state across minimal/window/fullscreen for badges, EPG, and channel list
+
 ### Optimization (FCC)
 Fast Channel Change and UDP multicast optimization.
 
@@ -66,6 +78,7 @@ Fast Channel Change and UDP multicast optimization.
   - The current playing row is highlighted; when replaying, a green left stripe is shown for better visibility (especially in dark mode)
 - **Reminders & Notifications**
   - Single-instance reminder list; centers to the player on first open; user-dragged position is respected afterward
+  - Supports both “remind-only” and “auto-play” scheduling policies
   - Checkbox + Select All/Invert for batch deletion
   - Accessible from Tray / Dropdown / Right-click with consistent behavior
   - Due/success toasts don’t steal focus (bottom-right vs. centered strategies are clearly separated)

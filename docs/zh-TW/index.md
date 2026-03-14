@@ -32,8 +32,14 @@ features:
   - title: 時移與回看
     details: 支援直播流即時拖動時移，以及基於模板自動生成的 Catchup 回放，不錯過任何精彩瞬間。
     icon: ⏪
+  - title: 預約與提醒
+    details: 支援節目預約提醒與到點自動播放，提供預約清單與批次管理能力。
+    icon: ⏰
+  - title: 錄播與上傳
+    details: 支援本機錄製、錄製索引與 WebDAV 上傳佇列，適配本地/遠端雙模式。
+    icon: ⬆️
   - title: 頻道管理
-    details: 提供便捷的頻道分組、搜尋和收藏功能，輕鬆管理您的播放清單。
+    details: 提供頻道分組、搜尋、收藏與歷史記錄，本機持久化管理播放清單。
     icon: 📺
 ---
 
@@ -70,7 +76,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
-        Your browser does not support the video tag.
+        您的瀏覽器不支援 video 標籤。
       </video>
     </ClientOnly>
   </div>
@@ -81,7 +87,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/catchup.mp4" type="video/mp4">
-        Your browser does not support the video tag.
+        您的瀏覽器不支援 video 標籤。
       </video>
     </ClientOnly>
   </div>
@@ -92,7 +98,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/timeshift.mp4" type="video/mp4">
-        Your browser does not support the video tag.
+        您的瀏覽器不支援 video 標籤。
       </video>
     </ClientOnly>
   </div>

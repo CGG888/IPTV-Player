@@ -111,6 +111,14 @@ Version note: verifiable Git tags in this repository are `1.0.1` to `1.1.2`; the
 - **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
 - **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
 
+### v1.1.2+ Interaction Highlights (Synced from VitePress)
+- **EPG status chips**: Live red chip and Replay green chip; clicking Live chip switches back to live immediately.
+- **Now-playing indicators**: Current row highlight and a green left stripe during replay playback.
+- **Scheduling improvements**: single-instance reminder list, checkbox batch delete, Select All/Invert, and unified tray/right-click/dropdown entries.
+- **Scheduled autoplay policy**: supports both “remind-only” and “auto-play-at-time” modes.
+- **Minimal mode sync**: compact window top interactions, resize behavior, and status badges stay synchronized with window/fullscreen states.
+- **Tray & exit flow**: persistent tray with Open/Reminders/Manage M3U/Settings/Exit and explicit “No => minimize to tray” behavior.
+
 ---
 
 ## Roadmap

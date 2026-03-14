@@ -77,6 +77,8 @@ export default defineConfig({
       label: '繁體中文',
       lang: 'zh-TW',
       link: '/zh-TW/',
+      title: 'SrcBox',
+      description: '以 libmpv 為核心的現代 IPTV 播放器',
       themeConfig: {
         nav: [
           { text: '首頁', link: '/zh-TW/' },
@@ -104,12 +106,28 @@ export default defineConfig({
         outline: {
           label: '頁面導航'
         },
+        footer: {
+          message: '以 MIT 授權條款釋出。',
+          copyright: 'Copyright © 2024-present CGG888'
+        },
         docFooter: {
           prev: '上一頁',
           next: '下一頁'
         },
         lastUpdated: {
           text: '最後更新於'
+        },
+        darkModeSwitchLabel: '外觀',
+        lightModeSwitchTitle: '切換為淺色模式',
+        darkModeSwitchTitle: '切換為深色模式',
+        sidebarMenuLabel: '選單',
+        returnToTopLabel: '回到頂部',
+        langMenuLabel: '語言',
+        notFound: {
+          title: '找不到頁面',
+          quote: '您要找的頁面不存在或已被移除。',
+          linkLabel: '前往首頁',
+          linkText: '回到首頁'
         },
         editLink: {
           pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',
@@ -155,6 +173,8 @@ export default defineConfig({
       label: 'Русский',
       lang: 'ru',
       link: '/ru/',
+      title: 'SrcBox',
+      description: 'Современный IPTV-плеер на базе libmpv',
       themeConfig: {
         nav: [
           { text: 'Главная', link: '/ru/' },
@@ -182,12 +202,28 @@ export default defineConfig({
         outline: {
           label: 'Навигация'
         },
+        footer: {
+          message: 'Распространяется по лицензии MIT.',
+          copyright: 'Copyright © 2024-present CGG888'
+        },
         docFooter: {
           prev: 'Назад',
           next: 'Вперед'
         },
         lastUpdated: {
           text: 'Последнее обновление'
+        },
+        darkModeSwitchLabel: 'Тема',
+        lightModeSwitchTitle: 'Переключить на светлую тему',
+        darkModeSwitchTitle: 'Переключить на тёмную тему',
+        sidebarMenuLabel: 'Меню',
+        returnToTopLabel: 'Наверх',
+        langMenuLabel: 'Язык',
+        notFound: {
+          title: 'Страница не найдена',
+          quote: 'Запрошенная страница не существует или была удалена.',
+          linkLabel: 'Перейти на главную',
+          linkText: 'На главную'
         },
         editLink: {
           pattern: 'https://github.com/CGG888/SrcBox/edit/main/docs/:path',

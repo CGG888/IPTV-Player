@@ -32,8 +32,14 @@ features:
   - title: Timeshift и Архив
     details: Поддержка перемотки прямого эфира и автоматическая генерация ссылок на архив (Catchup) на основе шаблонов.
     icon: ⏪
+  - title: Планирование и напоминания
+    details: Напоминания о программах и автозапуск по расписанию, список напоминаний и пакетное управление.
+    icon: ⏰
+  - title: Запись и выгрузка
+    details: Локальная запись, индекс записей и очередь выгрузки на WebDAV для локального и удалённого сценариев.
+    icon: ⬆️
   - title: Управление каналами
-    details: Удобная группировка, поиск и избранное для легкого управления вашим плейлистом.
+    details: Группировка, поиск, избранное и история просмотров, локальное сохранение плейлиста.
     icon: 📺
 ---
 
@@ -70,7 +76,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
-        Ваш браузер не поддерживает видео тег.
+        Ваш браузер не поддерживает тег video.
       </video>
     </ClientOnly>
   </div>
@@ -81,7 +87,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/catchup.mp4" type="video/mp4">
-        Ваш браузер не поддерживает видео тег.
+        Ваш браузер не поддерживает тег video.
       </video>
     </ClientOnly>
   </div>
@@ -92,7 +98,7 @@ video::-webkit-media-controls-volume-panel {
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/timeshift.mp4" type="video/mp4">
-        Ваш браузер не поддерживает видео тег.
+        Ваш браузер не поддерживает тег video.
       </video>
     </ClientOnly>
   </div>

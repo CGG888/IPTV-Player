@@ -32,8 +32,14 @@ features:
   - title: Timeshift & Catchup
     details: Never miss a moment with real-time seeking in live streams and auto-generated catchup replay URLs.
     icon: ⏪
+  - title: Scheduling & Alerts
+    details: Program reminders with remind-only or auto-play actions, plus list management and batch operations.
+    icon: ⏰
+  - title: Recording & Upload
+    details: Local recording, recording index, and WebDAV upload queue for local/remote workflows.
+    icon: ⬆️
   - title: Channel Management
-    details: Easily organize your channels with grouping, searching, and favorites features.
+    details: Organize channels with grouping, search, favorites, and persisted history.
     icon: 📺
 ---
 

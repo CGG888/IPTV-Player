@@ -14,17 +14,35 @@ const i18n = {
     footer: 'SrcBox 仅作为一个开源的播放器工具，用户需自行寻找合法的播放源。请遵守当地法律法规。',
     button: '我已知晓 (I Understand)'
   },
+  'zh-TW': {
+    title: '⚠️ 重要聲明（免責聲明）',
+    point1: '1. 本頁面展示的所有影片、截圖及示範畫面僅作<strong>功能展示用途</strong>，並非實際可播放或可用的媒體資源。',
+    point2: '2. 本專案不提供任何 m3u 播放清單檔案及其中包含的頻道資料，亦不對第三方資料來源負責。',
+    footer: 'SrcBox 僅作為開源播放器工具，使用者需自行尋找合法的播放來源。請遵守所在地法律與相關規範。',
+    button: '我已了解'
+  },
   en: {
     title: '⚠️ Disclaimer',
     point1: '1. All videos, screenshots, and demos shown on this page are for <strong>functional demonstration purposes only</strong> and are not actual playable media resources.',
     point2: '2. This project does not provide any m3u playlist files or channel data, nor is it responsible for any third-party data sources.',
     footer: 'SrcBox is an open-source player tool only. Users must find legal playback sources themselves. Please comply with local laws and regulations.',
     button: 'I Understand'
+  },
+  ru: {
+    title: '⚠️ Отказ от ответственности',
+    point1: '1. Все видео, скриншоты и демонстрации на этой странице предназначены <strong>только для демонстрации функций</strong> и не являются реальными воспроизводимыми медиаресурсами.',
+    point2: '2. Проект не предоставляет никаких плейлистов m3u и данных каналов и не несёт ответственности за сторонние источники данных.',
+    footer: 'SrcBox — это лишь инструмент с открытым исходным кодом. Пользователь должен самостоятельно найти легальные источники воспроизведения. Пожалуйста, соблюдайте местные законы и правила.',
+    button: 'Я понял'
   }
 }
 
 const currentText = computed(() => {
-  return lang.value === 'zh' ? i18n.zh : i18n.en
+  const code = (lang.value || 'en').toLowerCase()
+  if (code === 'zh-tw' || code.startsWith('zh-tw-')) return i18n['zh-TW']
+  if (code === 'zh' || code.startsWith('zh-')) return i18n.zh
+  if (code === 'ru' || code.startsWith('ru-')) return i18n.ru
+  return i18n.en
 })
 
 // Function to close the disclaimer and save preference
