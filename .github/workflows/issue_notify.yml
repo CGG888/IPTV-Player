@@ -1,0 +1,83 @@
+name: Issue Full-State Notification
+
+on:
+  issues:
+    # 监听：打开、编辑、关闭、重新打开、删除
+    types: [opened, edited, closed, reopened, deleted]
+
+concurrency: 
+  group: wechat-notify-${{ github.repository }}
+  cancel-in-progress: false 
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rate Limit Sleep
+        run: sleep $((3 + RANDOM % 3))
+
+      - name: Process and Send Message
+        shell: python
+        env:
+          ACTION: ${{ github.event.action }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          USER_LOGIN: ${{ github.event.issue.user.login }}
+          USER_URL: ${{ github.event.issue.user.html_url }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          WEBHOOK_URL: ${{ secrets.WECHAT_WORK_WEBHOOK }}
+        run: |
+          import os
+          import requests
+          import json
+
+          def translate(text):
+              if not text: return ""
+              try:
+                  url = f"https://translate.googleapis.com{text}"
+                  r = requests.get(url, timeout=5)
+                  return "".join([s[0] for s in r.json()[0]])
+              except:
+                  return text
+
+          # 获取环境变量
+          action = os.getenv('ACTION')
+          title = os.getenv('ISSUE_TITLE')
+          body = os.getenv('ISSUE_BODY', '无详细内容')
+          user_login = os.getenv('USER_LOGIN')
+          user_url = os.getenv('USER_URL')
+          issue_url = os.getenv('ISSUE_URL')
+          webhook_url = os.getenv('WEBHOOK_URL')
+
+          # 状态映射逻辑
+          status_map = {
+              "opened": ("🆕 新建 Issue", "info"),
+              "edited": ("✏️ 修改了内容", "comment"),
+              "closed": ("✅ 已关闭 Issue", "warning"),
+              "reopened": ("♻️ 重新打开了 Issue", "info"),
+              "deleted": ("🗑️ 删除了 Issue", "warning")
+          }
+          status_text, color = status_map.get(action, (f"🛠️ 状态更新: {action}", "comment"))
+
+          # 内容截取与翻译
+          summary = (body[:200] + '...') if len(body) > 200 else body
+          trans_title = translate(title)
+          trans_summary = translate(summary)
+
+          # 格式化标题展示
+          display_title = title if trans_title == title else f"{title}\n> **翻译**: {trans_title}"
+
+          # 构造微信 Markdown
+          content = f"### {status_text}\n" \
+                    f"> **项目**: {os.getenv('REPO_NAME')}\n" \
+                    f"> **标题**: <font color=\"{color}\">{display_title}</font>\n" \
+                    f"> **操作人**: [{user_login}]({user_url})\n" \
+                    f"> **最新内容摘要**:\n" \
+                    f"```\n{trans_summary}\n```\n\n" \
+                    f"[🔗 在 GitHub 查看详情]({issue_url})"
+
+          # 发送请求
+          headers = {'Content-Type': 'application/json'}
+          data = {"msgtype": "markdown", "markdown": {"content": content}}
+          requests.post(webhook_url, data=json.dumps(data), headers=headers)
