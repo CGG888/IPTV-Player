@@ -233,7 +233,7 @@
   <sys:String x:Key="UI_Epg_SmartMatch">Включить умный поиск</sys:String>
   <sys:String x:Key="UI_Epg_SmartMatch_Note">Автоматически сопоставлять каналы с похожими именами (напр. CCTV-1 и CCTV1).</sys:String>
   <sys:String x:Key="UI_Epg_MatchRules_Title">Правила сопоставления и заглушки</sys:String>
-  <sys:String x:Key="UI_Epg_MatchRules_Desc">Порядок: 1) точное совпадение tvg-id; 2) точное совпадение имени с EPG display-name; 3) совпадение после очистки имени (удаление HD/HEVC и т.п., унификация цифр); 4) умный нестрогий поиск (для CCTV цифры должны совпадать; суффиксы «卫视/台/频道/TV» считаются синонимами). При включении результаты кешируются.</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">Порядок (от высокого к низкому): 1) точное совпадение tvg-id; 2) tvg-id после очистки (удаление -_ пробелов); 3) tvg-name после очистки; 4) имя канала после очистки к EPG display-name; 5) умный нечёткий поиск (для CCTV цифры должны совпадать; суффиксы «TV/Канал/Станция» считаются синонимами). Заполнение tvg-id и tvg-name в M3U повышает вероятность сопоставления. Результаты кешируются.</sys:String>
   <sys:String x:Key="UI_Epg_Placeholder_Desc">Если у канала нет EPG, в программе показываются по одному «Рекомендуемому» на час — это лишь заглушки и не влияют на прямой эфир, запись и таймшифт.</sys:String>
   
   <sys:String x:Key="UI_Logo_Config">Настройки логотипов</sys:String>
@@ -375,4 +375,20 @@
   <sys:String x:Key="ReminderList_Column_Action">Тип</sys:String>
   <sys:String x:Key="Reminder_Action_Notify">Уведомление</sys:String>
   <sys:String x:Key="Reminder_Action_Play">Воспроизведение</sys:String>
+
+  <!-- HTTP/RTSP Header Settings -->
+  <sys:String x:Key="UI_HttpHeader_Section">Настройки HTTP/RTSP Header</sys:String>
+  <sys:String x:Key="UI_HttpHeader_Headers">HTTP Headers</sys:String>
+  <sys:String x:Key="UI_HttpHeader_HeadersHint">Многострочный текст, по одному Header в строке. Формат: User-Agent: xxx или Referer: https://xxx. Применяется к HTTP/HTTPS потокам.</sys:String>
+  <sys:String x:Key="UI_RtspTransport">Транспорт RTSP</sys:String>
+  <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_RtspUser">RTSP Имя пользователя</sys:String>
+  <sys:String x:Key="UI_RtspPassword">RTSP Пароль</sys:String>
+  <sys:String x:Key="UI_TestUrl">Тестовый URL</sys:String>
+  <sys:String x:Key="UI_TestHttp">Тест HTTP</sys:String>
+  <sys:String x:Key="UI_TestRtsp">Тест RTSP</sys:String>
+  <sys:String x:Key="UI_HttpHeader_TestHint">Введите полный URL (включая аутентификацию) и нажмите кнопку теста. Тест использует текущие параметры Header.</sys:String>
+  <sys:String x:Key="Msg_TestUrlRequired">Введите тестовый URL</sys:String>
+  <sys:String x:Key="Msg_TestHttpStarted">HTTP тест запущен. Проверьте журнал отладки проигрывателя.</sys:String>
+  <sys:String x:Key="Msg_TestRtspStarted">RTSP тест запущен. Проверьте журнал отладки проигрывателя.</sys:String>
 </ResourceDictionary>

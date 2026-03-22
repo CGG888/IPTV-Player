@@ -30,7 +30,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             Channel? currentChannel,
             EpgProgram? currentPlayingProgram,
             DateTime? programTime,
-            Func<string?, string?, List<EpgProgram>?> getPrograms)
+            Func<string?, string?, string?, List<EpgProgram>?> getPrograms)
         {
             if (currentPlayingProgram != null && !string.IsNullOrWhiteSpace(currentPlayingProgram.Title))
                 return currentPlayingProgram.Title;
@@ -40,7 +40,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 var focusTime = programTime ?? DateTime.Now;
                 if (currentChannel != null)
                 {
-                    var progs = getPrograms(currentChannel.TvgId, currentChannel.Name);
+                    var progs = getPrograms(currentChannel.TvgId, currentChannel.TvgName, currentChannel.Name);
                     var p = progs?.FirstOrDefault(x => x.Start <= focusTime && x.End > focusTime);
                     if (p != null && !string.IsNullOrWhiteSpace(p.Title)) return p.Title;
                 }
@@ -60,7 +60,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var ch = channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase));
-                        var progs = epgService?.GetPrograms(ch?.TvgId, channel);
+                        var progs = epgService?.GetPrograms(ch?.TvgId, ch?.TvgName, channel);
                         if (progs != null && start.HasValue)
                         {
                             var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
@@ -75,7 +75,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var ch = channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase));
-                        var progs = epgService?.GetPrograms(ch?.TvgId, channel);
+                        var progs = epgService?.GetPrograms(ch?.TvgId, ch?.TvgName, channel);
                         if (progs != null && start.HasValue)
                         {
                             var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
@@ -107,7 +107,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var ch = channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase));
-                        var progs = epgService?.GetPrograms(ch?.TvgId, channel);
+                        var progs = epgService?.GetPrograms(ch?.TvgId, ch?.TvgName, channel);
                         if (progs != null && start.HasValue)
                         {
                             var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
@@ -122,7 +122,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var ch = channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", channel ?? "", StringComparison.OrdinalIgnoreCase));
-                        var progs = epgService?.GetPrograms(ch?.TvgId, channel);
+                        var progs = epgService?.GetPrograms(ch?.TvgId, ch?.TvgName, channel);
                         if (progs != null && start.HasValue)
                         {
                             var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);
@@ -185,7 +185,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var ch = channelKey ?? "";
-                        var progs = epgService?.GetPrograms(channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", ch ?? "", StringComparison.OrdinalIgnoreCase))?.TvgId, ch);
+                        var matchedChannel = channels?.FirstOrDefault(c => string.Equals(c.Name ?? "", ch ?? "", StringComparison.OrdinalIgnoreCase));
+                        var progs = epgService?.GetPrograms(matchedChannel?.TvgId, matchedChannel?.TvgName, ch);
                         if (progs != null && start.HasValue)
                         {
                             var p = progs.FirstOrDefault(x => x.Start <= start.Value && x.End > start.Value);

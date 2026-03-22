@@ -224,6 +224,17 @@
                   <RowDefinition Height="Auto"/><!-- 13: Lang hint -->
                   <RowDefinition Height="Auto"/><!-- 14: mpv timeout -->
                   <RowDefinition Height="Auto"/><!-- 15: Timeout hint -->
+                  <!-- HTTP/RTSP Header -->
+                  <RowDefinition Height="Auto"/><!-- 16: Section header -->
+                  <RowDefinition Height="Auto"/><!-- 17: HTTP Headers -->
+                  <RowDefinition Height="Auto"/><!-- 18: HTTP Headers hint -->
+                  <RowDefinition Height="Auto"/><!-- 19: RTSP Transport -->
+                  <RowDefinition Height="Auto"/><!-- 20: RTSP User-Agent -->
+                  <RowDefinition Height="Auto"/><!-- 21: RTSP User -->
+                  <RowDefinition Height="Auto"/><!-- 22: RTSP Password -->
+                  <RowDefinition Height="Auto"/><!-- 23: Test URL -->
+                  <RowDefinition Height="Auto"/><!-- 24: Test buttons -->
+                  <RowDefinition Height="Auto"/><!-- 25: Test hint -->
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto"/>
@@ -272,6 +283,39 @@
                 <TextBox x:Name="TbMpvTimeout" Grid.Row="14" Grid.Column="1" Height="30"/>
                 <TextBlock Grid.Row="15" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
                            Text="{DynamicResource UI_Playback_MpvTimeoutHint}" TextWrapping="Wrap"/>
+
+                <!-- HTTP/RTSP Header Settings -->
+                <TextBlock Grid.Row="16" Grid.ColumnSpan="2" Text="{DynamicResource UI_HttpHeader_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                <TextBlock Grid.Row="17" Grid.Column="0" Text="{DynamicResource UI_HttpHeader_Headers}" VerticalAlignment="Top" Margin="0,0,16,0"/>
+                <TextBox x:Name="TbHttpHeaders" Grid.Row="17" Grid.Column="1" Height="72" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                <TextBlock Grid.Row="18" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,8"
+                           Text="{DynamicResource UI_HttpHeader_HeadersHint}" TextWrapping="Wrap"/>
+
+                <TextBlock Grid.Row="19" Grid.Column="0" Text="{DynamicResource UI_RtspTransport}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <ComboBox x:Name="CbRtspTransport" Grid.Row="19" Grid.Column="1" Height="30" Width="160" HorizontalAlignment="Left">
+                  <ComboBoxItem Content="TCP" Tag="tcp"/>
+                  <ComboBoxItem Content="UDP" Tag="udp"/>
+                  <ComboBoxItem Content="HTTP Tunnel" Tag="http"/>
+                </ComboBox>
+
+                <TextBlock Grid.Row="20" Grid.Column="0" Text="{DynamicResource UI_RtspUserAgent}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbRtspUserAgent" Grid.Row="20" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="21" Grid.Column="0" Text="{DynamicResource UI_RtspUser}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbRtspUser" Grid.Row="21" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="22" Grid.Column="0" Text="{DynamicResource UI_RtspPassword}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <PasswordBox x:Name="PbRtspPassword" Grid.Row="22" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="23" Grid.Column="0" Text="{DynamicResource UI_TestUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <TextBox x:Name="TbTestUrl" Grid.Row="23" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
+
+                <StackPanel Grid.Row="24" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0">
+                  <Button x:Name="BtnTestHttp" Content="{DynamicResource UI_TestHttp}" Width="80" Height="30" Margin="0,0,8,0" Click="BtnTestHttp_Click" Style="{StaticResource ChipButton}"/>
+                  <Button x:Name="BtnTestRtsp" Content="{DynamicResource UI_TestRtsp}" Width="80" Height="30" Click="BtnTestRtsp_Click" Style="{StaticResource ChipButton}"/>
+                </StackPanel>
+                <TextBlock Grid.Row="25" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
+                           Text="{DynamicResource UI_HttpHeader_TestHint}" TextWrapping="Wrap"/>
               </Grid>
             </ScrollViewer>
           </TabItem>

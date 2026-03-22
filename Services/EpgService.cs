@@ -17,6 +17,7 @@ namespace LibmpvIptvClient.Services
         private HttpClient _http => HttpClientService.Instance.Client;
         private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
+        private Dictionary<string, string> _tvgNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // CleanTvgName -> TvgId (新增)
         private Dictionary<string, string?> _smartMatchCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // ChannelName -> TvgId (Cache)
         private readonly Dictionary<string, Dictionary<DateTime, List<EpgProgram>>> _programsByHour = new Dictionary<string, Dictionary<DateTime, List<EpgProgram>>>(StringComparer.OrdinalIgnoreCase); // tvgId -> hourBucket -> programs in that hour
 
@@ -89,13 +90,14 @@ namespace LibmpvIptvClient.Services
         {
             var newPrograms = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
             var newMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var newTvgNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
                 // 创建命名空间管理器以处理带前缀的节点
                 var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore };
                 using var reader = XmlReader.Create(stream, settings);
-                
+
                 while (reader.Read())
                 {
                     if (reader.NodeType == XmlNodeType.Element)
@@ -113,7 +115,16 @@ namespace LibmpvIptvClient.Services
                                     if (inner.NodeType == XmlNodeType.Element && inner.LocalName == "display-name")
                                     {
                                         var name = inner.ReadElementContentAsString();
-                                        if (!string.IsNullOrEmpty(name)) newMap[name] = id;
+                                        if (!string.IsNullOrEmpty(name))
+                                        {
+                                            newMap[name] = id;
+                                            // 同时构建清洗后的 tvg-name 映射
+                                            var cleanedName = EpgMatcher.CleanName(name);
+                                            if (!string.IsNullOrEmpty(cleanedName))
+                                            {
+                                                newTvgNameMap[cleanedName] = id;
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -166,6 +177,7 @@ namespace LibmpvIptvClient.Services
 
             _programs = newPrograms;
             _channelNameMap = newMap;
+            _tvgNameMap = newTvgNameMap;
         }
 
         private bool TryParseTime(string? s, out DateTime dt)
@@ -219,22 +231,40 @@ namespace LibmpvIptvClient.Services
             return false;
         }
 
-        public List<EpgProgram> GetPrograms(string tvgId, string? channelName = null)
+        public List<EpgProgram> GetPrograms(string tvgId, string? tvgName = null, string? channelName = null)
         {
-            if (_programs.TryGetValue(tvgId ?? "", out var list)) return list;
-            
-            // Try fallback by name (exact match from map)
-            if (!string.IsNullOrEmpty(channelName) && _channelNameMap.TryGetValue(channelName, out var id))
+            // 1. tvg-id 精确匹配
+            if (!string.IsNullOrEmpty(tvgId) && _programs.TryGetValue(tvgId, out var list)) return list;
+
+            // 2. tvg-id 清洗后再匹配（去除空格、连字符、转小写）
+            if (!string.IsNullOrEmpty(tvgId))
             {
-                if (_programs.TryGetValue(id, out var list2)) return list2;
+                var cleanedId = CleanTvgId(tvgId);
+                if (cleanedId != tvgId && _programs.TryGetValue(cleanedId, out list)) return list;
             }
 
-            // Try Smart Match
+            // 3. tvg-name 清洗后匹配（新增）
+            if (!string.IsNullOrEmpty(tvgName))
+            {
+                var cleanedTvgName = EpgMatcher.CleanName(tvgName);
+                if (_tvgNameMap.TryGetValue(cleanedTvgName, out var id))
+                {
+                    if (_programs.TryGetValue(id, out list)) return list;
+                }
+            }
+
+            // 4. channelName 清洗后匹配（现有逻辑）
+            if (!string.IsNullOrEmpty(channelName) && _channelNameMap.TryGetValue(channelName, out var nameId))
+            {
+                if (_programs.TryGetValue(nameId, out list)) return list;
+            }
+
+            // 5. 智能模糊匹配（兜底）
             if (LibmpvIptvClient.AppSettings.Current.Epg.EnableSmartMatch && !string.IsNullOrEmpty(channelName))
             {
                 string? smartId = null;
                 bool foundInCache = false;
-                
+
                 lock (_smartMatchCache)
                 {
                     if (_smartMatchCache.TryGetValue(channelName, out smartId))
@@ -252,7 +282,7 @@ namespace LibmpvIptvClient.Services
                     // 先获取所有已知的EPG频道名称
                     var allEpgNames = _channelNameMap.Keys;
                     var matchedName = EpgMatcher.Match(channelName, allEpgNames);
-                    
+
                     if (matchedName != null && _channelNameMap.TryGetValue(matchedName, out var idFromMatch))
                     {
                         smartId = idFromMatch;
@@ -266,8 +296,15 @@ namespace LibmpvIptvClient.Services
                     }
                 }
             }
-            
+
             return new List<EpgProgram>();
+        }
+
+        private string CleanTvgId(string tvgId)
+        {
+            // tvg-id 清洗：去除空格、连字符、下划线，转小写
+            return tvgId.Trim().ToLowerInvariant()
+                .Replace(" ", "").Replace("-", "").Replace("_", "");
         }
 
         public EpgProgram? GetCurrentProgram(string tvgId, string? channelName = null)

@@ -4,7 +4,10 @@ using LibmpvIptvClient.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
@@ -35,7 +38,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
         }
 
-        public void OpenUrl()
+        public async Task OpenUrlAsync()
         {
             var owner = GetOwnerWindow();
             var url = _shell.DialogActions.PromptOpenUrl(owner);
@@ -46,8 +49,102 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     foreach (var s in AppSettings.Current.SavedSources) s.IsSelected = false;
                     AppSettings.Current.Save();
                 }
-                RequestLoadSingleStream?.Invoke(url!);
+
+                // 自动检测 URL 类型：M3U 列表还是单个播放源
+                var (isM3U, errorMsg) = await DetectUrlTypeAsync(url!);
+                if (!string.IsNullOrEmpty(errorMsg))
+                {
+                    ShowError(errorMsg);
+                    return;
+                }
+
+                if (isM3U)
+                {
+                    // M3U 列表：加载频道列表（会自动播放第一个频道）
+                    RequestLoadChannels?.Invoke(url!);
+                }
+                else
+                {
+                    // 单个播放源
+                    RequestLoadSingleStream?.Invoke(url!);
+                }
             }
+        }
+
+        // 同步版本，供菜单命令使用
+        public void OpenUrl()
+        {
+            _ = OpenUrlAsync();
+        }
+
+        private async Task<(bool isM3U, string? errorMsg)> DetectUrlTypeAsync(string url)
+        {
+            // 非 HTTP/HTTPS 的 URL（如 rtp://, udp:// 等组播地址）直接当作单个播放源
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, null);
+            }
+
+            // HTTP URL 中包含 /rtp/、/udp/ 等路径的，是组播代理地址，直接当单个播放源
+            var urlLower = url.ToLowerInvariant();
+            if (urlLower.Contains("/rtp/") || urlLower.Contains("/udp/") ||
+                urlLower.Contains("/mpegts/") || urlLower.Contains("/ts/"))
+            {
+                return (false, null);
+            }
+
+            try
+            {
+                var client = HttpClientService.Instance.Client;
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                req.Headers.Range = new RangeHeaderValue(0, 8192);
+                using var resp = await client.SendAsync(req);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return (false, null);
+                }
+                var content = await resp.Content.ReadAsStringAsync();
+
+                // 检测是否为 M3U 格式（必须是标准的 IPTV M3U 列表）
+                // HLS 流 (.m3u8) 通常每个 #EXTINF 后面跟的是 .ts 或 .m3u8 分片地址
+                // IPTV M3U 列表通常有多个频道条目
+                var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                int extInfCount = 0;
+                foreach (var line in lines)
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith("#EXTINF:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        extInfCount++;
+                    }
+                }
+
+                // 如果有 2 个以上 #EXTINF，认为是 M3U 列表
+                if (extInfCount >= 2)
+                {
+                    return (true, null);
+                }
+
+                return (false, null);
+            }
+            catch (Exception ex)
+            {
+                // 检测失败，当作单个播放源处理
+                LibmpvIptvClient.Diagnostics.Logger.Warn($"URL 类型检测失败: {ex.Message}");
+                return (false, null);
+            }
+        }
+
+        private void ShowError(string message)
+        {
+            try
+            {
+                var owner = GetOwnerWindow();
+                System.Windows.MessageBox.Show(owner, message, "错误",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+            catch { }
         }
 
         public void AddM3uFile()

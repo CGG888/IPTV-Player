@@ -21,14 +21,35 @@ The player supports XMLTV (including `.gz`) EPG URLs. Common ways to provide it:
 
 - **Player Settings** (useful if M3U does not provide it, or you want to override it)
 
-## Matching channels to EPG (tvg-id)
+## Matching Channels to EPG (Matching Priority)
 
-The player matches channels primarily by `tvg-id`. If `tvg-id` does not match, it can try channel name matching (with some normalization).
+The player uses **chain multi-level matching** strategy, trying in this order:
 
-Recommendations:
+### Matching Priority (High to Low)
 
-- Fill correct `tvg-id` in your M3U whenever possible
-- Keep channel names close to the EPG canonical names
+1. **tvg-id Exact Match** — Directly matches M3U `tvg-id` with EPG XML `channel@id`
+2. **tvg-id Cleaned Match** — Matches after removing special characters like `-`, `_`, spaces (e.g., `CCTV-1` matches `CCTV1`)
+3. **tvg-name Cleaned Match** — Matches M3U `tvg-name` with EPG `display-name` after normalization
+4. **channelName Cleaned Match** — Matches M3U channel name (`display-name`) with EPG `display-name` after normalization
+5. **Smart Fuzzy Match (Fallback)** — Handles common naming variations like CCTV/TV Station aliases
+
+### M3U Attributes
+
+```m3u
+#EXTINF:-1 tvg-id="cctv1" tvg-name="CCTV" group-title="CCTV" ch-name="CCTV-1",http://example.com/stream
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `tvg-id` | Unique channel identifier for precise matching |
+| `tvg-name` | Channel name identifier (independent of display name) |
+| `ch-name` or after comma | Channel display name |
+
+### Recommendations
+
+- Fill correct `tvg-id` in your M3U whenever possible (most accurate matching method)
+- Also fill `tvg-name` to improve matching success rate
+- Keep channel display names close to or consistent with EPG canonical names
 
 ## In-player actions (viewing EPG)
 

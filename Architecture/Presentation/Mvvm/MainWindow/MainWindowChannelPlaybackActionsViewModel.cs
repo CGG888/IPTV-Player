@@ -351,7 +351,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     if (_shell.EpgService != null)
                     {
-                        var programs = _shell.EpgService.GetPrograms(ch.TvgId, ch.Name);
+                        var programs = _shell.EpgService.GetPrograms(ch.TvgId, ch.TvgName, ch.Name);
                         if (programs != null && programs.Count > 0)
                         {
                             var prog = programs.FirstOrDefault(p => p.Start <= start && p.End > start);

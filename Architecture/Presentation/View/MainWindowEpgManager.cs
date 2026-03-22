@@ -168,7 +168,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         public void FilterEpgList()
         {
             if (_shell.CurrentChannel == null) return;
-            var programs = _epgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.Name);
+            var programs = _epgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.TvgName, _shell.CurrentChannel.Name);
             if (programs == null || programs.Count == 0)
             {
                 programs = GeneratePlaceholderEpg();
@@ -272,7 +272,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
 
             _window.LblEpgChannel.Text = ch.Name;
-            var programs = _epgService?.GetPrograms(ch.TvgId, ch.Name);
+            var programs = _epgService?.GetPrograms(ch.TvgId, ch.TvgName, ch.Name);
             try { LibmpvIptvClient.Diagnostics.Logger.Log($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
 
             var suppressAutoScroll = _suppressAutoScroll || !allowAutoScroll;

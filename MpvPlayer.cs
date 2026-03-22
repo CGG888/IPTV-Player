@@ -78,18 +78,36 @@ namespace LibmpvIptvClient
         void SetupProtocolOptions(string url)
         {
             var u = url.ToLowerInvariant();
-            
+
             // 1. RTSP Special Handling
             if (u.StartsWith("rtsp://"))
             {
-                SetString("rtsp-transport", "tcp"); // Force TCP for stability
-                SetString("user-agent", "VLC/3.0.18Libmpv"); // Fake UA
+                var headers = _settings.HttpHeaders;
+
+                // RTSP 传输模式（默认 TCP）
+                SetString("rtsp-transport", string.IsNullOrWhiteSpace(headers?.RtspTransport) ? "tcp" : headers.RtspTransport);
+
+                // RTSP User-Agent（使用自定义或默认）
+                var rtspUa = string.IsNullOrWhiteSpace(headers?.RtspUserAgent) ? "VLC/3.0.18Libmpv" : headers.RtspUserAgent;
+                SetString("user-agent", rtspUa);
+
+                // RTSP 认证
+                if (!string.IsNullOrWhiteSpace(headers?.RtspUser))
+                {
+                    SetString("rtsp-user", headers.RtspUser);
+                    if (!string.IsNullOrWhiteSpace(headers?.EncryptedRtspPassword))
+                    {
+                        var pwd = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(headers.EncryptedRtspPassword);
+                        SetString("rtsp-password", pwd);
+                    }
+                }
+
                 // Enable cache for RTSP to allow smoother playback
                 SetString("cache", _settings.CacheSecs > 0 ? "yes" : "no");
                 if (_settings.CacheSecs > 0)
                     SetString("cache-secs", _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 // RTSP doesn't need forced demuxer, let ffmpeg handle it
-                SetString("demuxer-lavf-format", ""); 
+                SetString("demuxer-lavf-format", "");
                 SetString("demuxer-lavf-probesize", "32"); // Fast probe
                 SetString("demuxer-lavf-analyzeduration", "0");
                 Logger.Debug($"[mpv] rtsp cache={(_settings.CacheSecs>0?"yes":"no")} cache-secs={_settings.CacheSecs} probesize=32 adur=0 url={url}");
@@ -139,6 +157,15 @@ namespace LibmpvIptvClient
                 SetString("demuxer-cache-wait", "no"); // 不要等待缓存填满才播放，但要持续缓存
                 
                 Logger.Debug($"[mpv] generic http cache=yes max=512MiB back=256MiB seekable=yes readahead=60 url={url}");
+            }
+
+            // 4. HTTP/HTTPS 自定义 Header（适用于所有 HTTP 流）
+            if ((u.StartsWith("http://") || u.StartsWith("https://")) && !string.IsNullOrWhiteSpace(_settings.HttpHeaders?.Headers))
+            {
+                // mpv 格式：每行用 \n 分隔
+                var headers = _settings.HttpHeaders.Headers.Replace("\r\n", "\n").Replace("\n", "\\n");
+                SetString("http-header-fields", headers);
+                Logger.Debug($"[mpv] http-headers set: {headers}");
             }
             // 3. HLS 自适应（仅在启用时）
             if (_settings.EnableProtocolAdaptive && (u.Contains(".m3u8") || u.Contains("format=hls")))

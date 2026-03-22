@@ -126,7 +126,7 @@ namespace LibmpvIptvClient
                 var now = DateTime.Now;
                 if (_shell.CurrentChannel != null)
                 {
-                    var progs = _epgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.Name);
+                    var progs = _epgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.TvgName, _shell.CurrentChannel.Name);
                     var p = progs?.FirstOrDefault(x => x.Start <= now && x.End > now);
                     if (p != null && !string.IsNullOrWhiteSpace(p.Title)) return p.Title!;
                 }

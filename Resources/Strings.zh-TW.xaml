@@ -233,7 +233,7 @@
   <sys:String x:Key="UI_Epg_SmartMatch">啟用智慧模糊匹配</sys:String>
   <sys:String x:Key="UI_Epg_SmartMatch_Note">嘗試自動匹配名稱不完全一致的頻道 (例如 CCTV-1 匹配 CCTV1)。</sys:String>
   <sys:String x:Key="UI_Epg_MatchRules_Title">匹配規則與佔位符說明</sys:String>
-  <sys:String x:Key="UI_Epg_MatchRules_Desc">匹配順序：1）tvg-id 精準匹配；2）頻道名與 EPG display-name 完全匹配；3）名稱清洗後的匹配（移除「高清/HEVC」等標識、統一數字）；4）智慧模糊匹配（CCTV 數字必須一致、衛視/台等後綴視為同義）。啟用智慧匹配後，命中結果會快取以提升速度。</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">匹配順序（從高到低）：1）tvg-id 精準匹配；2）tvg-id 清洗後匹配（去除 -_ 空格等特殊字符）；3）tvg-name 清洗後匹配；4）頻道名與 EPG display-name 清洗後匹配；5）智慧模糊匹配（CCTV 數字必須一致、衛視/台等後綴視為同義）。M3U 中建議填寫 tvg-id 和 tvg-name 可提高匹配成功率。命中結果會快取以提升速度。</sys:String>
   <sys:String x:Key="UI_Epg_Placeholder_Desc">當頻道暫無 EPG 資料時，節目單將以每小時一筆「精選」佔位項顯示，僅作為佔位，不影響直播、回放與時移。</sys:String>
   
   <sys:String x:Key="UI_Logo_Config">台標設定</sys:String>
@@ -374,4 +374,20 @@
   <sys:String x:Key="Msg_WebDAV_RestoreFailed">恢復失敗</sys:String>
   <sys:String x:Key="Msg_WebDAV_RecordingsWriteDone">錄播目錄寫入成功</sys:String>
   <sys:String x:Key="Msg_WebDAV_RecordingsWriteFailed">錄播目錄寫入失敗</sys:String>
+
+  <!-- HTTP/RTSP Header Settings -->
+  <sys:String x:Key="UI_HttpHeader_Section">HTTP/RTSP Header 設定</sys:String>
+  <sys:String x:Key="UI_HttpHeader_Headers">HTTP Headers</sys:String>
+  <sys:String x:Key="UI_HttpHeader_HeadersHint">多行文字，每行一個 Header，格式：User-Agent: xxx 或 Referer: https://xxx。適用於 HTTP/HTTPS 流。</sys:String>
+  <sys:String x:Key="UI_RtspTransport">RTSP 傳輸模式</sys:String>
+  <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_RtspUser">RTSP 使用者名稱</sys:String>
+  <sys:String x:Key="UI_RtspPassword">RTSP 密碼</sys:String>
+  <sys:String x:Key="UI_TestUrl">測試 URL</sys:String>
+  <sys:String x:Key="UI_TestHttp">測試 HTTP</sys:String>
+  <sys:String x:Key="UI_TestRtsp">測試 RTSP</sys:String>
+  <sys:String x:Key="UI_HttpHeader_TestHint">輸入完整 URL（含認證資訊）後點擊測試按鈕。測試將使用目前設定的 Header 參數。</sys:String>
+  <sys:String x:Key="Msg_TestUrlRequired">請輸入測試 URL</sys:String>
+  <sys:String x:Key="Msg_TestHttpStarted">HTTP 測試已啟動，請檢視播放器的偵錯記錄</sys:String>
+  <sys:String x:Key="Msg_TestRtspStarted">RTSP 測試已啟動，請檢視播放器的偵錯記錄</sys:String>
 </ResourceDictionary>

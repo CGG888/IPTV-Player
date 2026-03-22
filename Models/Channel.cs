@@ -15,6 +15,7 @@ namespace LibmpvIptvClient.Models
             set { if (_logo != value) { _logo = value; OnPropertyChanged(); } }
         }
         public string TvgId { get; set; } = "";
+        public string TvgName { get; set; } = "";
         public string Catchup { get; set; } = "";
         public string CatchupSource { get; set; } = "";
         

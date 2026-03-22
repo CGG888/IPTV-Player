@@ -120,10 +120,11 @@ namespace LibmpvIptvClient.Services
             var ch = new Channel
             {
                 Id = attrs.TryGetValue("tvg-id", out var tid) ? tid : "",
-                Name = name ?? attrs.GetValueOrDefault("tvg-name") ?? "",
+                Name = name ?? "",
                 Group = attrs.GetValueOrDefault("group-title") ?? "",
                 Logo = attrs.GetValueOrDefault("tvg-logo") ?? attrs.GetValueOrDefault("logo") ?? "",
-                TvgId = attrs.GetValueOrDefault("tvg-id") ?? "",
+                TvgId = attrs.TryGetValue("tvg-id", out var tid2) ? tid2 : "",
+                TvgName = attrs.GetValueOrDefault("tvg-name") ?? "",
                 Catchup = attrs.GetValueOrDefault("catchup") ?? "",
                 CatchupSource = attrs.GetValueOrDefault("catchup-source") ?? ""
             };

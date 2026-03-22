@@ -21,14 +21,35 @@ EPG（Electronic Program Guide）是电视节目的时间表。播放器通过 E
 
 - **在播放器设置中配置 EPG URL**（当 M3U 未提供或需要覆盖时使用）
 
-## 频道如何与 EPG 对上（tvg-id 与匹配）
+## 频道如何与 EPG 对上（匹配优先级）
 
-播放器优先使用 `tvg-id` 进行匹配；当 `tvg-id` 不一致时，会再尝试按频道名进行匹配（包含一定的清洗/模糊策略）。
+播放器采用**链式多级匹配**策略，按以下顺序尝试匹配：
 
-建议：
+### 匹配优先级（从高到低）
 
-- 尽量在 M3U 中为频道填写正确的 `tvg-id`
-- 频道名保持与 EPG 中的标准名一致或接近（例如避免额外前后缀）
+1. **tvg-id 精确匹配** — 直接用 M3U 的 `tvg-id` 与 EPG XML 的 `channel@id` 对应
+2. **tvg-id 清洗后匹配** — 去除 `-`、`_`、空格等特殊字符后再次匹配（如 `CCTV-1` 与 `CCTV1`）
+3. **tvg-name 清洗后匹配** — 用 M3U 的 `tvg-name` 与 EPG 的 `display-name` 进行清洗后匹配
+4. **channelName 清洗后匹配** — 用 M3U 的频道名称（`display-name`）与 EPG 的 `display-name` 清洗后匹配
+5. **智能模糊匹配（兜底）** — 处理 CCTV/卫视等常见命名差异
+
+### M3U 中的相关属性
+
+```m3u
+#EXTINF:-1 tvg-id="cctv1" tvg-name="CCTV" group-title="央视" ch-name="CCTV-1 综合",http://example.com/stream
+```
+
+| 属性 | 说明 |
+|------|------|
+| `tvg-id` | 频道唯一标识，用于精确匹配 |
+| `tvg-name` | 频道名称标识（独立于显示名称） |
+| `ch-name` 或逗号后 | 频道显示名称 |
+
+### 建议
+
+- 尽量在 M3U 中填写正确的 `tvg-id`（最准确的匹配方式）
+- 同时填写 `tvg-name` 可以提高匹配成功率
+- 频道显示名称保持与 EPG 中的标准名一致或接近
 
 ## 播放器内操作（查看节目单）
 

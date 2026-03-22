@@ -242,7 +242,7 @@
   <sys:String x:Key="UI_Epg_SmartMatch">Enable Smart Fuzzy Match</sys:String>
   <sys:String x:Key="UI_Epg_SmartMatch_Note">Automatically match channels with slightly different names (e.g. CCTV-1 vs CCTV1).</sys:String>
   <sys:String x:Key="UI_Epg_MatchRules_Title">Matching Rules &amp; Placeholders</sys:String>
-  <sys:String x:Key="UI_Epg_MatchRules_Desc">Order: 1) Exact tvg-id match; 2) Exact name match to EPG display-name; 3) Cleaned-name equality (remove tags like HD/HEVC, unify digits); 4) Smart fuzzy match (CCTV numbers must be identical; satellite TV suffixes treated as aliases). When enabled, smart matches are cached for speed.</sys:String>
+  <sys:String x:Key="UI_Epg_MatchRules_Desc">Order (High to Low): 1) Exact tvg-id match; 2) tvg-id cleaned match (remove -_ spaces); 3) tvg-name cleaned match; 4) Channel name cleaned match to EPG display-name; 5) Smart fuzzy match (CCTV numbers must be identical; satellite TV suffixes treated as aliases). Filling tvg-id and tvg-name in M3U improves matching success. Matches are cached for speed.</sys:String>
   <sys:String x:Key="UI_Epg_Placeholder_Desc">If a channel has no EPG data, the guide shows one “Featured Program” per hour as placeholders only; this does not affect live, replay or timeshift.</sys:String>
   
   <sys:String x:Key="UI_Logo_Config">Logo Config</sys:String>
@@ -388,4 +388,20 @@
   <sys:String x:Key="Msg_WebDAV_RestoreFailed">Restore failed</sys:String>
   <sys:String x:Key="Msg_WebDAV_RecordingsWriteDone">Recordings directory write succeeded</sys:String>
   <sys:String x:Key="Msg_WebDAV_RecordingsWriteFailed">Recordings directory write failed</sys:String>
+
+  <!-- HTTP/RTSP Header Settings -->
+  <sys:String x:Key="UI_HttpHeader_Section">HTTP/RTSP Header Settings</sys:String>
+  <sys:String x:Key="UI_HttpHeader_Headers">HTTP Headers</sys:String>
+  <sys:String x:Key="UI_HttpHeader_HeadersHint">Multi-line text, one Header per line. Format: User-Agent: xxx or Referer: https://xxx. Applies to HTTP/HTTPS streams.</sys:String>
+  <sys:String x:Key="UI_RtspTransport">RTSP Transport</sys:String>
+  <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_RtspUser">RTSP Username</sys:String>
+  <sys:String x:Key="UI_RtspPassword">RTSP Password</sys:String>
+  <sys:String x:Key="UI_TestUrl">Test URL</sys:String>
+  <sys:String x:Key="UI_TestHttp">Test HTTP</sys:String>
+  <sys:String x:Key="UI_TestRtsp">Test RTSP</sys:String>
+  <sys:String x:Key="UI_HttpHeader_TestHint">Enter a complete URL (including authentication info) and click the test button. The test will use the current Header settings.</sys:String>
+  <sys:String x:Key="Msg_TestUrlRequired">Please enter a test URL</sys:String>
+  <sys:String x:Key="Msg_TestHttpStarted">HTTP test started. Check the player's debug log for details.</sys:String>
+  <sys:String x:Key="Msg_TestRtspStarted">RTSP test started. Check the player's debug log for details.</sys:String>
 </ResourceDictionary>

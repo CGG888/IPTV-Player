@@ -428,7 +428,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _shell.CurrentChannel,
                 _shell.CurrentPlayingProgram,
                 focusTime,
-                (id, name) => _epgService?.GetPrograms(id, name));
+                (id, tvgName, name) => _epgService?.GetPrograms(id, tvgName ?? _shell.CurrentChannel?.TvgName, name));
         }
 
         private string ResolveChannelKey()
@@ -709,7 +709,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     title = _recordProgramTitle;
                     if (string.IsNullOrWhiteSpace(title))
                     {
-                        var progs = _epgService?.GetPrograms(_shell.CurrentChannel?.TvgId, _shell.CurrentChannel?.Name);
+                        var progs = _epgService?.GetPrograms(_shell.CurrentChannel?.TvgId, _shell.CurrentChannel?.TvgName, _shell.CurrentChannel?.Name);
                         var titleTime = _recordProgramLocalTime ?? _shell.GetPlaybackLocalTime() ?? start.Value.ToLocalTime();
                         var p = progs?.FirstOrDefault(x => x.Start <= titleTime && x.End > titleTime);
                         if (p != null && !string.IsNullOrWhiteSpace(p.Title)) title = p.Title!;

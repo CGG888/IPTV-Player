@@ -141,7 +141,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 try
                 {
-                    var programs = epgService?.GetPrograms(currentChannel.TvgId, currentChannel.Name);
+                    var programs = epgService?.GetPrograms(currentChannel.TvgId, currentChannel.TvgName, currentChannel.Name);
                     if (programs != null && programs.Count > 0)
                     {
                         var earliest = programs.Min(p => p.Start);

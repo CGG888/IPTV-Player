@@ -71,6 +71,7 @@ namespace LibmpvIptvClient
         public LogoConfig Logo { get; set; } = new LogoConfig();
         public ReplayConfig Replay { get; set; } = new ReplayConfig();
         public TimeshiftConfig Timeshift { get; set; } = new TimeshiftConfig();
+        public HttpHeaderConfig HttpHeaders { get; set; } = new HttpHeaderConfig();
         
         public TimeOverrideConfig TimeOverride { get; set; } = new TimeOverrideConfig();
         public WebDavConfig WebDav { get; set; } = new WebDavConfig();
@@ -181,6 +182,20 @@ namespace LibmpvIptvClient
         public string DurationKey { get; set; } = "duration";
         public string PlayseekKey { get; set; } = "playseek";
         public bool UrlEncode { get; set; } = true;
+    }
+
+    public class HttpHeaderConfig
+    {
+        // HTTP/HTTPS 流 Header（多行文本）
+        public string Headers { get; set; } = "";
+        // RTSP User-Agent
+        public string RtspUserAgent { get; set; } = "";
+        // RTSP 用户名
+        public string RtspUser { get; set; } = "";
+        // RTSP 密码（加密存储）
+        public string EncryptedRtspPassword { get; set; } = "";
+        // RTSP 传输模式：tcp/udp/http
+        public string RtspTransport { get; set; } = "tcp";
     }
     
     public class ScheduledReminder

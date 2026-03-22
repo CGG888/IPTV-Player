@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Diagnostics;
@@ -51,6 +52,7 @@ namespace LibmpvIptvClient
         private EpgConfig _tempEpg;
         private LogoConfig _tempLogo;
         private RecordingConfig _tempRecording;
+        private HttpHeaderConfig _tempHttpHeader;
         
         // private FrameworkElement? _currentDrawer;
 
@@ -120,7 +122,41 @@ namespace LibmpvIptvClient
                 TbMpvTimeout.Text = current.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture);
             }
             catch { }
-            
+
+            // Load HTTP/RTSP Header settings
+            _tempHttpHeader = new HttpHeaderConfig();
+            try
+            {
+                var hh = current.HttpHeaders ?? new HttpHeaderConfig();
+                _tempHttpHeader = new HttpHeaderConfig
+                {
+                    Headers = hh.Headers,
+                    RtspUserAgent = hh.RtspUserAgent,
+                    RtspUser = hh.RtspUser,
+                    EncryptedRtspPassword = hh.EncryptedRtspPassword,
+                    RtspTransport = hh.RtspTransport
+                };
+                TbHttpHeaders.Text = hh.Headers ?? "";
+                // Set RTSP Transport combobox
+                if (CbRtspTransport != null)
+                {
+                    var transport = string.IsNullOrWhiteSpace(hh.RtspTransport) ? "tcp" : hh.RtspTransport;
+                    for (int i = 0; i < CbRtspTransport.Items.Count; i++)
+                    {
+                        var item = CbRtspTransport.Items[i] as ComboBoxItem;
+                        if (item != null && string.Equals(item.Tag?.ToString(), transport, StringComparison.OrdinalIgnoreCase))
+                        {
+                            CbRtspTransport.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                TbRtspUserAgent.Text = hh.RtspUserAgent ?? "";
+                TbRtspUser.Text = hh.RtspUser ?? "";
+                // Password is not shown for security, it stays encrypted
+            }
+            catch { }
+
             try
             {
                 // Init Controls (Lazy load not strictly needed for local controls, but we populate them now)
@@ -243,6 +279,33 @@ namespace LibmpvIptvClient
                 TbAlang?.Text ?? "",
                 TbSlang?.Text ?? "",
                 TbMpvTimeout?.Text ?? "0");
+        }
+        HttpHeaderConfig ReadHttpHeaderFormState()
+        {
+            var config = new HttpHeaderConfig
+            {
+                Headers = TbHttpHeaders?.Text ?? ""
+            };
+            // RTSP Transport
+            if (CbRtspTransport?.SelectedItem is ComboBoxItem tItem)
+                config.RtspTransport = tItem.Tag?.ToString() ?? "tcp";
+            else
+                config.RtspTransport = "tcp";
+            config.RtspUserAgent = TbRtspUserAgent?.Text ?? "";
+            config.RtspUser = TbRtspUser?.Text ?? "";
+            // Password: only update if user entered a new one (not empty and different from placeholder)
+            var pwd = PbRtspPassword?.Password ?? "";
+            if (!string.IsNullOrWhiteSpace(pwd))
+            {
+                // New password entered, encrypt and store
+                config.EncryptedRtspPassword = LibmpvIptvClient.Services.CryptoUtil.ProtectString(pwd);
+            }
+            else
+            {
+                // No new password, keep the original encrypted one
+                config.EncryptedRtspPassword = _tempHttpHeader?.EncryptedRtspPassword ?? "";
+            }
+            return config;
         }
         SettingsTimeOverrideFormState ReadTimeOverrideFormState()
         {
@@ -388,6 +451,8 @@ namespace LibmpvIptvClient
             {
                 s = new PlaybackSettings();
             }
+            // Save HTTP/RTSP Header settings
+            s.HttpHeaders = ReadHttpHeaderFormState();
             Result = s;
             ApplySettingsRequested?.Invoke(s);
 
@@ -403,6 +468,94 @@ namespace LibmpvIptvClient
                 ModernMessageBox.Show(this, result.Message, result.Title, MessageBoxButton.OK);
             }
             catch { }
+        }
+        async void BtnTestHttp_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var url = TbTestUrl?.Text?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_TestUrlRequired", "请输入测试URL"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                    return;
+                }
+                if (BtnTestHttp != null)
+                {
+                    BtnTestHttp.IsEnabled = false;
+                    BtnTestRtsp.IsEnabled = false;
+                }
+                try
+                {
+                    // Apply current HTTP headers to temp settings for testing
+                    var testSettings = AppSettings.Current;
+                    testSettings.HttpHeaders = ReadHttpHeaderFormState();
+
+                    using var player = new LibmpvIptvClient.MpvInterop();
+                    player.Create();
+                    player.SetSettings(testSettings);
+                    player.Initialize();
+
+                    // Show mpv console for testing
+                    player.SetString("terminal", "yes");
+                    player.SetString("msg-level", "all=debug");
+                    player.LoadFile(url);
+                    await System.Threading.Tasks.Task.Delay(3000);
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_TestHttpStarted", "HTTP测试已启动，请查看播放器的调试日志"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                }
+                finally
+                {
+                    if (BtnTestHttp != null) BtnTestHttp.IsEnabled = true;
+                    if (BtnTestRtsp != null) BtnTestRtsp.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModernMessageBox.Show(this, $"{LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Error", "错误")}: {ex.Message}", LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+            }
+        }
+        async void BtnTestRtsp_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var url = TbTestUrl?.Text?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_TestUrlRequired", "请输入测试URL"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                    return;
+                }
+                if (BtnTestRtsp != null)
+                {
+                    BtnTestRtsp.IsEnabled = false;
+                    BtnTestHttp.IsEnabled = false;
+                }
+                try
+                {
+                    // Apply current HTTP headers to temp settings for testing
+                    var testSettings = AppSettings.Current;
+                    testSettings.HttpHeaders = ReadHttpHeaderFormState();
+
+                    using var player = new LibmpvIptvClient.MpvInterop();
+                    player.Create();
+                    player.SetSettings(testSettings);
+                    player.Initialize();
+
+                    // Show mpv console for testing
+                    player.SetString("terminal", "yes");
+                    player.SetString("msg-level", "all=debug");
+                    player.LoadFile(url);
+                    await System.Threading.Tasks.Task.Delay(3000);
+                    ModernMessageBox.Show(this, LibmpvIptvClient.Helpers.ResxLocalizer.Get("Msg_TestRtspStarted", "RTSP测试已启动，请查看播放器的调试日志"), LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+                }
+                finally
+                {
+                    if (BtnTestRtsp != null) BtnTestRtsp.IsEnabled = true;
+                    if (BtnTestHttp != null) BtnTestHttp.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ModernMessageBox.Show(this, $"{LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Error", "错误")}: {ex.Message}", LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"), MessageBoxButton.OK);
+            }
         }
         async void BtnWebDavBackup_Click(object sender, RoutedEventArgs e)
         {
