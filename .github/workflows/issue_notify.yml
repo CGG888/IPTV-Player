@@ -2,12 +2,15 @@ name: Issue Full-State Notification
 
 on:
   issues:
-    # 监听：打开、编辑、关闭、重新打开、删除
-    types: [opened, edited, closed, reopened, deleted]
+    # 监听：打开、编辑、关闭、重新打开、删除、置顶、分配、标签、转移
+    types: [opened, edited, closed, reopened, deleted, pinned, unpinned, assigned, unassigned, labeled, unlabeled, transferred]
+  issue_comment:
+    # 监听：创建评论、编辑评论、删除评论
+    types: [created, edited, deleted]
 
-concurrency: 
+concurrency:
   group: wechat-notify-${{ github.repository }}
-  cancel-in-progress: false 
+  cancel-in-progress: false
 
 jobs:
   notify:
@@ -26,6 +29,14 @@ jobs:
           USER_LOGIN: ${{ github.event.issue.user.login }}
           USER_URL: ${{ github.event.issue.user.html_url }}
           REPO_NAME: ${{ github.event.repository.name }}
+          # 评论相关字段
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          COMMENT_USER_URL: ${{ github.event.comment.user.html_url }}
+          # 标签相关字段
+          LABEL_NAME: ${{ github.event.label.name }}
+          # 分配相关字段
+          ASSIGNEE: ${{ github.event.assignee.login }}
           WEBHOOK_URL: ${{ secrets.WECHAT_WORK_WEBHOOK }}
         run: |
           import os
@@ -50,29 +61,66 @@ jobs:
           issue_url = os.getenv('ISSUE_URL')
           webhook_url = os.getenv('WEBHOOK_URL')
 
+          # 评论相关
+          comment_body = os.getenv('COMMENT_BODY', '')
+          comment_user = os.getenv('COMMENT_USER', '')
+          comment_user_url = os.getenv('COMMENT_USER_URL', '')
+
+          # 标签相关
+          label_name = os.getenv('LABEL_NAME', '')
+
+          # 分配相关
+          assignee = os.getenv('ASSIGNEE', '')
+
           # 状态映射逻辑
           status_map = {
+              # issues
               "opened": ("🆕 新建 Issue", "info"),
               "edited": ("✏️ 修改了内容", "comment"),
               "closed": ("✅ 已关闭 Issue", "warning"),
               "reopened": ("♻️ 重新打开了 Issue", "info"),
-              "deleted": ("🗑️ 删除了 Issue", "warning")
+              "deleted": ("🗑️ 删除了 Issue", "warning"),
+              "pinned": ("📌 置顶了 Issue", "info"),
+              "unpinned": ("📌 取消置顶 Issue", "comment"),
+              "assigned": ("👤 分配了 Issue", "info"),
+              "unassigned": ("👤 取消了分配", "comment"),
+              "labeled": ("🏷️ 添加了标签", "info"),
+              "unlabeled": ("🏷️ 移除了标签", "comment"),
+              "transferred": ("🔄 转移了 Issue", "warning"),
+              # issue_comment
+              "created": ("💬 新建评论", "info"),
+              "edited": ("✏️ 编辑了评论", "comment"),
+              "deleted": ("🗑️ 删除了评论", "warning")
           }
           status_text, color = status_map.get(action, (f"🛠️ 状态更新: {action}", "comment"))
 
-          # 内容截取与翻译
-          summary = (body[:200] + '...') if len(body) > 200 else body
-          trans_title = translate(title)
-          trans_summary = translate(summary)
+          # 特殊内容处理
+          extra_info = ""
+          if action in ["labeled", "unlabeled"] and label_name:
+              extra_info = f"\n> **标签**: {label_name}"
+          elif action in ["assigned", "unassigned"] and assignee:
+              extra_info = f"\n> **分配给**: @{assignee}"
 
-          # 格式化标题展示
-          display_title = title if trans_title == title else f"{title}\n> **翻译**: {trans_title}"
+          # 内容截取与翻译
+          # 评论事件使用评论内容，Issue 事件使用 body
+          if action in ["created", "edited", "deleted"] and comment_body:
+              summary = (comment_body[:200] + '...') if len(comment_body) > 200 else comment_body
+              trans_summary = translate(summary)
+              trans_title = title
+              display_title = title
+              operator = f"[{comment_user}]({comment_user_url})"
+          else:
+              summary = (body[:200] + '...') if len(body) > 200 else body
+              trans_title = translate(title)
+              trans_summary = translate(summary)
+              display_title = title if trans_title == title else f"{title}\n> **翻译**: {trans_title}"
+              operator = f"[{user_login}]({user_url})"
 
           # 构造微信 Markdown
           content = f"### {status_text}\n" \
                     f"> **项目**: {os.getenv('REPO_NAME')}\n" \
                     f"> **标题**: <font color=\"{color}\">{display_title}</font>\n" \
-                    f"> **操作人**: [{user_login}]({user_url})\n" \
+                    f"> **操作人**: {operator}{extra_info}\n" \
                     f"> **最新内容摘要**:\n" \
                     f"```\n{trans_summary}\n```\n\n" \
                     f"[🔗 在 GitHub 查看详情]({issue_url})"
