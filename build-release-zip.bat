@@ -15,7 +15,19 @@ set "PROJECT_FILE=%SCRIPT_DIR%\LibmpvIptvClient.csproj"
 set "OUTPUT_DIR=%SCRIPT_DIR%\Output"
 set "PUBLISH_DIR=%OUTPUT_DIR%\publish"
 set "STAGE_DIR=%OUTPUT_DIR%\stage"
-set "VERSION=1.1.4"
+
+:: Extract version from csproj using PowerShell
+echo Extracting version from project file...
+for /f "usebackq tokens=*" %%i in (`powershell -noprofile -command "(Select-String -Path '%SCRIPT_DIR%\LibmpvIptvClient.csproj' -Pattern '<Version>(.*)</Version>' | Select-Object -First 1).Matches.Groups[1].Value"`) do set "VERSION=%%i"
+
+:: Validate version
+if not defined VERSION (
+    echo ERROR: Could not extract version from csproj!
+    echo Please check that LibmpvIptvClient.csproj contains a <Version> tag.
+    exit /b 1
+)
+
+echo Version detected: %VERSION%
 
 :: Package name
 set "ZIP_NAME=SrcBox-v%VERSION%.zip"
