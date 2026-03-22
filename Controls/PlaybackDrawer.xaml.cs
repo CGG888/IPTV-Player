@@ -20,6 +20,7 @@ namespace LibmpvIptvClient.Controls
             CbEnabled.IsChecked = config.Enabled;
             TbUrlFormat.Text = config.UrlFormat;
             SldDuration.Value = Math.Max(1, Math.Min(168, config.DurationHours));
+            CbAppendEpgTime.IsChecked = config.AppendEpgTime;
         }
 
         public void Save(ReplayConfig config)
@@ -27,6 +28,7 @@ namespace LibmpvIptvClient.Controls
             config.Enabled = CbEnabled.IsChecked == true;
             config.UrlFormat = TbUrlFormat.Text;
             config.DurationHours = (int)SldDuration.Value;
+            config.AppendEpgTime = CbAppendEpgTime.IsChecked == true;
         }
 
         public bool HasChanges(ReplayConfig original)
@@ -34,6 +36,7 @@ namespace LibmpvIptvClient.Controls
             if (original.Enabled != (CbEnabled.IsChecked == true)) return true;
             if (original.UrlFormat != TbUrlFormat.Text) return true;
             if (original.DurationHours != (int)SldDuration.Value) return true;
+            if (original.AppendEpgTime != (CbAppendEpgTime.IsChecked == true)) return true;
             return false;
         }
 

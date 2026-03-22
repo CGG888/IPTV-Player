@@ -215,7 +215,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 if (_shell.IsTimeshiftActive) _shell.IsTimeshiftActive = false;
                 
-                url = ProcessUrlPlaceholders(url, prog.Start, prog.End);
+                url = ProcessUrlPlaceholders(url, prog.Start, prog.End, AppSettings.Current.Replay.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, prog.Start, prog.End, false); } catch { }
 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Catchup - Program: {prog.Title}, Channel: {ch.Name}, Time: {prog.Start:HH:mm}-{prog.End:HH:mm}, URL: {url}");
@@ -365,7 +365,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 catch { }
                 
-                url = ProcessUrlPlaceholders(url, start, end);
+                url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _shell.IsTimeshiftActive); } catch { }
                 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
@@ -398,7 +398,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             catch { }
         }
 
-        private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end)
+        private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
         {
             // 1. Unix Timestamp & Duration (rtp2httpd macros)
             long tsStart = new DateTimeOffset(start).ToUnixTimeSeconds();
@@ -407,7 +407,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             url = url.Replace("{timestamp}", tsStart.ToString());
             url = url.Replace("${end_timestamp}", tsEnd.ToString());
             url = url.Replace("{end_timestamp}", tsEnd.ToString());
-            
+
             long dur = (long)(end - start).TotalSeconds;
             url = url.Replace("${duration}", dur.ToString());
             url = url.Replace("{duration}", dur.ToString());
@@ -421,19 +421,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 var type = m.Groups[1].Value;
                 var fmt = m.Groups[2].Value;
-                
+
                 // Expand rtp2httpd Macros
                 if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
                 else if (fmt == "Ymd") fmt = "yyyyMMdd";
                 else if (fmt == "HMS") fmt = "HHmmss";
-                
+
                 var dt = (type == "b" ? start : end);
                 if (fmt.EndsWith("|UTC", StringComparison.OrdinalIgnoreCase))
                 {
                     dt = dt.ToUniversalTime();
                     fmt = fmt.Substring(0, fmt.Length - 4);
                 }
-                
+
                 // Unix seconds for start/end
                 if (string.Equals(fmt, "timestamp", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(fmt, "unix", StringComparison.OrdinalIgnoreCase) ||
@@ -449,13 +449,17 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
             url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
             // 5. Append EPG tracking parameters (minute-level) for replay/timeshift correlation
-            try
+            // 仅当 appendEpgTime 为 true 时追加，避免影响不支持该参数的播放源
+            if (appendEpgTime)
             {
-                var minTs = start.ToString("yyyy-MM-ddTHH:mm");
-                var sep = url.Contains("?") ? "&" : "?";
-                url = url + sep + "epg_time=" + Uri.EscapeDataString(minTs);
+                try
+                {
+                    var minTs = start.ToString("yyyy-MM-ddTHH:mm");
+                    var sep = url.Contains("?") ? "&" : "?";
+                    url = url + sep + "epg_time=" + Uri.EscapeDataString(minTs);
+                }
+                catch { }
             }
-            catch { }
             return url;
         }
 

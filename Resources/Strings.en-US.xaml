@@ -308,6 +308,8 @@
   <sys:String x:Key="UI_Playback_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
   <sys:String x:Key="UI_Playback_Duration">Replay Range (Hours)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">Time span for replay availability</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime">Append epg_time parameter</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime_Tip">When enabled, appends epg_time parameter to replay URL. Disabled by default as some sources don't support this parameter and it may affect playback.</sys:String>
 
   <sys:String x:Key="UI_Timeshift_Settings">Timeshift Settings</sys:String>
   <sys:String x:Key="UI_EnableTimeshift">Enable Timeshift</sys:String>
@@ -317,7 +319,9 @@
   <sys:String x:Key="UI_Timeshift_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">Timeshift Range (Hours)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">Time span for timeshift availability</sys:String>
-  
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime">Append epg_time parameter</sys:String>
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime_Tip">When enabled, appends epg_time parameter to timeshift URL. Disabled by default as some sources don't support this parameter and it may affect playback.</sys:String>
+
   <sys:String x:Key="UI_Enable">Enable</sys:String>
   <sys:String x:Key="UI_Close">Close</sys:String>
 

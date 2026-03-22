@@ -283,6 +283,8 @@
   <sys:String x:Key="UI_Playback_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
   <sys:String x:Key="UI_Playback_Duration">Глубина архива (часы)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">Доступный период архива</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime">Добавлять параметр epg_time</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime_Tip">При включении добавляет параметр epg_time к URL архива. По умолчанию выключено, так как некоторые источники не поддерживают этот параметр и это может повлиять на воспроизведение.</sys:String>
 
   <sys:String x:Key="UI_Timeshift_Settings">Настройки таймшифта</sys:String>
   <sys:String x:Key="UI_EnableTimeshift">Включить таймшифт</sys:String>
@@ -292,7 +294,9 @@
   <sys:String x:Key="UI_Timeshift_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">Глубина таймшифта (часы)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">Доступный период сдвига</sys:String>
-  
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime">Добавлять параметр epg_time</sys:String>
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime_Tip">При включении добавляет параметр epg_time к URL таймшифта. По умолчанию выключено, так как некоторые источники не поддерживают этот параметр и это может повлиять на воспроизведение.</sys:String>
+
   <sys:String x:Key="UI_Enable">Включить</sys:String>
   <sys:String x:Key="UI_Close">Закрыть</sys:String>
 

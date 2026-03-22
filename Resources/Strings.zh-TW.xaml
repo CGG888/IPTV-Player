@@ -298,6 +298,8 @@
   <sys:String x:Key="UI_Playback_UrlFormat_Note">可填完整URL或僅參數段（如 ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
   <sys:String x:Key="UI_Playback_Duration">回看範圍 (小時)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">設定支援回看的跨度</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime">追加 epg_time 參數</sys:String>
+  <sys:String x:Key="UI_Replay_AppendEpgTime_Tip">啟用後會在回放 URL 後追加 epg_time 參數。預設關閉，因為部分播放源不支援該參數會影響播放。</sys:String>
 
   <sys:String x:Key="UI_Timeshift_Settings">時移設定</sys:String>
   <sys:String x:Key="UI_EnableTimeshift">啟用時移</sys:String>
@@ -307,7 +309,9 @@
   <sys:String x:Key="UI_Timeshift_UrlFormat_Note">可填完整URL或僅參數段（如 ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">時移範圍 (小時)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">設定支援時移的跨度</sys:String>
-  
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime">追加 epg_time 參數</sys:String>
+  <sys:String x:Key="UI_Timeshift_AppendEpgTime_Tip">啟用後會在時移 URL 後追加 epg_time 參數。預設關閉，因為部分播放源不支援該參數會影響播放。</sys:String>
+
   <sys:String x:Key="UI_Enable">啟用</sys:String>
   <sys:String x:Key="UI_Close">關閉</sys:String>
 

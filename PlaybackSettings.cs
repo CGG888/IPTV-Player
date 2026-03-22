@@ -37,6 +37,8 @@ namespace LibmpvIptvClient
         public bool Enabled { get; set; } = true;
         public string UrlFormat { get; set; } = "";
         public int DurationHours { get; set; } = 72;
+        // 回放时追加 epg_time 参数（默认关闭，避免影响部分不支持的播放源）
+        public bool AppendEpgTime { get; set; } = false;
     }
 
     public class TimeshiftConfig
@@ -44,6 +46,8 @@ namespace LibmpvIptvClient
         public bool Enabled { get; set; } = true;
         public string UrlFormat { get; set; } = "";
         public int DurationHours { get; set; } = 6;
+        // 时移时追加 epg_time 参数（默认关闭，避免影响部分不支持的播放源）
+        public bool AppendEpgTime { get; set; } = false;
     }
 
     public class PlaybackSettings
